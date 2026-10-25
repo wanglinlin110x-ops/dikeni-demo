@@ -148,6 +148,25 @@
     }
   }
   updateSend();
+  function updateSuggestionIcon(button) {
+    const icon = $('.s29', button);
+    if (!icon) return;
+    const text = button.textContent.trim();
+    const rules = [
+      [/冠军|最好|TOP\s*1|第一/i, '🏆'],
+      [/对比|车型/, '🚗'],
+      [/跟进|客户/, '📝'],
+      [/方法|经验/, '💡'],
+      [/趋势|增长|个月/, '📈'],
+      [/成交率/, '🎯'],
+      [/门店/, '🏬'],
+    ];
+    icon.classList.add('suggestion-emoji');
+    icon.dataset.emoji = rules.find(([pattern]) => pattern.test(text))?.[1] || '💬';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.replaceChildren();
+  }
+  $$('[data-name="Section - 推荐问题"] .s28').forEach(updateSuggestionIcon);
   const routes = text => /增长|原因|成交|经验/.test(text) ? 'analysis.html' : /趋势|6个月|6 个月/.test(text) ? 'trend.html' : 'conversation.html';
   $$('[data-name="Button"]').forEach(button => {
     const text = button.textContent.trim();
@@ -161,7 +180,7 @@
       const next = candidates.filter(item => !visible.includes(item)).slice(0, buttons.length);
       buttons.forEach((item, index) => {
         const label = $('[data-name="Text"] p', item) || $('[data-name="Text"]', item) || [...item.children].find(child => child.textContent.trim());
-        if (label && next[index]) label.textContent = next[index];
+        if (label && next[index]) { label.textContent = next[index]; updateSuggestionIcon(item); }
       });
     });
     else if (text === '确定' || text === '跳过') interactive(button, () => toast(text === '确定' ? '已选择对比范围' : '已跳过范围选择'));

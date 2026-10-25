@@ -913,3 +913,8 @@ body:is([data-page="index"],[data-page="input"]) .s24{width:100%}
 @container home-content (max-height:450px){
   body:is([data-page="index"],[data-page="input"]) .s18{display:none}
 }
+
+/* Emoji icons decorate suggestions without becoming part of the submitted question. */
+.suggestion-emoji{display:flex;align-items:center;justify-content:center}
+.suggestion-emoji::before{content:attr(data-emoji);font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;font-size:32px;line-height:1;font-weight:400}
+.font-large .suggestion-emoji::before{font-size:36px}
