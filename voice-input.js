@@ -11,6 +11,7 @@ class VoiceInput {
       <button class="voice-wave" type="button" aria-label="结束语音并发送识别文字">${'<i></i>'.repeat(30)}</button>`;
     root.append(this.panel);
     this.bars = [...this.panel.querySelectorAll('i')];
+    this.restHeights = [16.657,16.657,16.657,16.657,16.657,16.657,8.634,20.5,14.384,24.503,32.102,15.242,42.641,35.729,53.318,46.923,43.69,20.735,33.574,45.363,20.585,26.546,25.255,38.554,16.657,16.657,16.657,16.657,16.657,16.657];
     this.panel.querySelector('button').addEventListener('click', () => {
       if (!this.suppressClick) this.finish();
     });
@@ -37,7 +38,7 @@ class VoiceInput {
       return;
     }
     this.onBeforeStart?.();
-    const session = { held, finalText: '', frame: 0, ending: false, heights: this.bars.map(() => 6) };
+    const session = { held, finalText: '', frame: 0, ending: false, heights: [...this.restHeights] };
     this.session = session;
     this.root.querySelector('.message-input')?.blur();
     this.panel.getAnimations().forEach(animation => animation.cancel());
@@ -105,7 +106,7 @@ class VoiceInput {
     this.bars.forEach((bar, index) => {
       const band = frequencies[Math.min(frequencies.length - 1, 1 + index * 2)] / 255;
       const center = 0.35 + 0.65 * Math.sin(Math.PI * index / (this.bars.length - 1));
-      const target = 6 + 50 * level * (0.45 + 0.55 * band) * center;
+      const target = Math.min(56, this.restHeights[index] + 50 * level * (0.45 + 0.55 * band) * center);
       session.heights[index] += (target - session.heights[index]) * 0.3;
       bar.style.height = `${session.heights[index].toFixed(2)}px`;
     });

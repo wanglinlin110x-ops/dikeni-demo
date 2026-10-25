@@ -87,7 +87,7 @@
       const dx = event.touches[0].clientX - swipe.x;
       const dy = event.touches[0].clientY - swipe.y;
       if (Math.abs(dy) > 24 && Math.abs(dy) > Math.abs(dx)) { swipe = undefined; return; }
-      if (Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy) * 1.5 && (page === 'index' || dx > 0 && swipe.x < 32)) event.preventDefault();
+      if (Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy) * 1.5 && (dx < 0 || page === 'index' || dx > 0 && swipe.x < 32)) event.preventDefault();
     }, { passive: false });
     screen.addEventListener('touchend', event => {
       const start = swipe; swipe = undefined;
@@ -95,7 +95,7 @@
       const dx = event.changedTouches[0].clientX - start.x;
       const dy = event.changedTouches[0].clientY - start.y;
       if (Math.abs(dx) < 64 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-      if (page === 'index' && dx < 0) openOverlay('history', $('[data-name="Button - 打开菜单"]'));
+      if (dx < 0) openOverlay('history', $('[data-name="Button - 打开菜单"]'));
       else if (dx > 0 && start.x < 32) DemoMotion.back();
     }, { passive: true });
     screen.addEventListener('touchcancel', () => { swipe = undefined; }, { passive: true });
@@ -205,7 +205,7 @@
     history.innerHTML = `<button class="overlay-backdrop" aria-label="关闭侧边栏"></button>
       <aside class="history-panel" role="dialog" aria-modal="true" aria-labelledby="history-title" tabindex="-1">
         <div class="history-content">
-          <header class="history-account"><img class="history-avatar" src="assets/ebdd8.png" alt=""><h2 id="history-title">王小迪</h2><button class="history-settings" aria-label="账户设置"><img src="assets/e7bb9.svg" alt=""></button></header>
+          <header class="history-account"><img class="history-avatar" src="assets/ebdd8.png" alt=""><h2 id="history-title">代用名</h2><button class="font-size-toggle" type="button" data-font-size-toggle>大字</button></header>
           <nav class="history-list" aria-label="对话列表">
             <h3>置顶</h3><button class="history-main"><img src="assets/f56ba.png" alt="">主对话</button>
             <div class="history-pinned-list"></div><h3 class="history-recent-title">最近</h3>
@@ -224,7 +224,6 @@
         <p class="feedback-prompt">哪里需要改进？请选择原因或补充说明。</p>
         <div class="feedback-reasons" aria-label="反馈原因">${['没有解决问题', '回答不相关', '信息不准确', '格式有问题', '内容不当'].map(reason => `<button type="button" aria-pressed="false">${reason}</button>`).join('')}</div>
         <textarea class="feedback-comment" aria-label="其他原因或补充说明" placeholder="其他原因或补充说明" maxlength="1000"></textarea>
-        <p class="feedback-storage-note">反馈仅保存在当前浏览器，不发送至后台。</p>
         <button class="feedback-submit" type="submit" disabled>提交反馈</button>
       </form>`;
     const context = document.createElement('section');
@@ -309,7 +308,8 @@
     $('.history-main', history).addEventListener('click', () => {
       if (ChatConversations.list().length) DemoMotion.navigate('conversation.html'); else closeOverlay();
     });
-    $('.history-settings', history).addEventListener('click', () => toast('账户设置将在后续版本接入'));
+    DemoFontSize.updateButtons();
+    $('[data-font-size-toggle]', history).addEventListener('click', DemoFontSize.toggle);
     $('.history-new', history).addEventListener('click', () => {
       ChatConversations.create();
       sessionStorage.removeItem('demo-current-message');
@@ -497,13 +497,18 @@
     const insets = getComputedStyle(shell);
     const horizontalInset = mobile ? parseFloat(insets.paddingLeft) + parseFloat(insets.paddingRight) : 0;
     
+    const viewport = window.visualViewport;
+    const occlusion = mobile && viewport ? Math.max(0, innerHeight - viewport.height - viewport.offsetTop) : 0;
+    document.documentElement.style.setProperty('--viewport-occlusion', `${occlusion}px`);
+    shell.style.position = mobile ? 'relative' : '';
+    shell.style.top = mobile ? `${viewport?.offsetTop || 0}px` : '';
     const mobileWidth = document.documentElement.clientWidth;
     const width = mobile ? mobileWidth - horizontalInset : Math.min(innerWidth, 375);
     $('.design-screen').style.zoom = String(width / 750);
     shell.style.width = (mobile ? mobileWidth : width) + 'px';
     const canvas = document.querySelector('.design-screen');
     canvas.style.setProperty('--safe-top', `calc(env(safe-area-inset-top, 0px) * ${750 / width})`);
-    canvas.style.setProperty('--safe-bottom', `calc(env(safe-area-inset-bottom, 0px) * ${750 / width})`);
+    canvas.style.setProperty('--safe-bottom', `calc(var(--native-safe-bottom) * ${750 / width})`);
     if (isChatFlow) {
       const viewportHeight = window.visualViewport?.height || innerHeight;
       const height = mobile ? Math.max(1, Math.min(innerHeight, viewportHeight)) : Math.min(812, viewportHeight - (innerWidth > 900 ? 48 : 0));
@@ -514,6 +519,8 @@
   window.addEventListener('pageshow', () => { navigatingToChat = false; updateSend(); });
   window.addEventListener('resize', fitSmallScreen);
   window.visualViewport?.addEventListener('resize', fitSmallScreen);
+  window.visualViewport?.addEventListener('scroll', fitSmallScreen);
   window.addEventListener('resize', positionHistoryContext);
   window.visualViewport?.addEventListener('resize', positionHistoryContext);
+  document.addEventListener('demo-font-change', positionHistoryContext);
 })();
