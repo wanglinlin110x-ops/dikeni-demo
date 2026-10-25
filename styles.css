@@ -476,7 +476,7 @@ body[data-page="conversation"] .s57{white-space:normal;overflow-wrap:anywhere}
 .history-main{display:flex;align-items:center;gap:14px;width:100%;height:82px;padding:28px 16px 4px;background:white;text-align:left;font-size:32px;font-weight:500;line-height:48px;color:#111}
 .history-main img{width:50px;height:50px;border-radius:25px;object-fit:cover}
 .history-list .history-recent-title{margin-top:72px;margin-bottom:14px}
-.history-recent{display:block;width:100%;padding:16px;border-radius:26px;background:white;text-align:left;font-size:32px;line-height:44.8px;color:#111;white-space:nowrap}
+.history-recent{display:block;width:100%;padding:16px;border-radius:20px;background:white;text-align:left;font-size:32px;line-height:44.8px;color:#111;white-space:nowrap}
 .history-recent.selected{background:#f8f8f8}
 .history-footer{position:relative;z-index:1;padding:20px 32px 48px;flex-shrink:0}
 .history-footer .history-new{pointer-events:auto}
@@ -594,7 +594,7 @@ body[data-page="conversation"] [data-node-id="9:1383"]{width:40px;height:40px}
 .chat-thread button:focus-visible{outline:3px solid #00b5c7;outline-offset:3px}
 .chat-thread .thinking-status{margin-top:0}
 .history-recent-list{display:flex;flex-direction:column;gap:14px;width:100%;padding-bottom:20px}
-.history-recent-list .history-recent{flex-shrink:0;min-height:0;padding:16px 24px;border-radius:26px;background:#f8f8f8;font-size:30px;font-weight:400;line-height:normal;overflow:hidden;text-overflow:ellipsis}
+.history-recent-list .history-recent{flex-shrink:0;min-height:0;padding:16px 24px;border-radius:20px;background:#f8f8f8;font-size:30px;font-weight:400;line-height:normal;overflow:hidden;text-overflow:ellipsis}
 .history-recent-list .history-recent:hover{background:#efefef}
 .history-empty{font-size:26px;line-height:40px;color:#999;padding:16px}
 
@@ -796,9 +796,15 @@ body[data-page="conversation"] .chat-trend+.chat-source-disclosure{margin-top:-1
 }
 
 /* Reading mode changes content typography, not the canvas or system safe areas. */
-.font-size-toggle{display:flex;align-items:center;justify-content:center;flex-shrink:0;min-width:var(--tap-target,88px);min-height:var(--tap-target,88px);margin-left:auto;padding:12px 16px;border-radius:44px;background:#f3f4f5;color:#273148;font-size:28px;font-weight:500;line-height:40px}
-.font-size-toggle:focus-visible{outline:3px solid #00b5c7;outline-offset:4px}
-.font-large .font-size-toggle{background:#e3f7f9;color:#007a88;font-size:32px;line-height:48px}
+.font-size-switch{display:flex;align-items:center;flex-shrink:0;gap:0;margin-left:auto;padding:4px;border-radius:50px;background:#f8f8f8}
+.font-size-option{position:relative;display:flex;align-items:center;justify-content:center;width:72px;height:48px;padding:4px 8px;border-radius:40px;background:transparent;color:#777;font-size:24px;font-weight:400;line-height:38px}
+.font-size-option::before{content:"";position:absolute;inset-inline:0;top:50%;height:max(48px,var(--tap-target,88px));transform:translateY(-50%)}
+.font-size-option[data-font-size-toggle="large"]{font-size:28px}
+.font-size-option[aria-pressed="true"]{background:#00b3c6;color:#fff;font-weight:500}
+.font-size-option:focus-visible{outline:3px solid #00b5c7;outline-offset:2px}
+.font-large .font-size-switch{padding:5px}
+.font-large .font-size-option{width:90px;height:60px;padding:5px 10px;font-size:30px;line-height:48px}
+.font-large .font-size-option[data-font-size-toggle="large"]{font-size:34px}
 .font-large .history-account h2{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:40px;line-height:60px}
 .font-large .history-list h3{font-size:30px;line-height:46px;color:#666}
 .font-large .history-recent{min-height:var(--tap-target,88px);font-size:36px!important;line-height:54px!important;text-overflow:clip;white-space:normal}

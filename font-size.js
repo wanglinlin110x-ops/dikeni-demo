@@ -5,9 +5,9 @@ window.DemoFontSize = (() => {
   const isLarge = () => document.documentElement.classList.contains('font-large');
   function updateButtons() {
     document.querySelectorAll('[data-font-size-toggle]').forEach(button => {
-      button.textContent = isLarge() ? '标准' : '大字';
-      button.setAttribute('aria-label', isLarge() ? '切换到标准字号' : '切换到大字模式');
-      button.setAttribute('aria-pressed', String(isLarge()));
+      const large = button.dataset.fontSizeToggle === 'large';
+      button.setAttribute('aria-label', large ? '大字' : '标准');
+      button.setAttribute('aria-pressed', String(large === isLarge()));
     });
   }
   function updateTargets() {
