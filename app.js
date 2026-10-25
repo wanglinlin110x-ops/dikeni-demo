@@ -63,7 +63,7 @@
         else toast('当前页面没有消息输入框');
       }
       else if (/附件/.test(name)) toast('附件功能将在后续版本接入');
-      else if (/重新生成/.test(name)) toast('当前展示 Figma 示例回答');
+      else if (/重新生成/.test(name)) toast('当前为预置回答，暂不支持重新生成');
       else if (/分享/.test(name)) toast('分享功能将在后续版本接入');
     }, name.replace('Button - ', ''));
   });
@@ -142,6 +142,7 @@
     } else {
       navigatingToChat = true;
       if (['index', 'input'].includes(page)) ChatConversations.create();
+      else if (['answer', 'trend', 'analysis'].includes(page)) ChatConversations.create({ network: 'wangchao', personId: 'dynasty-li', period: '2026年10月', scope: '全国门店', lastIntent: 'rank' });
       sessionStorage.setItem('demo-pending-message', message);
       DemoMotion.navigate('conversation.html');
     }
@@ -154,7 +155,7 @@
       const container = $('[data-name="Section - 推荐问题"] [data-name="Container"]');
       if (!container) return;
       DemoMotion.animate(container, [{ opacity: .45, transform: 'translateY(8px)' }, { opacity: 1, transform: 'translateY(0)' }], 180);
-      const candidates = ['本月销量 TOP1 的销售是谁?', '本月 Z9 和 N9 销量对比', '帮我写跟进进展', '看看销冠经验', '王小迪近6个月的销量趋势', '王小迪本月成交率是多少?', '王小迪的门店信息', '本月王小迪的销量是多少?'];
+      const candidates = ['本月销售冠军是谁？', '本月 Z9 和 N9 销量对比', '给我一份客户跟进示例', '有哪些实用销售方法？', '王朝这个月谁卖得最好？', '王小迪近6个月的销量趋势', '王小迪本月成交率是多少?', '王小迪的门店信息'];
       const buttons = $$('[data-name="Button"]', container);
       const visible = buttons.map(item => item.textContent.trim());
       const next = candidates.filter(item => !visible.includes(item)).slice(0, buttons.length);
@@ -164,9 +165,9 @@
       });
     });
     else if (text === '确定' || text === '跳过') interactive(button, () => toast(text === '确定' ? '已选择对比范围' : '已跳过范围选择'));
-    else if (text === '重新生成') interactive(button, () => toast('当前展示 Figma 示例回答'));
+    else if (text === '重新生成') interactive(button, () => toast('当前为预置回答，暂不支持重新生成'));
     else if (!['图表', '表格'].includes(text)) interactive(button, () => {
-      if (isChatFlow) {
+      if (isChatFlow || ['answer', 'trend', 'analysis'].includes(page)) {
         submitMessage(button.textContent.trim());
       } else DemoMotion.navigate(routes(button.textContent.trim()));
     });
@@ -184,7 +185,7 @@
     const tabs = $$('[data-name="Button"]').filter(button => ['图表', '表格'].includes(button.textContent.trim()));
     tabs.forEach(tab => interactive(tab, () => {
       const isTable = tab.textContent.trim() === '表格';
-      chart.innerHTML = isTable ? '<table class="inline-table"><thead><tr><th>车型</th><th>销量</th><th>占比</th></tr></thead><tbody><tr><td>王潮 DM-i</td><td>19辆</td><td>50.0%</td></tr><tr><td>王潮 EV</td><td>11辆</td><td>28.9%</td></tr><tr><td>王潮 PLUS</td><td>6辆</td><td>15.8%</td></tr><tr><td>其他</td><td>2辆</td><td>5.3%</td></tr></tbody></table>' : original;
+      chart.innerHTML = isTable ? '<table class="inline-table"><thead><tr><th>车型</th><th>销量</th><th>占比</th></tr></thead><tbody><tr><td>汉 DM-i</td><td>19辆</td><td>50.0%</td></tr><tr><td>宋 PLUS DM-i</td><td>11辆</td><td>28.9%</td></tr><tr><td>秦 PLUS DM-i</td><td>6辆</td><td>15.8%</td></tr><tr><td>其他</td><td>2辆</td><td>5.3%</td></tr></tbody></table>' : original;
       DemoMotion.animate(chart, [{ opacity: .4 }, { opacity: 1 }], 180);
       tabs.forEach(item => { item.style.backgroundColor = item === tab ? '#efedf2' : 'transparent'; item.setAttribute('aria-pressed', String(item === tab)); });
     }));
@@ -391,7 +392,7 @@
     const screen = $('.design-screen'), panel = $('.history-context-panel');
     const zoom = screen.getBoundingClientRect().width / screen.offsetWidth;
     panel.style.setProperty('--context-target', `${44 / zoom}px`);
-    const mobile = matchMedia('(max-width:900px)').matches;
+    const mobile = document.documentElement.classList.contains('mobile-layout') && matchMedia('(max-width:900px)').matches;
     const margin = mobile ? 24 : 104, bottom = mobile ? 24 : 88;
     const available = screen.getBoundingClientRect().height / zoom;
     panel.style.maxHeight = `${Math.max(120, available - margin - bottom)}px`;
@@ -494,7 +495,7 @@
   }
   // Fill narrow viewports while retaining the 750px design canvas.
   function fitSmallScreen() {
-    const mobile = matchMedia('(max-width: 900px)').matches;
+    const mobile = document.documentElement.classList.contains('mobile-layout') && matchMedia('(max-width:900px)').matches;
     const shell = $('.screen-shell');
     const insets = getComputedStyle(shell);
     const horizontalInset = mobile ? parseFloat(insets.paddingLeft) + parseFloat(insets.paddingRight) : 0;
@@ -513,14 +514,14 @@
     shell.style.position = mobile ? 'relative' : '';
     shell.style.top = mobile ? `${viewport?.offsetTop || 0}px` : '';
     const mobileWidth = document.documentElement.clientWidth;
-    const width = mobile ? mobileWidth - horizontalInset : Math.min(innerWidth, 375);
+    const width = mobile ? mobileWidth - horizontalInset : 375;
     $('.design-screen').style.zoom = String(width / 750);
     shell.style.width = (mobile ? mobileWidth : width) + 'px';
     const canvas = document.querySelector('.design-screen');
     canvas.style.setProperty('--safe-top', `calc(env(safe-area-inset-top, 0px) * ${750 / width})`);
     canvas.style.setProperty('--safe-bottom', `calc(var(--native-safe-bottom) * ${750 / width})`);
     if (isChatFlow) {
-      const height = mobile ? Math.max(1, mobileHeight) : Math.min(812, viewportHeight - (innerWidth > 900 ? 48 : 0));
+      const height = mobile ? Math.max(1, mobileHeight) : 812;
       $('.design-screen').style.setProperty('--canvas-height', `${height * 750 / width}px`);
     }
   }

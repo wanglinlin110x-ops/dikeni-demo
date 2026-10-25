@@ -2,7 +2,7 @@
   const nav = document.querySelector('.demo-nav');
   document.querySelector('.nav-toggle').addEventListener('click', () => nav.classList.toggle('open'));
   function fit() {
-    const mobile = matchMedia('(max-width: 900px)').matches;
+    const mobile = document.documentElement.classList.contains('mobile-layout') && matchMedia('(max-width:900px)').matches;
     const shell = document.querySelector('.screen-shell');
     const insets = getComputedStyle(shell);
     const horizontalInset = mobile ? parseFloat(insets.paddingLeft) + parseFloat(insets.paddingRight) : 0;
@@ -21,8 +21,8 @@
     shell.style.position = mobile ? 'relative' : '';
     shell.style.top = mobile ? `${viewport?.offsetTop || 0}px` : '';
     const mobileWidth = document.documentElement.clientWidth;
-    const width = mobile ? mobileWidth - horizontalInset : Math.min(innerWidth, 375);
-    const height = mobile ? Math.max(1, mobileHeight) : Math.min(812, viewportHeight - (innerWidth > 900 ? 48 : 0));
+    const width = mobile ? mobileWidth - horizontalInset : 375;
+    const height = mobile ? Math.max(1, mobileHeight) : 812;
     const screen = document.querySelector('.design-screen');
     screen.style.zoom = String(width / 750);
     screen.style.setProperty('--canvas-height', `${height * 750 / width}px`);

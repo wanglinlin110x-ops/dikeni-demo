@@ -532,7 +532,9 @@ body[data-page="conversation"] [data-node-id="9:1383"]{width:40px;height:40px}
 .chat-table-wrap table{width:100%;border-collapse:collapse;font-size:24px;line-height:36px;text-align:left}
 .chat-table-wrap td,.chat-table-wrap th{padding:16px 8px;border-bottom:1px solid #e6e8e8;font-weight:400;overflow-wrap:anywhere}
 .chat-table-wrap th{color:#939693}
-.chat-chart{display:flex;align-items:flex-end;gap:12px;padding:36px 4px 8px;margin-top:24px;border-radius:16px;background:white}
+.chat-chart{display:block;padding:0;margin-top:0;border-radius:0;background:transparent}
+.chat-bars{display:flex;align-items:flex-end;gap:12px}
+.chat-bars .chat-chart-column{gap:8px}
 .chat-chart-column{display:flex;align-items:center;flex-direction:column;flex:1;min-width:0;color:#666}
 .chat-chart-column>span{font-size:22px;line-height:34px;white-space:nowrap}
 .chat-chart-column>i{display:block;width:70%;background:#00b5c7;border-radius:8px 8px 0 0}
@@ -664,12 +666,9 @@ body[data-page="conversation"] .chat-sources{margin-top:0;padding:20px 24px;bord
 body[data-page="conversation"] .chat-sources>span:last-child{font-size:24px;line-height:33.6px}
 body[data-page="conversation"] .chat-answer-actions{padding:12px 8px;gap:46px}
 body[data-page="conversation"] .chat-trend{margin-top:0}
-body[data-page="conversation"] .chat-trend svg{margin-top:24px;margin-bottom:213px;transform:scaleY(1.5772357724);transform-origin:top;background:repeating-linear-gradient(to bottom,#e9e9e9 0px,#e9e9e9 1px,transparent 1px,transparent 56.6px) 72px 18px / calc(100% - 72px) 283px no-repeat}
-body[data-page="conversation"] .chat-trend svg>text{font-size:20px;transform:scaleY(.6340206186);transform-box:fill-box;transform-origin:center;fill:#999}
-body[data-page="conversation"] .chat-trend svg>path[fill^="url"]{fill:none}
-body[data-page="conversation"] .chat-trend svg>path[stroke-dasharray]{stroke-opacity:0}
-body[data-page="conversation"] .chat-trend svg>path{vector-effect:non-scaling-stroke}
-body[data-page="conversation"] .chat-trend svg>circle{r:8px;fill:#00b5c7;transform:scaleY(.6340206186);transform-box:fill-box;transform-origin:center;vector-effect:non-scaling-stroke}
+body[data-page="conversation"] .chat-trend svg{margin-top:24px;margin-bottom:0;transform:none;background:none}
+body[data-page="conversation"] .chat-trend svg>text{font-size:20px;fill:#999}
+body[data-page="conversation"] .chat-trend .trend-curve{vector-effect:non-scaling-stroke}
 body[data-page="conversation"] .followup-section{padding:24px 0 0}
 body[data-page="conversation"] .followup-section h2{font-size:24px;font-weight:400;line-height:36px;color:#444}
 body[data-page="conversation"] .followup-options{margin-top:20px}
@@ -704,18 +703,10 @@ body[data-page="conversation"] .chat-source-disclosure .chat-sources{margin:0;pa
 @keyframes feedback-pop{0%{transform:scale(.85)}55%{transform:scale(1.18)}100%{transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){.feedback-pop{animation:none}}
 
-/* Narrow screens fill the viewport regardless of pointer type. */
+/* Phones and installed apps fill the viewport; desktop keeps its preview size. */
 @media(max-width:900px){
-  html,body{background:#fff;min-height:100vh;min-height:100dvh}
-  [data-name="Header"]{position:sticky;top:0;z-index:3;background:white}
-  .screen-shell{margin:0;min-height:0;height:100vh;height:100dvh;padding:0 env(safe-area-inset-right,0px) 0 env(safe-area-inset-left,0px);background:white}
-  [data-name="Status Bar/Light"],[data-name="Home Indicator/Dark"],.wb-status,.wb-home-indicator,.overlay-status,.overlay-home-indicator{display:none!important}
-  .voice-panel::after{display:none}
-  .nav-toggle,.demo-nav,.demo-nav.open{display:none}
-  body:is([data-page="index"],[data-page="input"]) .s35,body[data-page="conversation"] .s149{height:var(--composer-height)}
-  body:is([data-page="index"],[data-page="input"]) .s11,body[data-page="conversation"] .s50{padding-bottom:var(--composer-height)}
-  .history-panel{padding-top:calc(24px + var(--safe-top,0px));padding-bottom:0}
-  .voice-panel{height:calc(308px + max(44px,var(--safe-bottom,0px)));padding-bottom:max(44px,var(--safe-bottom,0px))}
+html.mobile-layout,:where(html.mobile-layout) body{background:#fff;min-height:100vh;min-height:100dvh}:where(html.mobile-layout) [data-name="Header"]{position:sticky;top:0;z-index:3;background:white}:where(html.mobile-layout) .screen-shell{margin:0;min-height:0;height:100vh;height:100dvh;padding:0 env(safe-area-inset-right,0px) 0 env(safe-area-inset-left,0px);background:white}:where(html.mobile-layout) [data-name="Status Bar/Light"],:where(html.mobile-layout) [data-name="Home Indicator/Dark"],:where(html.mobile-layout) .wb-status,:where(html.mobile-layout) .wb-home-indicator,:where(html.mobile-layout) .overlay-status,:where(html.mobile-layout) .overlay-home-indicator{display:none!important}:where(html.mobile-layout) .voice-panel::after{display:none}:where(html.mobile-layout) .nav-toggle,:where(html.mobile-layout) .demo-nav,:where(html.mobile-layout) .demo-nav.open{display:none}:where(html.mobile-layout) body:is([data-page="index"],[data-page="input"]) .s35,:where(html.mobile-layout) body[data-page="conversation"] .s149{height:var(--composer-height)}:where(html.mobile-layout) body:is([data-page="index"],[data-page="input"]) .s11,:where(html.mobile-layout) body[data-page="conversation"] .s50{padding-bottom:var(--composer-height)}:where(html.mobile-layout) .history-panel{padding-top:calc(24px + var(--safe-top,0px));padding-bottom:0}:where(html.mobile-layout) .voice-panel{height:calc(308px + max(44px,var(--safe-bottom,0px)));padding-bottom:max(44px,var(--safe-bottom,0px))}
+
 }
 
 /* Interaction refinements preserve the existing icon and card geometry. */
@@ -743,7 +734,8 @@ body:is([data-page="index"],[data-page="input"]) [data-name="Section - 推荐问
 .system-chrome .system-home-bar{position:absolute;bottom:0;left:0;width:750px;height:68px}
 .overlay-status,.overlay-home-indicator,.voice-panel::after{display:none}
 @media(max-width:900px){
-  .system-chrome,.system-status-slot,.system-home-slot{display:none!important}
+:where(html.mobile-layout) .system-chrome,:where(html.mobile-layout) .system-status-slot,:where(html.mobile-layout) .system-home-slot{display:none!important}
+
 }
 
 
@@ -777,23 +769,20 @@ body:is([data-page="index"],[data-page="input"]) [data-name="Section - 推荐问
 
 /* Full-bleed backgrounds; only interactive content avoids the native system bars. */
 @media(max-width:900px){
-  body:not([data-page="workbench"]) .design-screen>div:first-child{padding-top:var(--safe-top,0px)}
-  .design-screen{touch-action:pan-y}
+:where(html.mobile-layout) body:not([data-page="workbench"]) .design-screen>div:first-child{padding-top:var(--safe-top,0px)}:where(html.mobile-layout) .design-screen{touch-action:pan-y}
+
 }
 
 /* Figma 9:1377 and 10:4422: group data with its sources and use regular history text. */
 body[data-page="conversation"] .chat-metrics+.chat-source-disclosure,
-body[data-page="conversation"] .chat-trend+.chat-source-disclosure{margin-top:-12px}
+body[data-page="conversation"] .chat-chart+.chat-source-disclosure{margin-top:-12px}
 .history-panel .history-date-group{display:none}
 
 /* The system reports usable insets; never infer a home indicator from device names. */
 :root{--viewport-occlusion:0px;--native-safe-bottom:max(0px,calc(env(safe-area-inset-bottom,0px) - var(--viewport-occlusion)))}
 @media(max-width:900px){
-  .design-screen{--composer-height:calc(130px + max(12px,var(--safe-bottom,0px)))}
-  .history-footer{padding-bottom:max(48px,var(--safe-bottom,0px))}
-  .feedback-sheet{padding-bottom:max(44px,var(--safe-bottom,0px))}
-  .source-sheet{padding-bottom:max(0px,calc(var(--safe-bottom,0px) - 32px))}
-  .toast{bottom:max(28px,var(--native-safe-bottom,0px))}
+:where(html.mobile-layout) .design-screen{--composer-height:calc(130px + max(12px,var(--safe-bottom,0px)))}:where(html.mobile-layout) .history-footer{padding-bottom:max(48px,var(--safe-bottom,0px))}:where(html.mobile-layout) .feedback-sheet{padding-bottom:max(44px,var(--safe-bottom,0px))}:where(html.mobile-layout) .source-sheet{padding-bottom:max(0px,calc(var(--safe-bottom,0px) - 32px))}:where(html.mobile-layout) .toast{bottom:max(28px,var(--native-safe-bottom,0px))}
+
 }
 
 /* Reading mode changes content typography, not the canvas or system safe areas. */
@@ -872,6 +861,7 @@ body[data-page="conversation"] .chat-trend+.chat-source-disclosure{margin-top:-1
 .font-large .chat-chart-column>span,.font-large .chat-chart-column>small{font-size:28px;line-height:42px;white-space:normal;text-align:center;overflow-wrap:anywhere}
 .font-large .chat-trend h3{font-size:36px;line-height:54px}
 .font-large body[data-page="conversation"] .chat-trend svg>text{font-size:28px;fill:#666}
+.font-large body[data-page="conversation"] .chat-trend .trend-x-label{transform:translateY(12px)}
 .font-large .voice-instruction{font-size:30px;line-height:44px}
 .font-large .feedback-header h2,.font-large .source-header h2{font-size:40px;line-height:60px}
 .font-large .feedback-close,.font-large .source-close{min-width:var(--tap-target,88px);min-height:var(--tap-target,88px)}
@@ -885,7 +875,41 @@ body[data-page="conversation"] .chat-trend+.chat-source-disclosure{margin-top:-1
 .font-large .source-list small,.font-large .source-disclaimer,.font-large .chat-empty{font-size:30px;line-height:46px;color:#666}
 .font-large .toast{font-size:17px;line-height:1.5}
 @media(max-width:900px){
-  .font-large .design-screen{--composer-height:calc(150px + max(12px,var(--safe-bottom,0px)))}
-  .font-large body:is([data-page="index"],[data-page="input"]) .s35,.font-large body[data-page="conversation"] .s149{height:var(--composer-height)}
-  .font-large body:is([data-page="index"],[data-page="input"]) .s11,.font-large body[data-page="conversation"] .s50{padding-bottom:var(--composer-height)}
+:where(.mobile-layout).font-large .design-screen{--composer-height:calc(150px + max(12px,var(--safe-bottom,0px)))}:where(.mobile-layout).font-large body:is([data-page="index"],[data-page="input"]) .s35,:where(.mobile-layout).font-large body[data-page="conversation"] .s149{height:var(--composer-height)}:where(.mobile-layout).font-large body:is([data-page="index"],[data-page="input"]) .s11,:where(.mobile-layout).font-large body[data-page="conversation"] .s50{padding-bottom:var(--composer-height)}
+
+}
+
+/* Person facts use the existing card typography and colors. */
+body[data-page="conversation"] .chat-person-role{margin:8px 0 0;font-size:24px;line-height:36px;color:#888}
+body[data-page="conversation"] .chat-person-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 32px;margin:0;padding-top:24px;border-top:1px solid #e9e9e9}
+body[data-page="conversation"] .chat-person-facts>div{min-width:0}
+body[data-page="conversation"] .chat-person-facts dt{margin:0 0 8px;color:#999;font-size:26px;line-height:40px}
+body[data-page="conversation"] .chat-person-facts dd{margin:0;color:#111;font-size:32px;font-weight:400;line-height:48px;overflow-wrap:anywhere}
+.font-large body[data-page="conversation"] .chat-person-role{font-size:28px;line-height:42px}
+.font-large body[data-page="conversation"] .chat-person-facts dt{font-size:28px;line-height:42px}
+.font-large body[data-page="conversation"] .chat-person-facts dd{font-size:36px;line-height:54px}
+
+/* The welcome page fits its canvas; only conversations need a scrolling body. */
+body:is([data-page="index"],[data-page="input"]) .s10{overflow:hidden}
+body:is([data-page="index"],[data-page="input"]) .s11{height:100%;min-height:0}
+body:is([data-page="index"],[data-page="input"]) .s17{min-height:0;container:home-content / size;justify-content:space-evenly;gap:24px;padding:clamp(16px,calc((var(--canvas-height,1624px) - 1100px) / 8),64px) 48px 24px}
+body:is([data-page="index"],[data-page="input"]) .s26{width:100%;padding-top:0}
+body:is([data-page="index"],[data-page="input"]) .s22,
+body:is([data-page="index"],[data-page="input"]) .s24{width:100%}
+@container home-content (max-height:950px){
+  body:is([data-page="index"],[data-page="input"]) .s19{width:140px;height:140px}
+  body:is([data-page="index"],[data-page="input"]) .s20{left:0;width:140px;height:140px}
+  body:is([data-page="index"],[data-page="input"]) .s27{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  body:is([data-page="index"],[data-page="input"]) .s28{width:100%;padding:16px 14px;gap:10px}
+  body:is([data-page="index"],[data-page="input"]) .s28>.s13{min-width:0;flex:1}
+  body:is([data-page="index"],[data-page="input"]) .s30{white-space:normal;line-height:40px;overflow-wrap:anywhere}
+  body:is([data-page="index"],[data-page="input"]) .s31{padding-top:20px}
+}
+@container home-content (max-height:600px){
+  body:is([data-page="index"],[data-page="input"]) .s19,
+  body:is([data-page="index"],[data-page="input"]) .s24{display:none}
+  body:is([data-page="index"],[data-page="input"]) .s22{padding-top:0}
+}
+@container home-content (max-height:450px){
+  body:is([data-page="index"],[data-page="input"]) .s18{display:none}
 }

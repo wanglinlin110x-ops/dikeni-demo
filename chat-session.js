@@ -1,5 +1,6 @@
 window.ChatConversations = (() => {
-  const key = 'dick-cowboy-conversations-v1';
+  const defaultScope = encodeURIComponent(JSON.stringify(['general_manager', ['hometown', 'joinedAt'], ['*']]));
+  const key = window.DemoAccess?.storageScope === defaultScope ? 'dick-cowboy-conversations-v1' : `dick-cowboy-conversations-v1:${window.DemoAccess?.storageScope || 'guest'}`;
   const id = () => crypto.randomUUID();
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const metricMarkup = value => {
@@ -24,8 +25,8 @@ window.ChatConversations = (() => {
     try { localStorage.setItem(key, JSON.stringify(data)); return true; }
     catch { return false; }
   }
-  function create() {
-    const data = read(), session = { id: id(), title: '新对话', updated: Date.now(), messages: [], context: {} };
+  function create(context = {}) {
+    const data = read(), session = { id: id(), title: '新对话', updated: Date.now(), messages: [], context };
     data.sessions.push(session); data.activeId = session.id; write(data); return session;
   }
   function current() {
@@ -44,8 +45,9 @@ window.ChatConversations = (() => {
     data.activeId ||= session.id; return write(data);
   }
   class Conversation {
+    static get storageKey() { return key; }
     static list() { return read().sessions.filter(s => s.messages.length).sort((a, b) => b.updated - a.updated); }
-    static create() { return create(); }
+    static create(context) { return create(context); }
     static activate(sessionId) { const data = read(); if (data.sessions.some(s => s.id === sessionId)) { data.activeId = sessionId; write(data); } }
     static update(sessionId, patch) {
       const data = read(), session = data.sessions.find(item => item.id === sessionId);
@@ -228,40 +230,39 @@ window.ChatConversations = (() => {
     renderChart(message) {
       const { chart } = message.reply;
       const label = escape(chart.labels.map((text, i) => text + ' ' + chart.values[i] + '辆').join('，'));
-      if (!chart.labels.every(text => /^\d+月$/.test(text))) return `<div class="chat-chart" role="img" aria-label="${label}">${chart.values.map((value, i) => `<div class="chat-chart-column"><span>${escape(value)}辆</span><i style="height:${Math.max(6, value / Math.max(...chart.values) * 180)}px"></i><small>${escape(chart.labels[i])}</small></div>`).join('')}</div>`;
-      const max = Math.max(1, ...chart.values), rawStep = max / 5;
+      if (!chart.labels.every(text => /^\d+月$/.test(text))) return `<section class="chat-chart chat-bar"><div class="chat-bars" role="img" aria-label="${label}">${chart.values.map((value, i) => `<div class="chat-chart-column"><span>${escape(value)}辆</span><i style="height:${Math.max(6, value / Math.max(...chart.values) * 180)}px"></i><small>${escape(chart.labels[i])}</small></div>`).join('')}</div></section>`;
+      const max = Math.max(1, ...chart.values), rawStep = max / 4;
       const magnitude = 10 ** Math.floor(Math.log10(rawStep));
-      const step = [1, 2, 5, 10].find(value => value >= rawStep / magnitude) * magnitude, ceiling = step * 5;
-      const points = chart.values.map((value, i) => [72 + i * 538 / Math.max(1, chart.values.length - 1), 301 - value / ceiling * 283]);
+      const step = [1, 2, 5, 10].find(value => value >= rawStep / magnitude) * magnitude, ceiling = step * 4;
+      const plotTop = 33.61, plotBottom = 525.61;
+      const points = chart.values.map((value, i) => [43 + i * 600 / Math.max(1, chart.values.length - 1), plotBottom - value / ceiling * 492]);
       const curve = points.map(([x, y], i) => {
         if (!i) return `M ${x} ${y}`;
         const [previousX, previousY] = points[i - 1], middleX = (previousX + x) / 2;
         return `C ${middleX} ${previousY} ${middleX} ${y} ${x} ${y}`;
       }).join(' ');
-      const gradient = `trend-${message.id}`, last = points.at(-1);
-      const averageY = 301 - chart.values.reduce((a, b) => a + b, 0) / chart.values.length / ceiling * 283;
-      return `<section class="chat-chart chat-trend"><h3>近${chart.labels.length}个月销量趋势</h3><svg viewBox="0 0 638 369" role="img" aria-label="${label}">
-        <defs><linearGradient id="${escape(gradient)}" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#bceff3" stop-opacity=".6"/><stop offset="1" stop-color="#bceff3" stop-opacity="0"/></linearGradient></defs>
-        ${Array.from({ length: 6 }, (_, i) => `<text x="52" y="${18 + i * 283 / 5}" text-anchor="end" dominant-baseline="middle">${(ceiling - step * i).toFixed(0)}</text>`).join('')}
-        <path d="${curve} L ${last[0]} 301 L 72 301 Z" fill="url(#${escape(gradient)})"/>
-        <path d="M 72 ${averageY} H 618" stroke="#a9e8ed" stroke-width="2" stroke-dasharray="8 8"/>
-        <path d="${curve}" fill="none" stroke="#00b5c7" stroke-width="2.4"/>
-        <circle cx="${last[0]}" cy="${last[1]}" r="5" fill="white" stroke="#00b5c7" stroke-width="1.6"/>
-        <path d="M 60 301 H 638" stroke="#e9e9e9" stroke-width="2"/>
-        ${chart.labels.map((text, i) => `<text x="${points[i][0]}" y="349" text-anchor="middle" class="${i === chart.labels.length - 1 ? 'latest' : ''}">${escape(text)}</text>`).join('')}
+      const last = points.at(-1);
+      return `<section class="chat-chart chat-trend"><h3>近${chart.labels.length}个月销量趋势</h3><svg viewBox="0 0 651 580" role="img" aria-label="${label}">
+        <image class="trend-grid" href="assets/trend-grid.svg" x="43" y="32.91" width="595" height="493.4"/>
+        ${Array.from({ length: 5 }, (_, i) => `<text class="trend-y-label" x="36" y="${plotTop + i * 123}" text-anchor="end" dominant-baseline="middle">${(ceiling - step * i).toFixed(0)}</text>`).join('')}
+        <path class="trend-curve" d="${curve}" fill="none" stroke="#00b5c7" stroke-width="2.4"/>
+        <circle cx="${last[0]}" cy="${last[1]}" r="8" fill="#00b5c7"/>
+        ${chart.labels.map((text, i) => `<text class="trend-x-label" x="${43 + i * 595 / Math.max(1, chart.labels.length - 1)}" y="547.61" text-anchor="${i === 0 ? 'start' : i === chart.labels.length - 1 ? 'end' : 'middle'}" dominant-baseline="middle">${escape(text)}</text>`).join('')}
       </svg></section>`;
     }
     renderReply(message) {
-      const r = message.reply;
+      const r = DemoChat.normalizeReply(message.reply);
       if (r.kind === 'clarify') return `<form class="clarification-card" data-clarification="${escape(message.id)}">
         <fieldset ${message.resolved ? 'disabled' : ''}><legend>${escape(r.question)}</legend><p class="clarification-hint">${escape(r.multiple ? '请选择两款车型，选满后自动发送；也可以直接输入需要对比的车型。' : r.hint)}</p>
         <div class="clarification-options">${r.options.map(text => `<button type="button" data-chat-action="select" aria-pressed="false">${escape(text)}</button>`).join('')}</div>
         ${message.resolved ? '<p class="clarification-resolved">已补充 / 已继续对话</p>' : ''}</fieldset></form>`;
       return `<article class="chat-answer${r.profile ? ' chat-answer-champion' : ''}${r.chart?.labels.every(text => /^\d+月$/.test(text)) ? ' chat-answer-trend' : ''}" data-name="Article">
-        ${r.profile ? `<header class="chat-champion-profile">${r.profile.avatar ? `<img class="chat-champion-avatar" src="${escape(r.profile.avatar)}" alt="${escape(r.profile.name)}头像">` : `<span class="chat-champion-avatar chat-avatar-initial" aria-hidden="true">${escape(r.profile.name.slice(0, 1))}</span>`}<div><h2>${escape(r.profile.name)}</h2><div class="chat-champion-tags"><span><img src="assets/8e521.svg" alt="">${escape(r.profile.badge)}</span><span>${escape(r.profile.store)}</span></div></div></header>` : `<h2>${escape(r.title)}</h2>`}
+        ${r.profile ? `<header class="chat-champion-profile">${r.profile.avatar ? `<img class="chat-champion-avatar" src="${escape(r.profile.avatar)}" alt="${escape(r.profile.name)}头像">` : `<span class="chat-champion-avatar chat-avatar-initial" aria-hidden="true">${escape(r.profile.name.slice(0, 1))}</span>`}<div><h2>${escape(r.profile.name)}</h2><div class="chat-champion-tags"><span><img src="assets/8e521.svg" alt="">${escape(r.profile.badge)}</span><span>${escape(r.profile.store)}</span></div>${r.profile.role ? `<p class="chat-person-role">${escape(r.profile.role)}${r.profile.tenure ? ` · 入职约${escape(r.profile.tenure)}` : ''}</p>` : ''}</div></header>` : `<h2>${escape(r.title)}</h2>`}
         ${r.paragraphs.map(text => `<p class="chat-paragraph">${escape(text)}</p>`).join('')}
+        ${r.profile?.fields?.length ? `<dl class="chat-person-facts">${r.profile.fields.map(field => `<div><dt>${escape(field.label)}</dt><dd>${escape(field.value)}</dd></div>`).join('')}</dl>` : ''}
         ${r.metrics?.length ? `<div class="chat-metrics">${r.metrics.map(([value, label]) => `<div><strong${/^[+-]?\d+(?:\.\d+)?%$/.test(String(value)) ? ' class="metric-percentage"' : ''}>${metricMarkup(value)}</strong><span>${escape(r.chart?.labels.every(text => /^\d+月$/.test(text)) ? label.replace('6个月累计（辆）', '累计销量').replace('月均销量（辆）', '月均销量') : label)}</span></div>`).join('')}</div>` : ''}
         ${r.chart ? this.renderChart(message) : ''}
+        ${r.chart?.note ? `<p class="chat-paragraph">${escape(r.chart.note)}</p>` : ''}
         ${r.rows && !r.profile ? `<div class="chat-table-wrap"><table><thead><tr>${r.headers.map(text => `<th>${escape(text)}</th>`).join('')}</tr></thead><tbody>${r.rows.map(row => `<tr>${row.map(text => `<td>${escape(text)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
         ${r.sources.length ? `<section class="chat-source-disclosure"><button class="chat-sources" data-chat-action="sources" aria-controls="sources-${escape(message.id)}" aria-expanded="${this.expandedSources.has(message.id)}"><span><img src="assets/cff1a.svg" alt="">数据来源·${r.sources.length}项</span><span><span class="source-toggle-label">${this.expandedSources.has(message.id) ? '收起' : '展开'}</span><img src="assets/289e6.svg" alt=""></span></button><ol class="chat-source-content" id="sources-${escape(message.id)}" ${this.expandedSources.has(message.id) ? '' : 'hidden'}>${r.sources.map((source, i) => `<li><h3>${String(i + 1).padStart(2, '0')} · ${escape(source.title)}</h3>${source.description.split('。').filter(Boolean).map(line => `<p>${escape(line)}</p>`).join('')}<p>数据更新时间：${escape(source.updated)}</p></li>`).join('')}</ol></section>` : ''}
         <div class="chat-answer-actions" data-name="AnswerActions">
