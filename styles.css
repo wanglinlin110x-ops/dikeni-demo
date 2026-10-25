@@ -704,11 +704,11 @@ body[data-page="conversation"] .chat-source-disclosure .chat-sources{margin:0;pa
 @keyframes feedback-pop{0%{transform:scale(.85)}55%{transform:scale(1.18)}100%{transform:scale(1)}}
 @media(prefers-reduced-motion:reduce){.feedback-pop{animation:none}}
 
-/* Real touch devices use the browser viewport and OS safe areas; desktop keeps the design preview. */
-@media(max-width:900px) and (pointer:coarse){
-  html,body{background:#fff}
+/* Narrow screens fill the viewport regardless of pointer type. */
+@media(max-width:900px){
+  html,body{background:#fff;min-height:100vh;min-height:100dvh}
   [data-name="Header"]{position:sticky;top:0;z-index:3;background:white}
-  .screen-shell{margin:0;min-height:0;padding:0 env(safe-area-inset-right,0px) 0 env(safe-area-inset-left,0px);background:white}
+  .screen-shell{margin:0;min-height:0;height:100vh;height:100dvh;padding:0 env(safe-area-inset-right,0px) 0 env(safe-area-inset-left,0px);background:white}
   [data-name="Status Bar/Light"],[data-name="Home Indicator/Dark"],.wb-status,.wb-home-indicator,.overlay-status,.overlay-home-indicator{display:none!important}
   .voice-panel::after{display:none}
   .nav-toggle,.demo-nav,.demo-nav.open{display:none}
@@ -742,7 +742,7 @@ body:is([data-page="index"],[data-page="input"]) [data-name="Section - 推荐问
 .system-chrome .system-status-bar{background:transparent;position:absolute;top:0;left:0;width:750px;height:88px}
 .system-chrome .system-home-bar{position:absolute;bottom:0;left:0;width:750px;height:68px}
 .overlay-status,.overlay-home-indicator,.voice-panel::after{display:none}
-@media(max-width:900px) and (pointer:coarse){
+@media(max-width:900px){
   .system-chrome,.system-status-slot,.system-home-slot{display:none!important}
 }
 
@@ -776,7 +776,7 @@ body:is([data-page="index"],[data-page="input"]) [data-name="Section - 推荐问
 .history-context-actions button,.history-rename button,.history-rename input{min-height:max(88px,var(--context-target,88px))}
 
 /* Full-bleed backgrounds; only interactive content avoids the native system bars. */
-@media(max-width:900px) and (pointer:coarse){
+@media(max-width:900px){
   body:not([data-page="workbench"]) .design-screen>div:first-child{padding-top:var(--safe-top,0px)}
   .design-screen{touch-action:pan-y}
 }
@@ -788,7 +788,7 @@ body[data-page="conversation"] .chat-trend+.chat-source-disclosure{margin-top:-1
 
 /* The system reports usable insets; never infer a home indicator from device names. */
 :root{--viewport-occlusion:0px;--native-safe-bottom:max(0px,calc(env(safe-area-inset-bottom,0px) - var(--viewport-occlusion)))}
-@media(max-width:900px) and (pointer:coarse){
+@media(max-width:900px){
   .design-screen{--composer-height:calc(130px + max(12px,var(--safe-bottom,0px)))}
   .history-footer{padding-bottom:max(48px,var(--safe-bottom,0px))}
   .feedback-sheet{padding-bottom:max(44px,var(--safe-bottom,0px))}
@@ -884,7 +884,7 @@ body[data-page="conversation"] .chat-trend+.chat-source-disclosure{margin-top:-1
 .font-large .source-list p{font-size:34px;line-height:52px;max-height:none}
 .font-large .source-list small,.font-large .source-disclaimer,.font-large .chat-empty{font-size:30px;line-height:46px;color:#666}
 .font-large .toast{font-size:17px;line-height:1.5}
-@media(max-width:900px) and (pointer:coarse){
+@media(max-width:900px){
   .font-large .design-screen{--composer-height:calc(150px + max(12px,var(--safe-bottom,0px)))}
   .font-large body:is([data-page="index"],[data-page="input"]) .s35,.font-large body[data-page="conversation"] .s149{height:var(--composer-height)}
   .font-large body:is([data-page="index"],[data-page="input"]) .s11,.font-large body[data-page="conversation"] .s50{padding-bottom:var(--composer-height)}
