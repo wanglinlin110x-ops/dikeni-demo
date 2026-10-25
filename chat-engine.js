@@ -78,7 +78,7 @@ window.DemoChat = (() => {
   }
   function personCard(person, state, badge) {
     const mix = modelMix(person, state);
-    return { name: person.name, store: `${networkName(state.network)} · ${person.store}`, badge, role: '销售顾问', avatar: person.id === 'wang' ? 'assets/ebdd8.png' : null,
+    return { personId: person.id, name: person.name, store: `${networkName(state.network)} · ${person.store}`, badge, role: '销售顾问', avatar: null, avatarTone: [...people, ...dynastyPeople].findIndex(item => item.id === person.id),
       fields: [{ label: state.period === '2026年9月' ? '上月交付' : '本月交付', value: `${mix.amount}辆` }, { label: '销量最高车型', value: mix.names[0] }],
     };
   }
@@ -319,8 +319,21 @@ window.DemoChat = (() => {
       delete response.metrics;
       response.followups = nextQuestions(response.context, 'rank');
     }
+    if (response.profile) {
+      const profile = response.profile;
+      const candidate = personById(profile.personId || response.context?.personId);
+      const person = candidate && candidate.name === profile.name ? candidate : roster(response.context?.network).find(item => item.name === profile.name);
+      const identity = person ? personCard(person, { ...response.context, network: person.id.startsWith('dynasty-') ? 'wangchao' : 'tengshi' }, profile.badge) : null;
+      // Refresh cached demo identities as well as newly generated cards.
+      const fallbackTone = Array.from(profile.name || '').reduce((sum, char) => sum + char.codePointAt(0), 0) % 6;
+      response = { ...response, profile: { ...profile,
+        ...(identity ? { personId: identity.personId, name: identity.name, store: identity.store } : {}),
+        avatar: identity ? identity.avatar : profile.avatar === 'assets/ebdd8.png' ? null : profile.avatar,
+        avatarTone: identity ? identity.avatarTone : fallbackTone,
+      } };
+    }
     if (response.profile?.fields) {
-      const person = personById(response.context?.personId);
+      const person = personById(response.profile.personId || response.context?.personId);
       response = { ...response, profile: { ...response.profile, tenure: window.DemoAccess?.canReadEmployee('joinedAt', person) ? response.profile.tenure : null, fields: response.profile.fields.map(field => field.permission && !window.DemoAccess?.canReadEmployee(field.permission, person) ? { ...field, value: '无查看权限' } : field) } };
     }
     if (response.context?.personId) {

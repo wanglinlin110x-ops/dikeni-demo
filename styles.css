@@ -554,6 +554,11 @@ body[data-page="conversation"] [data-node-id="9:1383"]{width:40px;height:40px}
 .chat-champion-profile{display:flex;align-items:center;gap:18px}
 .chat-champion-avatar{width:80px;height:80px;flex-shrink:0;object-fit:cover;border-radius:40px}
 .chat-avatar-initial{display:flex;align-items:center;justify-content:center;background:#e3f7f9;color:#00a6ba;font-size:36px}
+.chat-avatar-initial.avatar-tone-1{background:#e8efff;color:#385ca8}
+.chat-avatar-initial.avatar-tone-2{background:#f5eafa;color:#89529c}
+.chat-avatar-initial.avatar-tone-3{background:#fff0df;color:#9b6225}
+.chat-avatar-initial.avatar-tone-4{background:#eaf2df;color:#587b2e}
+.chat-avatar-initial.avatar-tone-5{background:#fbe8ed;color:#a34764}
 .chat-champion-profile>div{min-width:0}
 .chat-champion-profile h2{margin:0;font-size:30px;line-height:39px;color:#111;font-weight:600}
 .chat-champion-tags{display:flex;align-items:center;flex-wrap:wrap;gap:14px;margin-top:8px}
