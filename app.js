@@ -513,12 +513,12 @@
     canvas.style.setProperty('--safe-bottom', `calc(var(--native-safe-bottom) * ${750 / width})`);
     if (isChatFlow) {
       const viewportHeight = window.visualViewport?.height || innerHeight;
-      const height = mobile ? Math.max(1, Math.min(innerHeight, viewportHeight)) : Math.min(812, viewportHeight - (innerWidth > 900 ? 48 : 0));
+      const height = mobile ? Math.max(1, viewportHeight) : Math.min(812, viewportHeight - (innerWidth > 900 ? 48 : 0));
       $('.design-screen').style.setProperty('--canvas-height', `${height * 750 / width}px`);
     }
   }
   fitSmallScreen();
-  window.addEventListener('pageshow', () => { navigatingToChat = false; updateSend(); });
+  window.addEventListener('pageshow', () => { navigatingToChat = false; updateSend(); fitSmallScreen(); });
   window.addEventListener('resize', fitSmallScreen);
   window.visualViewport?.addEventListener('resize', fitSmallScreen);
   window.visualViewport?.addEventListener('scroll', fitSmallScreen);
