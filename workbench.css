@@ -82,3 +82,11 @@ body[data-page="workbench"] .design-screen{height:var(--canvas-height,1624px);mi
 .font-large .wb-stat-tabs{height:auto;flex-wrap:wrap;gap:8px}
 .font-large .wb-stat-tabs span{font-size:30px;line-height:44px;padding:10px 20px}
 .font-large .wb-bottom-nav{grid-template-rows:minmax(96px,auto)}
+.font-large .wb-search>img{width:40px;height:40px}
+.font-large .wb-ai-entry,.font-large .wb-ai-entry img{width:70px;height:70px;border-radius:50%}
+.font-large .wb-notifications,.font-large .wb-notifications>img{width:48px;height:48px}
+.font-large .wb-notifications>i{left:32px}
+.font-large .wb-shortcuts img{width:52px;height:52px}
+.font-large .wb-bottom-nav img{width:56px;height:56px}
+.font-large .wb-period img{width:32px;height:32px}
+.font-large .wb-badge{font-size:24px;line-height:30px}

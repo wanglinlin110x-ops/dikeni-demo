@@ -805,6 +805,9 @@ body[data-page="conversation"] .chat-trend+.chat-source-disclosure{margin-top:-1
 .font-large .font-size-switch{padding:5px}
 .font-large .font-size-option{width:90px;height:60px;padding:5px 10px;font-size:30px;line-height:48px}
 .font-large .font-size-option[data-font-size-toggle="large"]{font-size:34px}
+.font-large .history-avatar{width:96px;height:96px;border-radius:50%}
+.font-large .history-main img{width:60px;height:60px;border-radius:50%}
+.font-large .history-new img{width:54px;height:54px}
 .font-large .history-account h2{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:40px;line-height:60px}
 .font-large .history-list h3{font-size:30px;line-height:46px;color:#666}
 .font-large .history-recent{min-height:var(--tap-target,88px);font-size:36px!important;line-height:54px!important;text-overflow:clip;white-space:normal}
@@ -822,20 +825,27 @@ body[data-page="conversation"] .chat-trend+.chat-source-disclosure{margin-top:-1
 .font-large body:is([data-page="index"],[data-page="input"]) .s29{width:40px;height:40px}
 .font-large .refresh-suggestions{min-height:var(--tap-target,88px)!important;height:auto!important}
 .font-large .refresh-suggestions>p{font-size:30px!important;line-height:44px}
+.font-large .refresh-suggestions .s34{width:36px;height:36px}
 .font-large [data-name="Header"]{height:144px}
 .font-large .s14,.font-large .s52{font-size:40px;line-height:60px}
 .font-large .s15,.font-large .s53,.font-large .assistant-close{width:96px;height:96px;min-width:var(--tap-target,88px);min-height:var(--tap-target,88px);top:24px;border-radius:52px;grid-template-columns:1fr;grid-template-rows:1fr}
+.font-large .s16{width:56px;height:56px}
+.font-large .assistant-close img{width:48px;height:48px}
 .font-large .s36{height:120px;min-height:120px}
 .font-large .s39{height:auto;min-height:56px;width:auto;flex:1;min-width:0}
 .font-large .message-input{font-size:36px;line-height:54px}
 .font-large .s37{min-width:var(--tap-target,88px);min-height:var(--tap-target,88px);display:flex;align-items:center;justify-content:center;margin-left:-24px;margin-right:-12px}
 .font-large .s41,.font-large .s47{width:80px;height:80px;min-width:var(--tap-target,88px);min-height:var(--tap-target,88px);grid-template-columns:1fr;grid-template-rows:1fr;border-radius:50%}
+.font-large .s38,.font-large .s42,.font-large .s43{width:48px;height:48px}
 .font-large body:is([data-page="index"],[data-page="input"]) .s35,.font-large body[data-page="conversation"] .s149{height:230px}
 .font-large body:is([data-page="index"],[data-page="input"]) .s11,.font-large body[data-page="conversation"] .s50{padding-bottom:230px}
 .font-large body[data-page="conversation"] .chat-user p{font-size:36px;line-height:54px}
 .font-large body[data-page="conversation"] .chat-paragraph{font-size:36px;line-height:56px}
 .font-large .chat-answer h2,.font-large body[data-page="conversation"] .chat-champion-profile h2{font-size:38px;line-height:56px}
 .font-large body[data-page="conversation"] .chat-champion-tags>span{font-size:30px;line-height:44px;white-space:normal}
+.font-large body[data-page="conversation"] .chat-champion-avatar{width:112px;height:112px}
+.font-large .chat-avatar-initial{font-size:44px}
+.font-large .thinking-status{font-size:34px;line-height:52px}
 .font-large body[data-page="conversation"] .chat-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .font-large body[data-page="conversation"] .chat-metrics>div{padding:0 4px;justify-content:flex-start}
 .font-large body[data-page="conversation"] .chat-metrics strong,.font-large body[data-page="conversation"] .chat-metrics .metric-digits{font-size:52px;line-height:72px}
@@ -853,7 +863,7 @@ body[data-page="conversation"] .chat-trend+.chat-source-disclosure{margin-top:-1
 .font-large .chat-answer-actions button::before{display:none}
 .font-large .chat-answer-actions button:last-child{justify-self:end}
 .font-large .chat-answer-actions img{width:48px;height:48px}
-.font-large body[data-page="conversation"] .followup-section h2{font-size:30px;line-height:46px;color:#555}
+.font-large body[data-page="conversation"] .followup-section h2{font-size:36px;line-height:52px;color:#555}
 .font-large .followup-options button{font-size:34px;line-height:50px;min-height:var(--tap-target,88px)}
 .font-large .clarification-card legend{font-size:34px;line-height:52px}
 .font-large .clarification-hint,.font-large .clarification-resolved{font-size:30px;line-height:46px;color:#666}
@@ -864,6 +874,7 @@ body[data-page="conversation"] .chat-trend+.chat-source-disclosure{margin-top:-1
 .font-large .voice-instruction{font-size:30px;line-height:44px}
 .font-large .feedback-header h2,.font-large .source-header h2{font-size:40px;line-height:60px}
 .font-large .feedback-close,.font-large .source-close{min-width:var(--tap-target,88px);min-height:var(--tap-target,88px)}
+.font-large .feedback-close img,.font-large .source-close img{width:48px;height:48px}
 .font-large .feedback-prompt{font-size:34px;line-height:52px}
 .font-large .feedback-reasons button{font-size:34px;line-height:48px;min-height:var(--tap-target,88px)}
 .font-large .feedback-comment{font-size:34px;line-height:52px;min-height:220px}
