@@ -225,7 +225,7 @@
     history.innerHTML = `<button class="overlay-backdrop" aria-label="关闭侧边栏"></button>
       <aside class="history-panel" role="dialog" aria-modal="true" aria-labelledby="history-title" tabindex="-1">
         <div class="history-content">
-          <header class="history-account"><img class="history-avatar" src="assets/ebdd8.png" alt=""><h2 id="history-title">代用名</h2><div class="font-size-switch" role="group" aria-label="阅读字号"><button class="font-size-option" type="button" data-font-size-toggle="standard" aria-pressed="true">标准</button><button class="font-size-option" type="button" data-font-size-toggle="large" aria-pressed="false">大字</button></div></header>
+          <header class="history-account"><img class="history-avatar" src="assets/account-chen-zhiyuan.png" alt="陈志远头像"><h2 id="history-title">陈志远</h2><div class="font-size-switch" role="group" aria-label="阅读字号"><button class="font-size-option" type="button" data-font-size-toggle="standard" aria-pressed="true">标准</button><button class="font-size-option" type="button" data-font-size-toggle="large" aria-pressed="false">大字</button></div></header>
           <nav class="history-list" aria-label="对话列表">
             <h3>置顶</h3><button class="history-main"><img src="assets/f56ba.png" alt="">主对话</button>
             <div class="history-pinned-list"></div><h3 class="history-recent-title">最近</h3>

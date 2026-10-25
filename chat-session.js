@@ -3,6 +3,22 @@ window.ChatConversations = (() => {
   const key = window.DemoAccess?.storageScope === defaultScope ? 'dick-cowboy-conversations-v1' : `dick-cowboy-conversations-v1:${window.DemoAccess?.storageScope || 'guest'}`;
   const id = () => crypto.randomUUID();
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function paragraphMarkup(paragraphs) {
+    const markup = [];
+    let items = [];
+    const flush = () => {
+      if (items.length) { markup.push(`<ul class="chat-answer-list">${items.join('')}</ul>`); items = []; }
+    };
+    for (const paragraph of paragraphs) {
+      const match = String(paragraph).match(/^\s*(?:\d+[.、．)]|[•●-])\s+([\s\S]+)$/);
+      if (!match) { flush(); markup.push(`<p class="chat-paragraph">${escape(paragraph)}</p>`); continue; }
+      const text = match[1], split = text.search(/[：:，,。！？?]/);
+      const boundary = split > 0 && split <= 36 ? split + (/[：:]/.test(text[split]) ? 1 : 0) : 0;
+      const body = boundary ? `<strong>${escape(text.slice(0, boundary))}</strong>${escape(text.slice(boundary))}` : escape(text);
+      items.push(`<li class="chat-paragraph">${body}</li>`);
+    }
+    flush(); return markup.join('');
+  }
   const metricMarkup = value => {
     const percent = String(value).match(/^([+-]?)(\d+(?:\.\d+)?)(%)$/);
     if (!percent) return escape(value);
@@ -122,11 +138,19 @@ window.ChatConversations = (() => {
       const node = this.host.querySelector(`[data-message-id="${message.id}"]`);
       const content = node?.querySelector('article, fieldset');
       if (!content) return [];
-      const blocks = [...content.children].map(element => {
-        const text = /^(H2|P|LEGEND)$/.test(element.tagName) ? element.textContent : null;
-        if (text !== null) element.replaceChildren(document.createTextNode(''));
+      const elements = [...content.children].flatMap(element => element.matches('.chat-answer-list') ? [...element.children] : [element]);
+      const blocks = elements.map(element => {
+        const text = /^(H2|P|LEGEND|LI)$/.test(element.tagName) ? element.textContent : null;
+        const parts = [];
+        if (text !== null) {
+          const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+          while (walker.nextNode()) {
+            const node = walker.currentNode, characters = Array.from(node.data);
+            parts.push({ node, characters }); node.data = '';
+          }
+        }
         element.hidden = true;
-        return { element, text, units: text === null ? 1 : Math.max(1, Array.from(text).length) };
+        return { element, text, parts, units: text === null ? 1 : Math.max(1, Array.from(text).length) };
       });
       node.querySelectorAll('button').forEach(button => { button.disabled = true; });
       this.applyProgress(blocks, message.progress || 0, message.state === 'streaming');
@@ -146,11 +170,17 @@ window.ChatConversations = (() => {
         const wasHidden = block.element.hidden;
         block.element.hidden = visible === 0;
         if (block.text !== null) {
-          block.element.firstChild.data = Array.from(block.text).slice(0, visible).join('');
+          let characters = visible;
+          for (const part of block.parts) {
+            part.node.data = part.characters.slice(0, Math.max(0, characters)).join('');
+            characters -= part.characters.length;
+          }
           if (visible > 0) lastText = block.element;
         } else if (visible && wasHidden && cursor) block.element.classList.add('stream-reveal');
         remaining -= block.units;
       }
+      const lists = new Set(blocks.map(block => block.element.closest('.chat-answer-list')).filter(Boolean));
+      lists.forEach(list => { list.hidden = [...list.children].every(item => item.hidden); });
       if (cursor && lastText) {
         this.cursor = document.createElement('span');
         this.cursor.className = 'streaming-cursor'; this.cursor.setAttribute('aria-hidden', 'true');
@@ -258,7 +288,7 @@ window.ChatConversations = (() => {
         ${message.resolved ? '<p class="clarification-resolved">已补充 / 已继续对话</p>' : ''}</fieldset></form>`;
       return `<article class="chat-answer${r.profile ? ' chat-answer-champion' : ''}${r.chart?.labels.every(text => /^\d+月$/.test(text)) ? ' chat-answer-trend' : ''}" data-name="Article">
         ${r.profile ? `<header class="chat-champion-profile">${r.profile.avatar ? `<img class="chat-champion-avatar" src="${escape(r.profile.avatar)}" alt="${escape(r.profile.name)}头像">` : `<span class="chat-champion-avatar chat-avatar-initial" aria-hidden="true">${escape(r.profile.name.slice(0, 1))}</span>`}<div><h2>${escape(r.profile.name)}</h2><div class="chat-champion-tags"><span><img src="assets/8e521.svg" alt="">${escape(r.profile.badge)}</span><span>${escape(r.profile.store)}</span></div>${r.profile.role ? `<p class="chat-person-role">${escape(r.profile.role)}${r.profile.tenure ? ` · 入职约${escape(r.profile.tenure)}` : ''}</p>` : ''}</div></header>` : `<h2>${escape(r.title)}</h2>`}
-        ${r.paragraphs.map(text => `<p class="chat-paragraph">${escape(text)}</p>`).join('')}
+        ${paragraphMarkup(r.paragraphs)}
         ${r.profile?.fields?.length ? `<dl class="chat-person-facts">${r.profile.fields.map(field => `<div><dt>${escape(field.label)}</dt><dd>${escape(field.value)}</dd></div>`).join('')}</dl>` : ''}
         ${r.metrics?.length ? `<div class="chat-metrics">${r.metrics.map(([value, label]) => `<div><strong${/^[+-]?\d+(?:\.\d+)?%$/.test(String(value)) ? ' class="metric-percentage"' : ''}>${metricMarkup(value)}</strong><span>${escape(r.chart?.labels.every(text => /^\d+月$/.test(text)) ? label.replace('6个月累计（辆）', '累计销量').replace('月均销量（辆）', '月均销量') : label)}</span></div>`).join('')}</div>` : ''}
         ${r.chart ? this.renderChart(message) : ''}

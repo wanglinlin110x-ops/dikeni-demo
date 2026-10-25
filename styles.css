@@ -899,11 +899,6 @@ body:is([data-page="index"],[data-page="input"]) .s24{width:100%}
 @container home-content (max-height:950px){
   body:is([data-page="index"],[data-page="input"]) .s19{width:140px;height:140px}
   body:is([data-page="index"],[data-page="input"]) .s20{left:0;width:140px;height:140px}
-  body:is([data-page="index"],[data-page="input"]) .s27{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-  body:is([data-page="index"],[data-page="input"]) .s28{width:100%;padding:16px 14px;gap:10px}
-  body:is([data-page="index"],[data-page="input"]) .s28>.s13{min-width:0;flex:1}
-  body:is([data-page="index"],[data-page="input"]) .s30{white-space:normal;line-height:40px;overflow-wrap:anywhere}
-  body:is([data-page="index"],[data-page="input"]) .s31{padding-top:20px}
 }
 @container home-content (max-height:600px){
   body:is([data-page="index"],[data-page="input"]) .s19,
@@ -918,3 +913,19 @@ body:is([data-page="index"],[data-page="input"]) .s24{width:100%}
 .suggestion-emoji{display:flex;align-items:center;justify-content:center}
 .suggestion-emoji::before{content:attr(data-emoji);font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;font-size:32px;line-height:1;font-weight:400}
 .font-large .suggestion-emoji::before{font-size:36px}
+
+/* Preserve single-column suggestions; compact only the welcome artwork on very short screens. */
+@container home-content (max-height:950px){
+  .font-large body:is([data-page="index"],[data-page="input"]) .s19,
+  .font-large body:is([data-page="index"],[data-page="input"]) .s20{width:88px;height:88px}
+  .font-large body:is([data-page="index"],[data-page="input"]) .s22{padding-top:8px}
+  .font-large body:is([data-page="index"],[data-page="input"]) .s24{padding-top:0;padding-bottom:0}
+  .font-large body:is([data-page="index"],[data-page="input"]) .s31{padding-top:20px}
+}
+
+/* Answer lists use hanging bullets and emphasize the original lead phrase. */
+body[data-page="conversation"] .chat-answer-list{display:flex;flex-direction:column;gap:12px;margin:0;padding:0 0 0 1.35em;list-style:disc;font-size:30px;line-height:46px}
+body[data-page="conversation"] .chat-answer-list>.chat-paragraph{display:list-item;margin:0;padding:0}
+.chat-answer-list>li::marker{color:#111;font-size:.75em}
+.chat-answer-list strong{font-weight:600}
+.font-large body[data-page="conversation"] .chat-answer-list{font-size:36px;line-height:56px}
