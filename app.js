@@ -45,7 +45,7 @@
     interactive(button, async () => {
       if (/菜单/.test(name) && isChatFlow) openOverlay('history', button);
       else if (/更多|回答选项/.test(name)) nav.classList.toggle('open');
-      else if (/返回/.test(name)) DemoMotion.navigate('index.html');
+      else if (/返回/.test(name)) DemoMotion.back();
       else if (/发送/.test(name)) send();
       else if (/滚动/.test(name)) window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
       else if (/复制/.test(name)) {
@@ -68,6 +68,38 @@
     }, name.replace('Button - ', ''));
   });
   if (voiceInput) voiceInput.bindPressGesture($('[data-name="Button - 语音输入"]'));
+  document.addEventListener('demo-back', event => {
+    if (voiceInput?.active) { event.preventDefault(); voiceInput.cancel(false); }
+    else if (activeOverlay) { event.preventDefault(); if (historyContext) closeHistoryContext(); else closeOverlay(); }
+    else if (page === 'index') { event.preventDefault(); openOverlay('history', $('[data-name="Button - 打开菜单"]')); }
+  });
+  if (isChatFlow) {
+    const screen = $('.design-screen');
+    let swipe;
+    screen.addEventListener('touchstart', event => {
+      swipe = undefined;
+      if (event.touches.length !== 1 || activeOverlay || voiceInput?.active || event.target.closest('input,textarea,button,a,[role="button"]')) return;
+      const touch = event.touches[0];
+      swipe = { x: touch.clientX, y: touch.clientY };
+    }, { passive: true });
+    screen.addEventListener('touchmove', event => {
+      if (!swipe || event.touches.length !== 1) { swipe = undefined; return; }
+      const dx = event.touches[0].clientX - swipe.x;
+      const dy = event.touches[0].clientY - swipe.y;
+      if (Math.abs(dy) > 24 && Math.abs(dy) > Math.abs(dx)) { swipe = undefined; return; }
+      if (Math.abs(dx) > 24 && Math.abs(dx) > Math.abs(dy) * 1.5 && (page === 'index' || dx > 0 && swipe.x < 32)) event.preventDefault();
+    }, { passive: false });
+    screen.addEventListener('touchend', event => {
+      const start = swipe; swipe = undefined;
+      if (!start || !event.changedTouches.length || activeOverlay || voiceInput?.active) return;
+      const dx = event.changedTouches[0].clientX - start.x;
+      const dy = event.changedTouches[0].clientY - start.y;
+      if (Math.abs(dx) < 64 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      if (page === 'index' && dx < 0) openOverlay('history', $('[data-name="Button - 打开菜单"]'));
+      else if (dx > 0 && start.x < 32) DemoMotion.back();
+    }, { passive: true });
+    screen.addEventListener('touchcancel', () => { swipe = undefined; }, { passive: true });
+  }
   $$('[data-name^="Text Input"]').forEach(wrapper => {
     const original = wrapper.textContent.trim();
     const input = document.createElement('input');
@@ -464,14 +496,17 @@
     const shell = $('.screen-shell');
     const insets = getComputedStyle(shell);
     const horizontalInset = mobile ? parseFloat(insets.paddingLeft) + parseFloat(insets.paddingRight) : 0;
-    const verticalInset = mobile ? parseFloat(insets.paddingTop) + parseFloat(insets.paddingBottom) : 0;
+    
     const mobileWidth = document.documentElement.clientWidth;
     const width = mobile ? mobileWidth - horizontalInset : Math.min(innerWidth, 375);
     $('.design-screen').style.zoom = String(width / 750);
     shell.style.width = (mobile ? mobileWidth : width) + 'px';
+    const canvas = document.querySelector('.design-screen');
+    canvas.style.setProperty('--safe-top', `calc(env(safe-area-inset-top, 0px) * ${750 / width})`);
+    canvas.style.setProperty('--safe-bottom', `calc(env(safe-area-inset-bottom, 0px) * ${750 / width})`);
     if (isChatFlow) {
       const viewportHeight = window.visualViewport?.height || innerHeight;
-      const height = mobile ? Math.max(1, Math.min(innerHeight, viewportHeight) - verticalInset) : Math.min(812, viewportHeight - (innerWidth > 900 ? 48 : 0));
+      const height = mobile ? Math.max(1, Math.min(innerHeight, viewportHeight)) : Math.min(812, viewportHeight - (innerWidth > 900 ? 48 : 0));
       $('.design-screen').style.setProperty('--canvas-height', `${height * 750 / width}px`);
     }
   }

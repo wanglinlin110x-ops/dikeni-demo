@@ -59,4 +59,9 @@ body[data-page="workbench"] .design-screen{height:var(--canvas-height,1624px);mi
 .wb-home-indicator i{position:absolute;bottom:16px;left:240px;width:270px;height:10px;background:black;border-radius:100px}
 .wb-status{position:absolute;left:0;top:0;width:750px;height:88px;pointer-events:none}
 @media(max-width:900px){body[data-page="workbench"] .nav-toggle{display:none}}
-@media(max-width:900px) and (pointer:coarse){.wb-header{position:sticky;top:0;z-index:3;padding-top:18px}.wb-app{background:#f5f5f7}body[data-page="workbench"] .screen-shell{background:#f5f5f7}}
+@media(max-width:900px) and (pointer:coarse){.wb-header{position:sticky;top:0;z-index:3;padding-top:calc(18px + var(--safe-top,0px))}.wb-app{background:#f5f5f7}body[data-page="workbench"] .screen-shell{background:#f5f5f7}}
+
+@media(max-width:900px) and (pointer:coarse){
+  .wb-footer{padding-bottom:var(--safe-bottom,0px)}
+  body[data-page="workbench"]{background:#f5f5f7}
+}

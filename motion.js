@@ -28,6 +28,18 @@ window.DemoMotion = (() => {
   const level = pathname => /workbench\.html$/.test(pathname) ? 0 : /(?:index|input)\.html$/.test(pathname) ? 1 : 2;
   const storageKey = 'demo-page-transition';
   let navigating = false;
+  function back() {
+    if (!document.dispatchEvent(new CustomEvent('demo-back', { cancelable: true }))) return;
+    const page = document.body.dataset.page;
+    navigate(page === 'conversation' || page === 'input' ? 'index.html' : 'conversation.html');
+  }
+  // Native edge/back gestures follow the product hierarchy, not previously visited examples.
+  if (document.body.dataset.page !== 'workbench' && matchMedia('(pointer: coarse)').matches) {
+    const guard = () => history.pushState({ demoBackGuard: true }, '', location.href);
+    history.replaceState({ demoBackBase: true }, '', location.href);
+    guard();
+    window.addEventListener('popstate', () => { guard(); back(); });
+  }
   async function navigate(href) {
     const url = new URL(href, location.href);
     if (url.origin !== location.origin || !/\.html$/.test(url.pathname)) { location.href = url.href; return; }
@@ -74,5 +86,5 @@ window.DemoMotion = (() => {
   });
   window.addEventListener('pageshow', event => { if (event.persisted) { navigating = false; scene()?.getAnimations().forEach(animation => animation.cancel()); } });
   enter();
-  return { navigate, overlay, animate };
+  return { navigate, back, overlay, animate };
 })();

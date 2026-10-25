@@ -6,15 +6,18 @@
     const shell = document.querySelector('.screen-shell');
     const insets = getComputedStyle(shell);
     const horizontalInset = mobile ? parseFloat(insets.paddingLeft) + parseFloat(insets.paddingRight) : 0;
-    const verticalInset = mobile ? parseFloat(insets.paddingTop) + parseFloat(insets.paddingBottom) : 0;
+    
     const mobileWidth = document.documentElement.clientWidth;
     const width = mobile ? mobileWidth - horizontalInset : Math.min(innerWidth, 375);
     const viewportHeight = window.visualViewport?.height || innerHeight;
-    const height = mobile ? Math.max(1, Math.min(innerHeight, viewportHeight) - verticalInset) : Math.min(812, viewportHeight - (innerWidth > 900 ? 48 : 0));
+    const height = mobile ? Math.max(1, Math.min(innerHeight, viewportHeight)) : Math.min(812, viewportHeight - (innerWidth > 900 ? 48 : 0));
     const screen = document.querySelector('.design-screen');
     screen.style.zoom = String(width / 750);
     screen.style.setProperty('--canvas-height', `${height * 750 / width}px`);
     shell.style.width = `${mobile ? mobileWidth : width}px`;
+    const canvas = document.querySelector('.design-screen');
+    canvas.style.setProperty('--safe-top', `calc(env(safe-area-inset-top, 0px) * ${750 / width})`);
+    canvas.style.setProperty('--safe-bottom', `calc(env(safe-area-inset-bottom, 0px) * ${750 / width})`);
   }
   fit();
   window.addEventListener('resize', fit);
