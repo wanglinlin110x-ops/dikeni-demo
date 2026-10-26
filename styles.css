@@ -1107,3 +1107,21 @@ body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .s36
 /* Figma 43:1126: identical thumb silhouette in outline and selected states. */
 body[data-page="conversation"] .chat-answer-actions :is([data-chat-action="like"],[data-chat-action="dislike"])[aria-pressed="true"]{background:#e3f7f9}
 .answer-context-panel [aria-pressed="true"] img{filter:none}
+
+/* Mobile home retains its IP even when browser chrome reduces the content area. */
+.mobile-layout body:is([data-page="index"],[data-page="input"]) .design-screen:not(.home-keyboard) .s18{display:flex}
+.mobile-layout body:is([data-page="index"],[data-page="input"]) .s19{display:flex;width:175.909px;height:180px}
+.mobile-layout body:is([data-page="index"],[data-page="input"]) .s20{left:-4.09px;width:180px;height:180px}
+.ip-intro-fallback{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.ip-has-fallback .ip-intro-video{opacity:0}
+.ip-has-fallback .ip-intro-video[data-frame-ready="true"]{opacity:1}
+@media(max-height:740px){
+  .mobile-layout body:is([data-page="index"],[data-page="input"]) .s19,
+  .mobile-layout body:is([data-page="index"],[data-page="input"]) .s20{width:140px;height:140px;left:0}
+  .mobile-layout.font-large body:is([data-page="index"],[data-page="input"]) .s19,
+  .mobile-layout.font-large body:is([data-page="index"],[data-page="input"]) .s20{width:88px;height:88px}
+}
+@media(max-height:600px){
+  .mobile-layout body:is([data-page="index"],[data-page="input"]) .s19,
+  .mobile-layout body:is([data-page="index"],[data-page="input"]) .s20{width:88px;height:88px;left:0}
+}

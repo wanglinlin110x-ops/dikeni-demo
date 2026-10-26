@@ -6,9 +6,23 @@
   video.defaultMuted = true;
   video.playsInline = true;
   video.loop = false;
+  // Keep a real image below the video: iOS may discard the video surface when
+  // autoplay is blocked, decoding fails, or the clip finishes in low-power mode.
+  const poster = new Image();
+  poster.className = 'ip-intro-fallback'; poster.alt = '';
+  poster.setAttribute('aria-hidden', 'true'); poster.src = video.poster;
+  video.before(poster); video.parentElement.classList.add('ip-has-fallback');
+  const showPoster = () => { delete video.dataset.frameReady; };
+  video.addEventListener('playing', () => {
+    const ready = () => { if (!video.paused && !video.ended) video.dataset.frameReady = 'true'; };
+    if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(ready);
+    else ready();
+  });
+  for (const name of ['ended', 'error', 'emptied']) video.addEventListener(name, showPoster);
   let pending = false;
   function playEntry() {
     pending = false;
+    showPoster();
     video.currentTime = 0;
     video.play().catch(() => { pending = true; });
   }
