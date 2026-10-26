@@ -5,6 +5,7 @@
   const page = document.body.dataset.page;
   const isChatFlow = ['index', 'input', 'conversation'].includes(page);
   let chat;
+  let attachments;
   let thinking = false;
   let activeOverlay;
   let overlayTrigger;
@@ -18,7 +19,7 @@
       const input = $('.message-input');
       if (input) { input.value = [input.value.trim(), text].filter(Boolean).join(' '); updateSend(); if (voiceInput?.mode !== 'compact' || voiceInput.restoreKeyboard) input.focus(); }
     },
-    onBeforeStart: () => { if (chat?.busy) chat.stop(); },
+    onBeforeStart: () => { attachments?.close(false); if (chat?.busy) chat.stop(); },
   }) : null;
   if (isChatFlow) setupOverlays();
   const activeLink = $(`a[href="${page}.html"]`, nav);
@@ -81,6 +82,7 @@
   }
   document.addEventListener('demo-back', event => {
     if (voiceInput?.active) { event.preventDefault(); voiceInput.cancel(false); }
+    else if (attachments && !attachments.panel.hidden) { event.preventDefault(); attachments.close(); }
     else if (activeOverlay) { event.preventDefault(); if (historyContext) closeHistoryContext(); else closeOverlay(); }
   });
   if (isChatFlow) {
@@ -123,6 +125,7 @@
     wrapper.replaceChildren(input);
     bindMessageInput(input);
   });
+  if (isChatFlow) attachments = new ComposerAttachments({ root: $('.design-screen'), onChange: updateSend, onError: toast, onOpen: () => voiceInput?.cancel(false) });
   function bindMessageInput(input) {
     if (input.tagName === 'TEXTAREA') input.rows = 1;
     voiceInput?.bindComposerHold(input);
@@ -146,7 +149,7 @@
     const input = $('.message-input');
     const button = $('[data-name="Button - 发送消息"], [data-name="Button - 发送"]');
     $('.design-screen')?.classList.toggle('voice-review', voiceInput?.mode === 'compact' && Boolean(input?.value.trim()));
-    const enabled = Boolean(input?.value.trim()) && !thinking && !voiceInput?.active;
+    const enabled = Boolean(input?.value.trim() || attachments?.items.length) && !thinking && !voiceInput?.active && !attachments?.pending;
     if (button) {
       button.classList.toggle('is-stop', thinking);
       button.setAttribute('aria-label', thinking ? '停止生成' : '发送消息');
@@ -162,17 +165,20 @@
   }
   function submitMessage(text) {
     const message = text.trim();
-    if (!message || thinking || navigatingToChat) return;
+    if ((!message && !attachments?.items.length) || thinking || navigatingToChat || attachments?.pending) return;
+    const files = attachments?.items.map(item => ({ ...item })) || [];
     voiceInput?.cancel(false);
     const input = $('.message-input');
     input?.blur();
     if (page === 'conversation') {
-      if (chat.submit(message)) { input.value = ''; updateSend(); }
+      if (chat.submit(message, files)) { input.value = ''; attachments?.clear(); updateSend(); }
     } else {
       navigatingToChat = true;
       if (['index', 'input'].includes(page)) ChatConversations.create();
       else if (['answer', 'trend', 'analysis'].includes(page)) ChatConversations.create({ network: 'wangchao', personId: 'dynasty-li', period: '2026年10月', scope: '全国门店', lastIntent: 'rank' });
       sessionStorage.setItem('demo-pending-message', message);
+      sessionStorage.setItem('demo-pending-attachments', JSON.stringify(files));
+      attachments?.clear();
       DemoMotion.navigate('conversation.html');
     }
   }
@@ -209,8 +215,9 @@
     icon.replaceChildren(image);
   }
   $$('[data-name="Section - 推荐问题"] .s28').forEach(updateSuggestionIcon);
+  const championSuggestion = '本月销售冠军是谁？';
   const suggestionPool = [
-    '本月销售冠军是谁？', '本月 Z9 和 N9 销量对比', '客户说有点贵，怎么接？', '置换权益和金融优惠能叠加吗？',
+    championSuggestion, '上月王朝网华南销冠是谁？', '本月 Z9 和 N9 销量对比', '客户说有点贵，怎么接？', '置换权益和金融优惠能叠加吗？',
     '本月销量复盘', '本月订单目标完成率是多少？', '本月订单量（分车型）', '上月销量怎么样？',
     '近6个月销量趋势', '各动力形式销量占比', '推荐几款同价位车型', '看看竞品新前脸',
     '门店区域归属查询', '置换补贴需要哪些材料？', '车型核心配置差异', '库存深度是什么意思？',
@@ -221,7 +228,8 @@
     return result;
   };
   const initialSuggestions = $$('[data-name="Section - 推荐问题"] .s28').map(item => item.textContent.trim());
-  let unseenSuggestions = shuffle(suggestionPool.filter(text => !initialSuggestions.includes(text)));
+  let unseenSuggestions = shuffle(suggestionPool.filter(text => text !== championSuggestion && !initialSuggestions.includes(text)));
+  let suggestionRefreshCount = 0;
   const routes = text => /增长|原因|成交|经验/.test(text) ? 'analysis.html' : /趋势|6个月|6 个月/.test(text) ? 'trend.html' : 'conversation.html';
   $$('[data-name="Button"]').forEach(button => {
     const text = button.textContent.trim();
@@ -231,10 +239,13 @@
       DemoMotion.animate(container, [{ opacity: .45, transform: 'translateY(8px)' }, { opacity: 1, transform: 'translateY(0)' }], 180);
       const buttons = $$('[data-name="Button"]', container);
       const visible = buttons.map(item => item.textContent.trim());
-      // The first three refreshes exhaust 12 unseen questions. Later refreshes
-      // sample anew rather than restarting the initial sequence.
-      const next = unseenSuggestions.length >= buttons.length ? unseenSuggestions.splice(0, buttons.length)
-        : shuffle(suggestionPool.filter(text => !visible.includes(text))).slice(0, buttons.length);
+      // Promote the champion question in three of every four refreshes, while rotating the rest.
+      const promoteChampion = ++suggestionRefreshCount % 4 !== 0;
+      const count = buttons.length - (promoteChampion ? 1 : 0);
+      if (unseenSuggestions.length < count) {
+        unseenSuggestions.push(...shuffle(suggestionPool.filter(text => text !== championSuggestion && !visible.includes(text) && !unseenSuggestions.includes(text))));
+      }
+      const next = [...(promoteChampion ? [championSuggestion] : []), ...unseenSuggestions.splice(0, count)];
       buttons.forEach((item, index) => {
         const label = $('[data-name="Text"] p', item) || $('[data-name="Text"]', item) || [...item.children].find(child => child.textContent.trim());
         if (label && next[index]) { label.textContent = next[index]; updateSuggestionIcon(item); }
@@ -558,6 +569,13 @@
     }
   }
   if (page === 'conversation') {
+    // Explicit review link opens the revised scenario without rewriting old turns.
+    if (new URLSearchParams(location.search).get('preview') === 'champion-september') {
+      ChatConversations.create();
+      sessionStorage.removeItem('demo-pending-attachments');
+      sessionStorage.setItem('demo-pending-message', '上个月王朝的销冠是谁？');
+      history.replaceState(history.state, '', location.pathname + location.hash);
+    }
     chat = new ChatConversations({
       host: $('[data-node-id="9:1388"]'),
       onBusy: value => { thinking = value; updateSend(); },
@@ -575,7 +593,10 @@
     });
     const pending = sessionStorage.getItem('demo-pending-message');
     sessionStorage.removeItem('demo-pending-message');
-    if (pending) chat.enqueue(pending);
+    let files = [];
+    try { files = JSON.parse(sessionStorage.getItem('demo-pending-attachments') || '[]'); } catch {}
+    sessionStorage.removeItem('demo-pending-attachments');
+    if (pending || files.length) chat.submit(pending || '', files);
   }
   // Fill narrow viewports while retaining the 750px design canvas.
   function fitSmallScreen() {

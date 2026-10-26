@@ -228,19 +228,26 @@ class VoiceInput {
     const clear = () => { if (press) clearTimeout(press.timer); };
     input.style.touchAction = 'none';
     input.style.webkitTouchCallout = 'none';
-    input.addEventListener('contextmenu', event => { if (press?.held || this.active) event.preventDefault(); });
+    input.addEventListener('contextmenu', event => { if (press || this.active) event.preventDefault(); });
+    input.addEventListener('selectstart', event => { if (press || this.active) event.preventDefault(); });
+    const restoreInput = () => { if (press) input.readOnly = press.wasReadOnly; input.classList.remove('voice-hold-pending'); };
     input.addEventListener('pointerdown', event => {
       if (event.button !== 0 || !event.isPrimary || this.active) return;
+      this.suppressClick = false;
       clear();
       // A short tap still opens the keyboard; a hold keeps it out of the way.
-      const focused = document.activeElement === input;
-      if (!focused) event.preventDefault();
-      const current = { id: event.pointerId, x: event.clientX, y: event.clientY, held: false, moved: false };
+      event.preventDefault();
+      const wasReadOnly = input.readOnly;
+      input.readOnly = true; input.classList.add('voice-hold-pending');
+      document.getSelection()?.removeAllRanges();
+      const current = { wasReadOnly, id: event.pointerId, x: event.clientX, y: event.clientY, held: false, moved: false };
       press = current;
       input.setPointerCapture(event.pointerId);
       current.timer = setTimeout(() => {
         if (press !== current || current.moved || !input.isConnected || document.hidden) return;
         current.held = true;
+        document.getSelection()?.removeAllRanges();
+        if (typeof input.selectionEnd === 'number') input.setSelectionRange(input.selectionEnd, input.selectionEnd);
         input.blur();
         this.start(true);
       }, 450);
@@ -258,13 +265,13 @@ class VoiceInput {
     });
     input.addEventListener('pointerup', event => {
       if (!press || press.id !== event.pointerId) return;
-      clear(); const current = press; press = undefined;
+      clear(); restoreInput(); const current = press; press = undefined;
       if (current.held) {
         this.suppressNextClick();
         if (current.cancel) this.cancel(false); else this.finish(true);
       } else if (!current.moved) input.focus();
     });
-    const abort = () => { clear(); if (press?.held) this.cancel(false); press = undefined; };
+    const abort = () => { clear(); restoreInput(); if (press?.held) this.cancel(false); press = undefined; };
     input.addEventListener('pointercancel', abort);
     input.addEventListener('lostpointercapture', abort);
     input.addEventListener('click', event => { if (this.suppressClick) { event.preventDefault(); event.stopImmediatePropagation(); input.blur(); } }, true);
@@ -274,9 +281,15 @@ class VoiceInput {
   bindPressGesture(button) {
     if (!button) return;
     button.style.touchAction = 'none';
+    button.style.webkitTouchCallout = 'none';
+    button.addEventListener('contextmenu', event => event.preventDefault());
+    button.addEventListener('selectstart', event => event.preventDefault());
     let timer, held = false, startY = 0, cancel = false;
     button.addEventListener('pointerdown', event => {
-      if (event.button !== 0 || this.active || this.mode === 'compact') return;
+      if (event.button !== 0 || this.active) return;
+      this.suppressClick = false;
+      if (this.mode === 'compact') return;
+      event.preventDefault(); document.getSelection()?.removeAllRanges();
       startY = event.clientY;
       cancel = false;
       held = false;

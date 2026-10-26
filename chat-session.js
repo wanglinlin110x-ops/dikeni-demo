@@ -29,11 +29,16 @@ window.ChatConversations = (() => {
       const data = JSON.parse(localStorage.getItem(key));
       if (data?.version === 1 && Array.isArray(data.sessions)) {
         data.sessions = data.sessions.filter(s => typeof s.id === 'string' && Array.isArray(s.messages) && s.context && typeof s.context === 'object');
-        data.sessions.forEach(session => session.messages.forEach(message => {
-          if (message.reply) message.reply = DemoChat.normalizeReply(message.reply);
-          const feedback = message.feedbackDraft || message.feedback;
-          message.disliked = !message.liked && Boolean(feedback?.reasons?.length || feedback?.comment?.trim());
-        }));
+        data.sessions.forEach(session => {
+          session.messages.forEach(message => {
+            if (message.reply) message.reply = DemoChat.normalizeReply(message.reply);
+            const feedback = message.feedbackDraft || message.feedback;
+            message.disliked = !message.liked && Boolean(feedback?.reasons?.length || feedback?.comment?.trim());
+          });
+          // A migrated ranking may have a new winner; followups must use the displayed identity.
+          const last = session.messages.at(-1);
+          if (last?.state === 'complete' && last.reply?.context?.lastIntent === 'rank') session.context = { ...last.reply.context };
+        });
         return data;
       }
     } catch { /* A missing or damaged cache starts a fresh session. */ }
@@ -146,7 +151,7 @@ window.ChatConversations = (() => {
       }
       overlay.querySelector('#knowledge-evidence-title').textContent = full ? '完整知识资料' : '原文依据';
       const body = overlay.querySelector('.knowledge-document');
-      body.innerHTML = `<h3>${escape(document.title)}</h3><p class="knowledge-tag">模拟资料 · ${escape(document.id)}</p><dl class="knowledge-metadata">${[['版本', document.version], ['审核状态', document.status], ['有效期', `${document.starts}—${document.ends}`], ['适用范围', document.scope], ['资料来源', document.origin]].map(([key,value]) => `<div><dt>${escape(key)}</dt><dd>${escape(value)}</dd></div>`).join('')}</dl>${document.parts.map(part => `<section class="knowledge-part${part.id === document.selected ? ' knowledge-part-selected' : ''}" data-section="${escape(part.id)}"><h4>${escape(part.title)}</h4><blockquote>${escape(part.text)}</blockquote></section>`).join('')}${full ? '' : '<button class="knowledge-full" data-evidence-action="full">查看完整资料</button>'}<p class="chat-answer-note">仅用于演示，不作为真实优惠承诺。</p>`;
+      body.innerHTML = `<h3>${escape(document.title)}</h3><p class="knowledge-tag">${escape(document.id)}</p><dl class="knowledge-metadata">${[['版本', document.version], ['审核状态', document.status], ['有效期', `${document.starts}—${document.ends}`], ['适用范围', document.scope], ['资料来源', document.origin]].map(([key,value]) => `<div><dt>${escape(key)}</dt><dd>${escape(value)}</dd></div>`).join('')}</dl>${document.parts.map(part => `<section class="knowledge-part${part.id === document.selected ? ' knowledge-part-selected' : ''}" data-section="${escape(part.id)}"><h4>${escape(part.title)}</h4><blockquote>${escape(part.text)}</blockquote></section>`).join('')}${full ? '' : '<button class="knowledge-full" data-evidence-action="full">查看完整资料</button>'}`;
       overlay.hidden = false;
       const selected = body.querySelector('.knowledge-part-selected');
       body.scrollTop = full && selected ? Math.max(0, selected.offsetTop - body.offsetTop - 16) : 0;
@@ -163,16 +168,19 @@ window.ChatConversations = (() => {
     }
     persist() { if (!save(this.session)) this.onError('浏览器存储空间不足，当前对话暂时无法持久保存'); }
     enqueue(text) { if (this.busy) this.queue.push(text); else this.submit(text); }
-    submit(text) {
+    submit(text, attachments = []) {
       text = text.trim();
-      if (!text || this.busy) return false;
+      if ((!text && !attachments.length) || this.busy) return false;
       this.session.messages.forEach(message => { if (message.reply?.kind === 'clarify') message.resolved = true; });
-      const response = DemoChat.reply(text, this.session.context);
-      this.session.messages.push({ id: id(), role: 'user', text });
+      const response = attachments.length ? {
+        kind: 'answer', title: '附件已收到', paragraphs: [`已添加${attachments.length}个附件。`, '当前暂不支持自动解读附件内容；你可以把需要处理的文字粘贴到输入框中继续提问。'],
+        context: { ...this.session.context, pending: null, journey: null, lastIntent: 'attachment' }, sources: [], followups: [],
+      } : DemoChat.reply(text, this.session.context);
+      this.session.messages.push({ id: id(), role: 'user', text, ...(attachments.length ? { attachments } : {}) });
       const message = { id: id(), role: 'assistant', reply: response, state: 'pending' };
       this.session.messages.push(message);
       this.session.context = response.context;
-      if (this.session.title === '新对话') this.session.title = text.slice(0, 26);
+      if (this.session.title === '新对话') this.session.title = (text || attachments[0]?.name || '附件消息').slice(0, 26);
       this.session.updated = Date.now();
       this.stickToBottom = true;
       this.persist(); this.render(); this.finish(message); return true;
@@ -302,10 +310,11 @@ window.ChatConversations = (() => {
       const anchorId = anchor?.dataset.messageId, anchorTop = anchor?.getBoundingClientRect().top;
       const last = this.session.messages.at(-1);
       this.host.innerHTML = this.session.messages.length ? this.session.messages.map(message => {
-        if (message.role === 'user') return `<div class="chat-user" data-message-id="${escape(message.id)}"><p>${escape(message.text)}</p></div>`;
+        if (message.role === 'user') return `<div class="chat-user" data-message-id="${escape(message.id)}">${message.attachments?.length ? `<div class="chat-user-attachments">${message.attachments.map(file => `<button type="button" data-chat-action="attachment" data-attachment-id="${escape(file.id)}" aria-label="下载附件：${escape(file.name)}">${file.type?.startsWith('image/') ? `<img data-attachment-id="${escape(file.id)}" alt="${escape(file.name)}">` : '<img src="assets/attachment-file.svg" alt="">'}<span>${escape(file.name)}</span></button>`).join('')}</div>` : ''}${message.text ? `<p>${escape(message.text)}</p>` : ''}</div>`;
         if (message.state === 'pending') return `${message.regeneration ? `<div class="chat-response" data-message-id="${escape(message.id)}">${this.renderReply(message)}</div>` : ''}<div class="thinking-status" role="status"><span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>正在思考...</span></div>`;
-        return `<div class="chat-response" data-message-id="${escape(message.id)}" data-generation-state="${escape(message.state)}">${this.renderReply(message)}${last === message && message.state === 'complete' && message.reply.followups?.length ? `<section class="followup-section"><h2>推荐追问</h2><div class="followup-options">${message.reply.followups.map(text => `<button data-chat-action="followup">${escape(text)}</button>`).join('')}</div></section>` : ''}</div>`;
+        return `<div class="chat-response" data-message-id="${escape(message.id)}" data-generation-state="${escape(message.state)}">${this.renderReply(message)}${last === message && message.state === 'complete' && !message.reply.unavailable && message.reply.followups?.length ? `<section class="followup-section"><h2>推荐追问</h2><div class="followup-options">${message.reply.followups.map(text => `<button data-chat-action="followup">${escape(text)}</button>`).join('')}</div></section>` : ''}</div>`;
       }).join('') : '<p class="chat-empty">开始一段新对话。你可以查询销量、对比车型，或整理客户跟进。</p>';
+      window.AttachmentStorage?.hydrate(this.host);
       this.host.setAttribute('aria-busy', String(this.busy));
       this.plans = new Map();
       this.session.messages.filter(message => ['streaming', 'interrupted'].includes(message.state)).forEach(message => {
@@ -320,6 +329,8 @@ window.ChatConversations = (() => {
     renderChart(message) {
       const { chart } = message.reply;
       const label = escape(chart.labels.map((text, i) => text + ' ' + chart.values[i] + '辆').join('，'));
+      if (chart.type === 'horizontal') return `<section class="chat-chart chat-horizontal"><h3>${escape(chart.title || '车型交付分布')}</h3><div role="img" aria-label="${label}">${chart.values.map((value, i) => `<div class="chat-horizontal-row${i === chart.highlight ? ' is-highlight' : ''}"><span>${escape(chart.labels[i])}</span><div class="chat-horizontal-track"><i style="width:${value / Math.max(...chart.values) * 100}%"></i></div><strong>${escape(value)}辆<small>${(value / chart.total * 100).toFixed(1)}%</small></strong></div>`).join('')}</div></section>`;
+
       if (!chart.labels.every(text => /^\d+月$/.test(text))) return `<section class="chat-chart chat-bar"><div class="chat-bars" role="img" aria-label="${label}">${chart.values.map((value, i) => `<div class="chat-chart-column"><span>${escape(value)}辆</span><i style="height:${Math.max(6, value / Math.max(...chart.values) * 180)}px"></i><small>${escape(chart.labels[i])}</small></div>`).join('')}</div></section>`;
       const max = Math.max(1, ...chart.values), rawStep = max / 4;
       const magnitude = 10 ** Math.floor(Math.log10(rawStep));
@@ -332,7 +343,7 @@ window.ChatConversations = (() => {
         return `C ${middleX} ${previousY} ${middleX} ${y} ${x} ${y}`;
       }).join(' ');
       const last = points.at(-1);
-      return `<section class="chat-chart chat-trend"><h3>近${chart.labels.length}个月销量趋势</h3><svg viewBox="0 0 651 580" role="img" aria-label="${label}">
+      return `<section class="chat-chart chat-trend"><h3>${escape(chart.title || `近${chart.labels.length}个月销量趋势`)}</h3><svg viewBox="0 0 651 580" role="img" aria-label="${label}">
         <image class="trend-grid" href="assets/trend-grid.svg" x="43" y="32.91" width="595" height="493.4"/>
         ${Array.from({ length: 5 }, (_, i) => `<text class="trend-y-label" x="36" y="${plotTop + i * 123}" text-anchor="end" dominant-baseline="middle">${(ceiling - step * i).toFixed(0)}</text>`).join('')}
         <path class="trend-curve" d="${curve}" fill="none" stroke="#00b5c7" stroke-width="2.4"/>
@@ -346,9 +357,10 @@ window.ChatConversations = (() => {
         <fieldset ${message.resolved ? 'disabled' : ''}><legend>${escape(r.question)}</legend><p class="clarification-hint">${escape(r.multiple ? '请选择两款车型，选满后自动发送；也可以直接输入需要对比的车型。' : r.hint)}</p>
         <div class="clarification-options">${r.options.map(text => `<button type="button" data-chat-action="select" aria-pressed="false">${escape(text)}</button>`).join('')}</div>
         ${message.resolved ? '<p class="clarification-resolved">已补充 / 已继续对话</p>' : ''}</fieldset></form>`;
-      return `<article tabindex="0" aria-haspopup="dialog" class="chat-answer${r.profile ? ' chat-answer-champion' : ''}${r.chart?.labels.every(text => /^\d+月$/.test(text)) ? ' chat-answer-trend' : ''}" data-name="Article">
+      return `<article tabindex="0" aria-haspopup="dialog" class="chat-answer${r.unavailable ? ' chat-answer-unavailable' : ''}${r.profile ? ' chat-answer-champion' : ''}${r.chart?.labels.every(text => /^\d+月$/.test(text)) ? ' chat-answer-trend' : ''}" data-name="Article">
         ${r.profile ? `<header class="chat-champion-profile">${r.profile.avatar ? `<img class="chat-champion-avatar" src="${escape(r.profile.avatar)}" alt="${escape(r.profile.name)}头像">` : `<span class="chat-champion-avatar chat-avatar-initial avatar-tone-${Number.isInteger(r.profile.avatarTone) && r.profile.avatarTone >= 0 && r.profile.avatarTone < 6 ? r.profile.avatarTone : 0}" aria-hidden="true">${escape((r.profile.name || '访').slice(0, 1))}</span>`}<div class="chat-profile-info"><div class="chat-profile-heading"><h2>${escape(r.profile.name)}</h2><span class="chat-profile-badge"><img src="assets/conversation-d3bb4.svg" alt="">${escape(r.profile.badge)}</span></div><p class="chat-profile-store">${escape(r.profile.store)}</p>${r.profile.role ? `<p class="chat-person-role">${escape(r.profile.role)}${r.profile.tenure ? ` · 入职约${escape(r.profile.tenure)}` : ''}</p>` : ''}</div></header>` : `<h2>${escape(r.title)}</h2>`}
         ${paragraphMarkup(r.paragraphs)}
+        ${r.unavailable && message === this.session.messages.at(-1) ? `<div class="followup-options unavailable-options" aria-label="可以尝试的问题">${r.followups.map(text => `<button data-chat-action="followup">${escape(text)}</button>`).join('')}</div>` : ''}
         ${r.contextLabel ? `<p class="chat-answer-note">${escape(r.contextLabel)}</p>` : ''}
         ${r.rationale ? `<p class="chat-answer-note">${escape(r.rationale)}</p>` : ''}
         ${r.quote ? `<section class="chat-script">${r.quoteLabel ? `<h3>${escape(r.quoteLabel)}</h3>` : ''}<blockquote>${escape(r.quote)}</blockquote><button class="chat-copy-script" data-chat-action="copy-script"><img src="assets/96cd7.svg" alt="">复制话术</button></section>` : ''}
@@ -362,7 +374,7 @@ window.ChatConversations = (() => {
         ${r.chart ? this.renderChart(message) : ''}
         ${r.chart?.note ? `<p class="chat-paragraph">${escape(r.chart.note)}</p>` : ''}
         ${r.rows && !r.profile ? `<div class="chat-table-wrap"><table><thead><tr>${r.headers.map(text => `<th>${escape(text)}</th>`).join('')}</tr></thead><tbody>${r.rows.map(row => `<tr>${row.map(text => `<td>${escape(text)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
-        ${r.sources.length ? `<section class="chat-source-disclosure"><button class="chat-sources" data-chat-action="sources" aria-controls="sources-${escape(message.id)}" aria-expanded="${this.expandedSources.has(message.id)}"><span><img src="assets/cff1a.svg" alt="">数据来源·${r.sources.length}项</span><span><span class="source-toggle-label">${this.expandedSources.has(message.id) ? '收起' : '展开'}</span><img src="assets/289e6.svg" alt=""></span></button><ol class="chat-source-content" id="sources-${escape(message.id)}" ${this.expandedSources.has(message.id) ? '' : 'hidden'}>${r.sources.map((source, i) => `<li><h3>${String(i + 1).padStart(2, '0')} · ${escape(source.title)}</h3>${source.description.split('。').filter(Boolean).map(line => `<p>${escape(line)}</p>`).join('')}<p>数据更新时间：${escape(source.updated)}</p></li>`).join('')}</ol></section>` : ''}
+        ${r.sources.length ? `<section class="chat-source-disclosure"><button class="chat-sources" data-chat-action="sources" aria-controls="sources-${escape(message.id)}" aria-expanded="${this.expandedSources.has(message.id)}"><span><img src="assets/cff1a.svg" alt="">数据来源·${r.sources.length}项</span><span><span class="source-toggle-label">${this.expandedSources.has(message.id) ? '收起' : '展开'}</span><img src="assets/289e6.svg" alt=""></span></button><ol class="chat-source-content" id="sources-${escape(message.id)}" ${this.expandedSources.has(message.id) ? '' : 'hidden'}>${r.sources.map((source, i) => `<li><h3>${String(i + 1).padStart(2, '0')} · ${escape(source.title)}</h3>${source.description.split('。').filter(Boolean).map(line => `<p>${escape(line)}</p>`).join('')}<p>数据更新时间：${escape(source.updated)}</p>${source.url ? `<a href="${escape(source.url)}" target="_blank" rel="noopener noreferrer">查看公开来源 ↗</a>` : ''}</li>`).join('')}</ol></section>` : ''}
         <div class="chat-answer-actions" data-name="AnswerActions" data-current="${message === this.session.messages.at(-1)}" ${message === this.session.messages.at(-1) ? '' : 'hidden'}>
           <button data-chat-action="copy" aria-label="复制回答"><img src="assets/conversation-1dd93.svg" alt=""></button>
           <button data-chat-action="like" aria-label="赞同回答" aria-pressed="${Boolean(message.liked)}"><img src="assets/${message.liked ? 'feedback-selected.svg' : 'conversation-47792.svg'}" alt=""></button>
@@ -506,7 +518,9 @@ window.ChatConversations = (() => {
       if (!button || button.matches(':disabled')) return;
       const message = this.session.messages.find(m => m.id === button.closest('[data-message-id]')?.dataset.messageId);
       const action = button.dataset.chatAction;
-      if (action === 'followup') this.submit(button.textContent);
+      if (action === 'attachment') {
+        try { await AttachmentStorage.download(button.dataset.attachmentId); } catch { this.onError('附件暂时无法打开，请重新添加'); }
+      } else if (action === 'followup') this.submit(button.textContent);
       else if (action === 'citation') this.openEvidence(message, button);
       else if (action === 'copy-script') {
         const reply = DemoChat.normalizeReply(message.reply);
@@ -580,7 +594,7 @@ window.ChatConversations = (() => {
         const question = preceding.findLast(item => item.role === 'user');
         if (!question) return;
         const context = preceding.findLast(item => item.role === 'assistant')?.reply.context || {};
-        message.regeneration = { original: { reply: message.reply, state: message.state, ...(message.progress !== undefined ? { progress: message.progress } : {}) }, nextReply: DemoChat.reply(question.text, context) };
+        message.regeneration = { original: { reply: message.reply, state: message.state, ...(message.progress !== undefined ? { progress: message.progress } : {}) }, nextReply: question.attachments?.length ? { ...message.reply, context: { ...context, pending: null, journey: null, lastIntent: 'attachment' } } : DemoChat.reply(question.text, context) };
         message.state = 'pending'; delete message.progress;
         this.session.updated = Date.now();
         this.persist(); this.render(); this.finish(message);

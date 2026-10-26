@@ -1014,7 +1014,7 @@ body:is([data-page="index"],[data-page="input"]) .s15{left:24px;top:28px;width:6
 body:is([data-page="index"],[data-page="input"]) .s16{width:38.4px;height:38.4px}
 body:is([data-page="index"],[data-page="input"]) .assistant-close{right:24px;top:28px;width:64px;height:64px;background:transparent}
 body:is([data-page="index"],[data-page="input"]) .assistant-close img{width:32px;height:32px}
-body:is([data-page="index"],[data-page="input"]) .s17{justify-content:space-between;gap:32px;padding:clamp(24px,calc((var(--canvas-height,1624px) - 1000px) / 5),120px) 48px 40px}
+body:is([data-page="index"],[data-page="input"]) .s17{justify-content:space-between;gap:32px;padding:clamp(24px,calc((var(--canvas-height,1624px) - 1000px) / 3.9),160px) 48px 40px}
 body:is([data-page="index"],[data-page="input"]) :is(.s18,.s22,.s24){align-items:flex-start}
 body:is([data-page="index"],[data-page="input"]) :is(.s23,.s25){text-align:left}
 body:is([data-page="index"],[data-page="input"]) .s28{border-radius:20px}
@@ -1101,7 +1101,7 @@ body:is([data-page="index"],[data-page="input"]) .assistant-close img{width:auto
 body[data-page="conversation"] .s53{left:24px}
 body[data-page="conversation"] .s53 .s16{width:48px;height:48px}
 body[data-page="conversation"] .s53 img{width:auto;height:auto;max-width:none}
-body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .s36{filter:drop-shadow(0px 10px 23px rgba(38,55,91,.12))}
+body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .s36{filter:none;box-shadow:0 10px 23px rgba(38,55,91,.12)}
 
 
 /* Figma 43:1126: identical thumb silhouette in outline and selected states. */
@@ -1125,3 +1125,103 @@ body[data-page="conversation"] .chat-answer-actions :is([data-chat-action="like"
   .mobile-layout body:is([data-page="index"],[data-page="input"]) .s19,
   .mobile-layout body:is([data-page="index"],[data-page="input"]) .s20{width:88px;height:88px;left:0}
 }
+
+/* Champion demo keeps public brand context separate from personal simulated delivery data. */
+.chat-public-background{display:flex;flex-direction:column;gap:16px;width:100%;padding-top:24px;border-top:1px solid #e9e9e9}
+.chat-public-background h3,.chat-horizontal h3{margin:0;font-size:28px;line-height:42px;font-weight:600}
+.chat-public-background .chat-table-wrap{width:100%}
+.chat-public-background table td:first-child{max-width:350px;white-space:normal}
+.chat-public-background tbody tr:last-child{font-weight:600}
+.chat-source-content a{display:inline-block;color:#009caf;font-size:24px;line-height:36px;text-decoration:none;padding:8px 0}
+.chat-horizontal{width:100%}
+.chat-horizontal>div{display:flex;flex-direction:column;gap:24px;margin-top:24px}
+.chat-horizontal-row{display:grid;grid-template-columns:200px minmax(0,1fr) 98px;align-items:center;gap:16px;font-size:24px;line-height:36px}
+.chat-horizontal-row>span{overflow-wrap:anywhere}
+.chat-horizontal-track{height:18px;border-radius:9px;background:#edf1f1;overflow:hidden}
+.chat-horizontal-track i{display:block;height:100%;border-radius:9px;background:#b1e6eb}
+.chat-horizontal-row.is-highlight .chat-horizontal-track i{background:#00b5c7}
+.chat-horizontal-row.is-highlight>span,.chat-horizontal-row.is-highlight strong{color:#009caf}
+.chat-horizontal-row strong{font-size:26px;font-weight:500;text-align:right}
+.chat-horizontal-row small{display:block;font-size:22px;font-weight:400;color:#888;line-height:32px}
+.font-large .chat-horizontal-row{grid-template-columns:220px minmax(0,1fr) 110px;font-size:28px;line-height:42px}
+.font-large .chat-horizontal-row strong{font-size:30px}
+.font-large .chat-horizontal-row small{font-size:26px;line-height:38px}
+
+/* Figma 9:1285: add, flexible text field, voice and send. */
+body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .composer-attachments .s36{gap:20px;padding:16px 24px 16px 32px}
+.composer-attachments .s39{order:1;flex:1;min-width:0;width:auto}
+.composer-attachments .s37{order:2;position:relative}
+.composer-attachments .s41,.composer-attachments .s47{order:3;width:56px;height:56px;border-radius:28px;grid-template-columns:56px;grid-template-rows:56px}
+.composer-attachments .s42,.composer-attachments .s43{width:32.941px;height:32.941px}
+.composer-attachments .s43{left:-.82px;top:.82px}
+.composer-attachments .s43 img{width:auto;height:auto;max-width:none}
+.composer-add{order:0;position:relative;display:grid;place-items:center;flex-shrink:0;width:40px;height:40px;padding:0;background:transparent;border:0;color:#101210}
+.composer-add img{width:auto;height:auto;max-width:none}
+.composer-attachments .s37 img{width:auto;height:auto;max-width:none}
+.composer-add::after,.composer-attachments .s37::after,.composer-attachments .s41::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:max(100%,var(--voice-tap-target,88px));height:max(100%,var(--voice-tap-target,88px))}
+.composer-add[aria-expanded="true"] img{transform:rotate(45deg)}
+.composer-add:focus-visible,.attachment-panel button:focus-visible,.attachment-drafts button:focus-visible{outline:3px solid #00b5c7;outline-offset:4px}
+.composer-attachments{--attachment-panel-space:0px;--attachment-draft-space:0px;--attachment-base-height:var(--composer-height,210px)}
+.composer-attachments.home-keyboard{--attachment-base-height:var(--home-keyboard-composer)}
+.composer-attachments.attachments-open{--attachment-base-height:138px;--attachment-panel-space:min(600px,calc(var(--canvas-height,1624px) * .46))}
+.composer-attachments.has-attachment-drafts{--attachment-draft-space:144px}
+body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .design-screen.composer-attachments :is(.s35,.s149){height:calc(var(--attachment-base-height) + var(--attachment-panel-space) + var(--attachment-draft-space));z-index:4}
+body[data-page="conversation"] .design-screen.composer-attachments .s50{padding-bottom:calc(var(--attachment-base-height) + var(--attachment-panel-space) + var(--attachment-draft-space))}
+body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .design-screen.composer-attachments:not(.home-keyboard) .s36{top:calc(30px + var(--attachment-draft-space))}
+.attachment-panel{position:absolute;left:0;right:0;bottom:0;height:var(--attachment-panel-space);padding:24px 32px max(32px,var(--safe-bottom,0px));background:white;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+.attachment-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.attachment-choices button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;height:172px;padding:20px;border-radius:28px;background:#f8f8f8;color:#686c6b;font-size:28px;line-height:40px}
+.attachment-choices img{width:56px;height:56px;max-width:none;flex-shrink:0;transform:none;margin:0}
+.attachment-recent-heading{font-size:26px;line-height:40px;color:#777c7b;margin:28px 0 16px}
+.attachment-recent{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.attachment-recent button{position:relative;aspect-ratio:1;padding:0;overflow:hidden;border-radius:20px;background:#f8f8f8;border:2px solid #eceeee}
+.attachment-recent img{width:100%;height:100%;object-fit:cover}
+.attachment-recent i{position:absolute;top:8px;right:8px;display:grid;place-items:center;width:28px;height:28px;border:2px solid white;box-shadow:0 0 0 1px #0002;border-radius:50%;font-style:normal;color:white;font-size:22px;line-height:24px;background:#fff7}
+.attachment-recent [aria-pressed="true"]{border-color:#00b5c7}
+.attachment-recent [aria-pressed="true"] i{background:#00b5c7}
+.attachment-empty{color:#999;font-size:24px;line-height:38px;margin:24px 0}
+.attachment-drafts{position:absolute;top:8px;left:32px;right:32px;height:128px;display:flex;gap:16px;overflow-x:auto;overscroll-behavior:contain;padding:8px 0}
+.attachment-chip{position:relative;display:flex;align-items:center;gap:14px;flex-shrink:0;max-width:360px;height:108px;padding:14px 54px 14px 14px;border:1px solid #e4e8e8;border-radius:20px;background:white}
+.attachment-chip>img{width:76px;height:76px;object-fit:cover;border-radius:12px;flex-shrink:0}
+.attachment-chip>img:not([data-attachment-id]){width:40px;height:40px;object-fit:contain}
+.attachment-chip>span{font-size:24px;line-height:36px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.attachment-chip button{position:absolute;top:2px;right:2px;width:48px;height:48px;font-size:36px;line-height:42px;background:transparent;color:#777}
+.chat-user-attachments{display:flex;flex-wrap:wrap;gap:16px;max-width:100%;margin-bottom:12px}
+.chat-user-attachments button{display:flex;flex-direction:column;gap:8px;align-items:flex-start;max-width:300px;padding:12px;border-radius:16px;background:#e3f7f9;color:#111;text-align:left}
+.chat-user-attachments img{width:160px;height:140px;object-fit:cover;border-radius:12px}
+.chat-user-attachments img:not([data-attachment-id]){width:40px;height:40px;object-fit:contain}
+.chat-user-attachments span{max-width:260px;font-size:24px;line-height:36px;overflow-wrap:anywhere}
+.voice-hold-pending{user-select:none!important;-webkit-user-select:none!important;-webkit-touch-callout:none!important}
+.composer-add,.attachment-choices,.s37{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.font-large .attachment-choices button{font-size:34px;line-height:48px}
+.font-large .attachment-recent-heading{font-size:30px;line-height:46px}
+.font-large .attachment-empty,.font-large .attachment-chip>span,.font-large .chat-user-attachments span{font-size:28px;line-height:42px}
+.attachment-panel[hidden],.attachment-drafts[hidden]{display:none!important}
+
+.composer-attachments [data-name="Button - 发送消息"].is-stop::after{left:17px;top:17px;width:22px;height:22px;transform:none}
+.composer-attachments.voice-alt.voice-review:not(.home-keyboard){--attachment-review-shift:-108px}
+body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .design-screen.composer-attachments:not(.home-keyboard) .s36{top:calc(30px + var(--attachment-draft-space) + var(--attachment-review-shift,0px))}
+.composer-attachments.voice-alt.voice-review:not(.home-keyboard) .s36:not(.voice-recording){grid-template-columns:64px minmax(0,1fr) 64px 64px}
+.composer-attachments.voice-alt.voice-review:not(.home-keyboard) .s36:not(.voice-recording) .composer-add{grid-row:2;grid-column:1;align-self:center;justify-self:center}
+.composer-attachments.voice-alt.voice-review:not(.home-keyboard) .s36:not(.voice-recording) .s37{grid-row:2;grid-column:3;width:64px;height:64px}
+.composer-attachments.voice-alt.voice-review:not(.home-keyboard) .s36:not(.voice-recording) :is(.s41,.s47){grid-row:2;grid-column:4;align-self:center}
+.composer-attachments.voice-alt.voice-review:not(.home-keyboard) .s36:not(.voice-recording){padding-left:32px;padding-right:32px}
+
+/* Keep streaming content on a separate layer from the stationary composer. */
+body[data-page="conversation"] .s149{isolation:isolate;transform:translateZ(0)}
+body[data-page="conversation"] .s49{overflow-anchor:none}
+
+/* Unavailable answers retain the standard light-gray answer card. */
+body[data-page="conversation"] .chat-answer-unavailable{background:#f8f8f8}
+body[data-page="conversation"] .chat-answer-unavailable>h2{color:#009eb2}
+body[data-page="conversation"] .unavailable-options{margin-top:0}
+body[data-page="conversation"] .unavailable-options button{background:#fff;border:1px solid #e4e4e4}
+
+.font-large .composer-attachments.attachments-open{--attachment-base-height:158px}
+
+/* The open attachment area is one surface; let the composer shadow float over it. */
+body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .design-screen.attachments-open :is(.s35,.s149){background:#fff}
+.composer-attachments.attachments-open .s36{z-index:1}
+.composer-attachments.attachments-open .attachment-panel{background:transparent}
+
+.s172>.static-person-avatar{width:100%;height:100%;object-fit:cover;border-radius:inherit}
