@@ -36,7 +36,7 @@ window.AttachmentStorage = (() => {
 window.ComposerAttachments = class {
   constructor({ root, onChange, onError, onOpen }) {
     Object.assign(this, { root, onChange, onError, onOpen }); this.items = []; this.pending = 0;
-    this.albumSamples = ["IMG_0011.PNG", "IMG_0009.PNG", "IMG_0008.PNG", "IMG_0007.PNG", "IMG_0006.PNG", "IMG_2685.PNG", "IMG_2684.PNG", "IMG_2683.PNG"].map(name=>({id:`sample-album:${name}`,name,type:'image/png',previewUrl:`assets/album-samples/${name}`}));
+    this.albumSamples = ["IMG_0011.PNG", "IMG_0009.PNG", "IMG_0008.PNG", "IMG_0007.PNG", "IMG_0006.PNG", "IMG_2685.PNG", "IMG_2684.PNG", "IMG_2683.PNG"].map(name=>({id:`sample-album:${name}`,name,type:'image/png',previewUrl:`assets/album-samples/${name}?v=thumb240`}));
     this.composer = root.querySelector('.s36'); this.footer = this.composer.parentElement;
     root.classList.add('composer-attachments');
     this.add = document.createElement('button'); this.add.type = 'button'; this.add.className = 'composer-add'; this.add.setAttribute('aria-label','添加照片或文件'); this.add.setAttribute('aria-expanded','false'); this.add.setAttribute('aria-controls','attachment-panel'); this.add.innerHTML = '<img src="assets/composer-add.svg" alt="">'; this.composer.prepend(this.add);
@@ -80,7 +80,8 @@ window.ComposerAttachments = class {
       else if(this.items.length>=10)this.onError('每次最多添加10个附件');
       else{
         let row=await AttachmentStorage.get(id);
-        if(!row){const sample=this.albumSamples.find(item=>item.id===id);if(sample){const response=await fetch(sample.previewUrl);if(!response.ok)throw new Error('照片加载失败');const blob=await response.blob();row=await AttachmentStorage.put(new File([blob],sample.name,{type:blob.type||sample.type}),id)}}
+        const sample=this.albumSamples.find(item=>item.id===id);
+        if(!row || (sample && row.size>40000)){if(sample){const response=await fetch(sample.previewUrl);if(!response.ok)throw new Error('照片加载失败');const blob=await response.blob();row=await AttachmentStorage.put(new File([blob],sample.name,{type:blob.type||sample.type}),id)}}
         if(row){const{blob,...metadata}=row;this.items.push(metadata)}
       }
     }catch{this.onError('照片暂时无法加载，请重新从相册选择')}
@@ -93,7 +94,7 @@ window.ComposerAttachments = class {
   clear(){this.items=[];this.render();this.close(false)}
   async refreshRecent(){
     try{const recent=await AttachmentStorage.recent();if(this.panel.hidden)return;const rows=[...recent,...this.albumSamples.filter(sample=>!recent.some(row=>row.id===sample.id))];this.releaseURLs();const grid=this.panel.querySelector('.attachment-recent');grid.replaceChildren();
-      for(const row of rows){const button=document.createElement('button');button.type='button';button.dataset.recent=row.id;button.setAttribute('aria-label',`选择照片：${row.name}`);button.setAttribute('aria-pressed',String(this.items.some(item=>item.id===row.id)));const image=document.createElement('img');image.alt=row.name;if(row.previewUrl)image.src=row.previewUrl;else{image.src=URL.createObjectURL(row.blob);this.urls.push(image.src)}const indicator=document.createElement('i');indicator.setAttribute('aria-hidden','true');indicator.textContent=this.items.some(item=>item.id===row.id)?'✓':'';button.append(image,indicator);grid.append(button)}
+      for(const row of rows){const sample=this.albumSamples.find(item=>item.id===row.id);const previewUrl=sample?.previewUrl||row.previewUrl;const button=document.createElement('button');button.type='button';button.dataset.recent=row.id;button.setAttribute('aria-label',`选择照片：${row.name}`);button.setAttribute('aria-pressed',String(this.items.some(item=>item.id===row.id)));const image=document.createElement('img');image.alt=row.name;image.decoding='async';image.width=240;image.height=522;if(previewUrl)image.src=previewUrl;else{image.src=URL.createObjectURL(row.blob);this.urls.push(image.src)}const indicator=document.createElement('i');indicator.setAttribute('aria-hidden','true');indicator.textContent=this.items.some(item=>item.id===row.id)?'✓':'';button.append(image,indicator);grid.append(button)}
     }catch{this.onError('照片暂时无法加载，仍可通过相册选择')}
   }
 };
