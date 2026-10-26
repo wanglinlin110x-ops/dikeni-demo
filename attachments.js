@@ -50,7 +50,13 @@ window.ComposerAttachments = class {
       input.addEventListener('change',()=>{this.select([...input.files]);input.value=''});this.footer.append(input);this.inputs[kind]=input;
     }
     this.composer.querySelector('.s37 img').src='assets/composer-voice.svg'; this.composer.querySelector('.s43 img').src='assets/composer-send.svg';
-    this.add.addEventListener('pointerdown',e=>e.preventDefault()); this.add.addEventListener('click',event=>this.panel.hidden?this.open():this.close(event.detail===0));
+    this.add.addEventListener('pointerdown',e=>e.preventDefault());
+    this.add.addEventListener('click',event=>{
+      if(!this.panel.hidden){this.close(event.detail===0);return}
+      this.open();
+      // Keep the native picker inside the user's click activation on mobile home screens.
+      if(document.documentElement.classList.contains('mobile-layout')&&['index','input'].includes(document.body.dataset.page))this.inputs.album.click();
+    });
     this.panel.addEventListener('click',e=>{const kind=e.target.closest('[data-pick]')?.dataset.pick;if(kind)this.inputs[kind].click();const recent=e.target.closest('[data-recent]');if(recent)this.toggleRecent(recent.dataset.recent)});
     this.drafts.addEventListener('click',e=>{const id=e.target.closest('[data-remove]')?.dataset.remove;if(id){this.items=this.items.filter(item=>item.id!==id);this.render()}});
     root.addEventListener('pointerdown',e=>{if(!this.panel.hidden&&!this.footer.contains(e.target))this.close(false)},true);

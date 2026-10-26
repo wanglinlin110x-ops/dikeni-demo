@@ -1,5 +1,14 @@
 // Shared, short transitions for the existing multipage demo.
 window.DemoMotion = (() => {
+  // Block browser selection/callouts on UI without intercepting custom long-press handlers.
+  const allowsTextInteraction = target => {
+    if (target.closest('input,textarea,[contenteditable="true"]')) return true;
+    return Boolean(target.closest('.chat-user>p,.chat-answer,[data-name="Article"],.clarification-card')) && !target.closest('button,[role="button"],a,img,svg,video');
+  };
+  for (const name of ['selectstart', 'contextmenu', 'dragstart']) document.addEventListener(name, event => {
+    const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+    if (target && !allowsTextInteraction(target)) event.preventDefault();
+  });
   const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   const animate = (element, frames, duration, easing = 'cubic-bezier(.2,.8,.2,1)', fill = 'none') => {
     if (!element || reduced() || !element.animate) return Promise.resolve();

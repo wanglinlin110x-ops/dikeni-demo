@@ -1225,3 +1225,10 @@ body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .des
 .composer-attachments.attachments-open .attachment-panel{background:transparent}
 
 .s172>.static-person-avatar{width:100%;height:100%;object-fit:cover;border-radius:inherit}
+
+/* Interface chrome is not selectable; editable fields and dialogue retain their behavior. */
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.chat-user>p,.chat-answer,[data-name="Article"],.clarification-card legend,.clarification-hint{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+button,[role="button"],a,img,svg,video{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+img,svg,video{-webkit-user-drag:none}

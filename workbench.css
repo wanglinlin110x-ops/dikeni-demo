@@ -1,7 +1,8 @@
+html:has(body[data-page="workbench"]){--wb-header-background:linear-gradient(158.77102900606758deg,#e1f6f9 6.1733%,#eef5f8 54.383%,#f7ecef 93.827%);--wb-native-header-content:15.466667vw}
 body[data-page="workbench"] .screen-shell{min-height:0}
 body[data-page="workbench"] .design-screen{height:var(--canvas-height,1624px);min-height:0}
 .wb-app{position:relative;width:750px;height:100%;min-height:0!important;display:flex;flex-direction:column;overflow:hidden;background:#f5f5f7;color:#111;font-family:"PingFang SC",Arial,sans-serif}
-.wb-header{position:relative;flex-shrink:0;padding:106px 42px 30px;background:linear-gradient(158.771deg,#e1f6f9 6.1733%,#eef5f8 54.383%,#f7ecef 93.827%)}
+.wb-header{position:relative;flex-shrink:0;padding:106px 42px 30px;background:var(--wb-header-background)}
 .wb-header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:47px;background:linear-gradient(to bottom,rgba(245,245,247,0),#f5f5f7);pointer-events:none}
 .wb-search-row{position:relative;z-index:1;display:flex;align-items:center;gap:16px}
 .wb-search{display:flex;align-items:center;gap:14px;height:68px;flex:1;min-width:0;padding:14px 22px;border-radius:50px;background:rgba(255,255,255,.72)}
@@ -96,5 +97,7 @@ body[data-page="workbench"] .design-screen{height:var(--canvas-height,1624px);mi
 /* Carry the entrance header color behind the phone's native top safe area. */
 @media(max-width:900px){
   html.mobile-layout:has(body[data-page="workbench"]),
-  html.mobile-layout body[data-page="workbench"]{background:#e1f6f9}
+  html.mobile-layout body[data-page="workbench"]{background-color:#e1f6f9;background-image:var(--wb-header-background);background-repeat:no-repeat;background-size:100% calc(env(safe-area-inset-top,0px) + var(--wb-native-header-content))}
 }
+
+html.mobile-layout.font-large:has(body[data-page="workbench"]){--wb-native-header-content:18.133333vw}
