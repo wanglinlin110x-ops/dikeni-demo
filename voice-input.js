@@ -35,6 +35,10 @@ class VoiceInput {
     this.panel.querySelector('button').addEventListener('click', () => {
       if (!this.suppressClick) this.finish();
     });
+    for (const panel of [this.legacyPanel, this.compactPanel]) {
+      for (const name of ['selectstart', 'contextmenu', 'dragstart']) panel.addEventListener(name, event => event.preventDefault());
+      panel.addEventListener('pointerdown', event => { event.preventDefault(); document.getSelection()?.removeAllRanges(); });
+    }
     this.bindSwipe(this.panel);
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && this.active) { event.preventDefault(); this.cancel(); }
@@ -88,49 +92,37 @@ class VoiceInput {
     window.addEventListener('pagehide', clear);
     document.addEventListener('visibilitychange', () => { if (document.hidden) clear(); });
   }
-  async start(held = false) {
+  start(held = false) {
     if (this.active) return;
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const Audio = window.AudioContext || window.webkitAudioContext;
-    if (!Recognition || !Audio || !navigator.mediaDevices?.getUserMedia) {
-      this.onError('当前浏览器不支持语音识别，请在支持语音识别的 Chrome 或 Safari 中打开');
-      return;
-    }
+    if (!Recognition) { this.onError('当前浏览器不支持语音识别，请在支持语音识别的 Chrome 或 Safari 中打开'); return; }
     this.onBeforeStart?.();
     const compact = this.mode === 'compact' && !held;
     this.panel = compact ? this.compactPanel : this.legacyPanel;
     this.bars = [...this.panel.querySelectorAll('i')];
     this.panel.querySelectorAll('button').forEach(button => { button.disabled = false; });
-    const session = { held, compact, draft: this.root.querySelector('.message-input')?.value.trim() || '', submit: !compact, finalText: '', frame: 0, ending: false, heights: [...this.restHeights] };
+    const session = { held, compact, draft: this.root.querySelector('.message-input')?.value.trim() || '', submit: !compact, finalText: '', frame: 0, starting: true, ending: false, heights: [...this.restHeights] };
     this.session = session;
+    document.getSelection()?.removeAllRanges();
     if (!compact) this.root.querySelector('.message-input')?.blur();
     this.composer?.classList.add('voice-recording');
     this.panel.getAnimations().forEach(animation => animation.cancel());
     this.panel.hidden = false;
     window.DemoMotion?.animate(this.panel, [{ opacity: 0, transform: 'translateY(36px)' }, { opacity: 1, transform: 'translateY(0)' }], 200);
-    this.panel.dataset.state = 'requesting';
-    this.instruction('正在开启麦克风...');
-    this.onStateChange();
+    this.panel.dataset.state = 'requesting'; this.instruction('正在开启语音识别...'); this.onStateChange();
     try {
-      // Resume during the user gesture, before awaiting microphone permission.
-      session.audio = new Audio();
-      const resume = session.audio.resume();
-      resume.catch(() => {});
-      session.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: false });
-      if (this.session !== session) { session.stream.getTracks().forEach(track => track.stop()); return; }
-      await resume;
-      if (this.session !== session) return;
-      session.source = session.audio.createMediaStreamSource(session.stream);
-      session.analyser = session.audio.createAnalyser();
-      session.analyser.fftSize = 256;
-      session.analyser.smoothingTimeConstant = 0.7;
-      session.source.connect(session.analyser);
-      session.samples = new Uint8Array(session.analyser.fftSize);
-      session.frequencies = new Uint8Array(session.analyser.frequencyBinCount);
       session.recognition = new Recognition();
       session.recognition.lang = 'zh-CN';
       session.recognition.continuous = compact || held;
       session.recognition.interimResults = true;
+      session.recognition.onstart = () => {
+        if (this.session !== session || session.ending) return;
+        session.starting = false; clearTimeout(session.startDeadline);
+        this.panel.dataset.state = 'listening';
+        this.instruction(compact ? '正在聆听…' : held ? '松手发送，上移取消' : '说完自动发送，点击结束');
+        if (session.analyser) this.draw(session);
+        session.limit = setTimeout(() => this.finish(), 60000);
+      };
       session.recognition.onresult = event => {
         if (this.session !== session) return;
         session.partialText = Array.from(event.results).map(result => result[0].transcript).join('').trim();
@@ -144,24 +136,47 @@ class VoiceInput {
       };
       session.recognition.onend = () => {
         if (this.session !== session) return;
-        const text = session.finalText;
-        this.cleanup(session);
-        if (text) { if (session.submit) this.onSubmit(session.compact ? [session.draft, text].filter(Boolean).join(' ') : text); else this.onRecover?.(text); }
-        else { this.onRecover?.(session.partialText || ''); this.onError(session.partialText ? '识别未完成，已保留文字，请检查后发送' : '未识别到文字，请再说一次'); }
+        if (session.held && !session.ending) {
+          session.starting = false; session.recognitionEnded = true;
+          clearTimeout(session.limit); clearTimeout(session.startDeadline); cancelAnimationFrame(session.frame);
+          this.releaseAudio(session); this.panel.dataset.state = 'ready';
+          this.instruction(session.partialText || session.finalText ? '已识别，松手发送，上移取消' : '没有听清，松手后再试一次');
+          return;
+        }
+        this.complete(session);
       };
+      // Recognition starts before any awaited microphone/AudioContext work.
       session.recognition.start();
-      this.panel.dataset.state = 'listening';
-      this.instruction(compact ? '正在聆听…' : held ? '松手发送，上移取消' : '说完自动发送，点击结束');
-      this.draw(session);
-      session.limit = setTimeout(() => this.finish(), 60000);
-      if (session.ending) this.stopRecognition(session);
-    } catch (error) {
+      if (this.session === session && session.starting) session.startDeadline = setTimeout(() => this.fail(session, '语音识别启动超时，请检查权限或网络后重试'), 12000);
+      if (this.session === session) this.startMeter(session);
+    } catch { this.fail(session, '无法启动语音输入，请检查麦克风权限后重试'); }
+  }
+  complete(session) {
+    if (this.session !== session) return;
+    const text = session.ending ? session.partialText || session.finalText : session.finalText;
+    this.cleanup(session);
+    if (text) { if (session.submit) this.onSubmit(session.compact ? [session.draft, text].filter(Boolean).join(' ') : text); else this.onRecover?.(text); }
+    else { this.onRecover?.(session.partialText || ''); this.onError(session.partialText ? '识别未完成，已保留文字，请检查后发送' : '未识别到文字，请再说一次'); }
+  }
+  async startMeter(session) {
+    const Audio = window.AudioContext || window.webkitAudioContext;
+    if (!Audio || !navigator.mediaDevices?.getUserMedia) return;
+    try {
+      session.audio = new Audio();
+      const resume = session.audio.resume(); resume.catch(() => {});
+      session.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: false });
+      if (this.session !== session || session.recognitionEnded) { session.stream.getTracks().forEach(track => track.stop()); return; }
+      await resume;
       if (this.session !== session) return;
-      this.fail(session, error.name === 'NotAllowedError' ? '麦克风权限被拒绝，请在浏览器设置中允许后重试' : '无法启动语音输入，请检查麦克风后重试');
-    }
+      session.source = session.audio.createMediaStreamSource(session.stream);
+      session.analyser = session.audio.createAnalyser(); session.analyser.fftSize = 256; session.analyser.smoothingTimeConstant = .7;
+      session.source.connect(session.analyser);
+      session.samples = new Uint8Array(session.analyser.fftSize); session.frequencies = new Uint8Array(session.analyser.frequencyBinCount);
+      if (!session.starting && !session.ending) this.draw(session);
+    } catch { this.releaseAudio(session); /* The optional visualizer must never block dictation. */ }
   }
   draw(session) {
-    if (this.session !== session || session.ending) return;
+    if (this.session !== session || session.ending || !session.analyser) return;
     const { analyser, samples, frequencies } = session;
     analyser.getByteTimeDomainData(samples);
     analyser.getByteFrequencyData(frequencies);
@@ -179,9 +194,10 @@ class VoiceInput {
   finish(submit) {
     const session = this.session;
     if (!session || session.ending) return;
+    if (session.starting) { this.cancel(false); this.onError('语音尚未就绪，请等开启后再说一次'); return; }
     if (session.compact) session.submit = submit === true;
     session.ending = true;
-    this.stopRecognition(session);
+    if (session.recognitionEnded) this.complete(session); else this.stopRecognition(session);
   }
   stopRecognition(session) {
     this.panel.dataset.state = 'recognizing';
@@ -189,19 +205,20 @@ class VoiceInput {
     this.panel.querySelectorAll('[data-voice-action]:not([data-voice-action=cancel])').forEach(button => { button.disabled = true; });
     if (!session.recognition) return; // Permission is still pending; honor release once ready.
     cancelAnimationFrame(session.frame);
-    this.releaseAudio(session);
+    // Keep the microphone alive until onend delivers the final recognition result.
     try { session.recognition.stop(); }
     catch { this.fail(session, '语音识别未完成，请重试'); return; }
     session.deadline = setTimeout(() => this.fail(session, '语音识别超时，请重试'), 8000);
   }
   releaseAudio(session) {
     session.stream?.getTracks().forEach(track => track.stop());
-    session.source?.disconnect();
+    try { session.source?.disconnect(); } catch { /* Already disconnected. */ }
     if (session.audio && session.audio.state !== 'closed') session.audio.close().catch(() => {});
   }
   cleanup(session) {
     if (this.session !== session) return;
     this.session = null;
+    clearTimeout(session.startDeadline);
     clearTimeout(session.limit);
     clearTimeout(session.deadline);
     cancelAnimationFrame(session.frame);
@@ -224,6 +241,7 @@ class VoiceInput {
     setTimeout(() => { this.suppressClick = false; }, 400);
   }
   bindComposerHold(input) {
+    const surface = this.composer || input;
     let press;
     const clear = () => { if (press) clearTimeout(press.timer); };
     input.style.touchAction = 'none';
@@ -242,7 +260,7 @@ class VoiceInput {
       document.getSelection()?.removeAllRanges();
       const current = { wasReadOnly, id: event.pointerId, x: event.clientX, y: event.clientY, held: false, moved: false };
       press = current;
-      input.setPointerCapture(event.pointerId);
+      surface.setPointerCapture(event.pointerId);
       current.timer = setTimeout(() => {
         if (press !== current || current.moved || !input.isConnected || document.hidden) return;
         current.held = true;
@@ -252,7 +270,7 @@ class VoiceInput {
         this.start(true);
       }, 450);
     });
-    input.addEventListener('pointermove', event => {
+    surface.addEventListener('pointermove', event => {
       if (!press || press.id !== event.pointerId) return;
       if (!press.held) {
         if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > 12) { press.moved = true; clear(); }
@@ -263,7 +281,7 @@ class VoiceInput {
       this.panel.classList.toggle('voice-cancel', press.cancel);
       this.instruction(press.cancel ? '松手取消' : '松手发送，上滑取消');
     });
-    input.addEventListener('pointerup', event => {
+    surface.addEventListener('pointerup', event => {
       if (!press || press.id !== event.pointerId) return;
       clear(); restoreInput(); const current = press; press = undefined;
       if (current.held) {
@@ -272,14 +290,15 @@ class VoiceInput {
       } else if (!current.moved) input.focus();
     });
     const abort = () => { clear(); restoreInput(); if (press?.held) this.cancel(false); press = undefined; };
-    input.addEventListener('pointercancel', abort);
-    input.addEventListener('lostpointercapture', abort);
-    input.addEventListener('click', event => { if (this.suppressClick) { event.preventDefault(); event.stopImmediatePropagation(); input.blur(); } }, true);
+    surface.addEventListener('pointercancel', abort);
+    surface.addEventListener('lostpointercapture', abort);
+    surface.addEventListener('click', event => { if (this.suppressClick) { event.preventDefault(); event.stopImmediatePropagation(); input.blur(); } }, true);
     document.addEventListener('visibilitychange', () => { if (document.hidden) abort(); });
     window.addEventListener('pagehide', abort);
   }
   bindPressGesture(button) {
     if (!button) return;
+    const surface = this.composer || button;
     button.style.touchAction = 'none';
     button.style.webkitTouchCallout = 'none';
     button.addEventListener('contextmenu', event => event.preventDefault());
@@ -294,22 +313,23 @@ class VoiceInput {
       cancel = false;
       held = false;
       button.setPointerCapture(event.pointerId);
-      timer = setTimeout(() => { held = true; this.start(true); }, 250);
+      timer = setTimeout(() => { held = true; surface.setPointerCapture(event.pointerId); this.start(true); }, 250);
     });
-    button.addEventListener('pointermove', event => {
+    surface.addEventListener('pointermove', event => {
       if (!held || !this.active) return;
       cancel = startY - event.clientY > 60;
       this.panel.classList.toggle('voice-cancel', cancel);
       this.instruction(cancel ? '松手取消' : '松手发送，上移取消');
     });
-    button.addEventListener('pointerup', () => {
+    surface.addEventListener('pointerup', () => {
       clearTimeout(timer);
       if (!held) return;
       this.suppressNextClick();
       if (cancel) this.cancel(); else this.finish();
       held = false;
     });
-    button.addEventListener('pointercancel', () => { clearTimeout(timer); if (held) { this.suppressNextClick(); this.cancel(); held = false; } });
+    surface.addEventListener('pointercancel', () => { clearTimeout(timer); if (held) { this.suppressNextClick(); this.cancel(); held = false; } });
+    surface.addEventListener('lostpointercapture', () => { clearTimeout(timer); if (held) { held = false; this.suppressNextClick(); this.cancel(false); } });
   }
   bindSwipe(element) {
     let startY;

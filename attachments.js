@@ -17,7 +17,7 @@ window.AttachmentStorage = (() => {
     });
   }
   return {
-    put: file => { const metadata = { id: crypto.randomUUID(), name: file.name, type: file.type, size: file.size, added: Date.now() }; return run('readwrite', store => store.put({ ...metadata, blob: file })).then(() => metadata); },
+    put: (file, id = crypto.randomUUID()) => { const metadata = { id, name: file.name, type: file.type, size: file.size, added: Date.now() }; return run('readwrite', store => store.put({ ...metadata, blob: file })).then(() => metadata); },
     get: id => run('readonly', store => store.get(id)),
     recent: () => run('readonly', store => store.getAll()).then(rows => rows.filter(row => row.type.startsWith('image/')).sort((a,b) => b.added-a.added).slice(0,20)),
     async hydrate(root) {
@@ -36,11 +36,12 @@ window.AttachmentStorage = (() => {
 window.ComposerAttachments = class {
   constructor({ root, onChange, onError, onOpen }) {
     Object.assign(this, { root, onChange, onError, onOpen }); this.items = []; this.pending = 0;
+    this.albumSamples = ["IMG_0011.PNG", "IMG_0009.PNG", "IMG_0008.PNG", "IMG_0007.PNG", "IMG_0006.PNG", "IMG_2685.PNG", "IMG_2684.PNG", "IMG_2683.PNG"].map(name=>({id:`sample-album:${name}`,name,type:'image/png',previewUrl:`assets/album-samples/${name}`}));
     this.composer = root.querySelector('.s36'); this.footer = this.composer.parentElement;
     root.classList.add('composer-attachments');
     this.add = document.createElement('button'); this.add.type = 'button'; this.add.className = 'composer-add'; this.add.setAttribute('aria-label','添加照片或文件'); this.add.setAttribute('aria-expanded','false'); this.add.setAttribute('aria-controls','attachment-panel'); this.add.innerHTML = '<img src="assets/composer-add.svg" alt="">'; this.composer.prepend(this.add);
     this.panel = document.createElement('section'); this.panel.id = 'attachment-panel'; this.panel.className = 'attachment-panel'; this.panel.hidden = true; this.panel.setAttribute('aria-label','添加附件');
-    this.panel.innerHTML = '<div class="attachment-choices"><button type="button" data-pick="camera"><img src="assets/attachment-camera.svg" alt=""><span>相机</span></button><button type="button" data-pick="album"><img src="assets/attachment-album.svg" alt=""><span>相册</span></button><button type="button" data-pick="files"><img src="assets/attachment-file.svg" alt=""><span>文件</span></button></div><div class="attachment-recent-heading">最近添加</div><div class="attachment-recent"></div><p class="attachment-empty">选择的照片会显示在这里</p>';
+    this.panel.innerHTML = '<div class="attachment-choices"><button type="button" data-pick="camera"><img src="assets/attachment-camera.svg" alt=""><span>相机</span></button><button type="button" data-pick="album"><img src="assets/attachment-album.svg" alt=""><span>相册</span></button><button type="button" data-pick="files"><img src="assets/attachment-file.svg" alt=""><span>文件</span></button></div><div class="attachment-recent" aria-label="相册图片"></div>';
     this.footer.append(this.panel);
     this.drafts = document.createElement('div'); this.drafts.className='attachment-drafts'; this.drafts.setAttribute('aria-label','待发送附件'); this.drafts.hidden=true; this.footer.append(this.drafts);
     this.inputs = {};
@@ -54,8 +55,6 @@ window.ComposerAttachments = class {
     this.add.addEventListener('click',event=>{
       if(!this.panel.hidden){this.close(event.detail===0);return}
       this.open();
-      // Keep the native picker inside the user's click activation on mobile home screens.
-      if(document.documentElement.classList.contains('mobile-layout')&&['index','input'].includes(document.body.dataset.page))this.inputs.album.click();
     });
     this.panel.addEventListener('click',e=>{const kind=e.target.closest('[data-pick]')?.dataset.pick;if(kind)this.inputs[kind].click();const recent=e.target.closest('[data-recent]');if(recent)this.toggleRecent(recent.dataset.recent)});
     this.drafts.addEventListener('click',e=>{const id=e.target.closest('[data-remove]')?.dataset.remove;if(id){this.items=this.items.filter(item=>item.id!==id);this.render()}});
@@ -79,7 +78,11 @@ window.ComposerAttachments = class {
     try{
       if(this.items.some(item=>item.id===id))this.items=this.items.filter(item=>item.id!==id);
       else if(this.items.length>=10)this.onError('每次最多添加10个附件');
-      else{const row=await AttachmentStorage.get(id);if(row){const{blob,...metadata}=row;this.items.push(metadata)}}
+      else{
+        let row=await AttachmentStorage.get(id);
+        if(!row){const sample=this.albumSamples.find(item=>item.id===id);if(sample){const response=await fetch(sample.previewUrl);if(!response.ok)throw new Error('照片加载失败');const blob=await response.blob();row=await AttachmentStorage.put(new File([blob],sample.name,{type:blob.type||sample.type}),id)}}
+        if(row){const{blob,...metadata}=row;this.items.push(metadata)}
+      }
     }catch{this.onError('照片暂时无法加载，请重新从相册选择')}
     finally{this.pending--;this.render();this.refreshRecent()}
   }
@@ -89,8 +92,8 @@ window.ComposerAttachments = class {
   }
   clear(){this.items=[];this.render();this.close(false)}
   async refreshRecent(){
-    try{const rows=await AttachmentStorage.recent();if(this.panel.hidden)return;this.releaseURLs();const grid=this.panel.querySelector('.attachment-recent');grid.replaceChildren();this.panel.querySelector('.attachment-empty').hidden=Boolean(rows.length);
-      for(const row of rows){const button=document.createElement('button');button.type='button';button.dataset.recent=row.id;button.setAttribute('aria-label',`选择照片：${row.name}`);button.setAttribute('aria-pressed',String(this.items.some(item=>item.id===row.id)));const image=document.createElement('img');image.alt=row.name;image.src=URL.createObjectURL(row.blob);this.urls.push(image.src);const indicator=document.createElement('i');indicator.setAttribute('aria-hidden','true');indicator.textContent=this.items.some(item=>item.id===row.id)?'✓':'';button.append(image,indicator);grid.append(button)}
-    }catch{this.onError('最近添加的照片暂时无法加载，仍可通过相册选择')}
+    try{const recent=await AttachmentStorage.recent();if(this.panel.hidden)return;const rows=[...recent,...this.albumSamples.filter(sample=>!recent.some(row=>row.id===sample.id))];this.releaseURLs();const grid=this.panel.querySelector('.attachment-recent');grid.replaceChildren();
+      for(const row of rows){const button=document.createElement('button');button.type='button';button.dataset.recent=row.id;button.setAttribute('aria-label',`选择照片：${row.name}`);button.setAttribute('aria-pressed',String(this.items.some(item=>item.id===row.id)));const image=document.createElement('img');image.alt=row.name;if(row.previewUrl)image.src=row.previewUrl;else{image.src=URL.createObjectURL(row.blob);this.urls.push(image.src)}const indicator=document.createElement('i');indicator.setAttribute('aria-hidden','true');indicator.textContent=this.items.some(item=>item.id===row.id)?'✓':'';button.append(image,indicator);grid.append(button)}
+    }catch{this.onError('照片暂时无法加载，仍可通过相册选择')}
   }
 };

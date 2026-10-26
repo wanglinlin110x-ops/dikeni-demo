@@ -1172,14 +1172,12 @@ body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .des
 .attachment-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
 .attachment-choices button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;height:172px;padding:20px;border-radius:28px;background:#f8f8f8;color:#686c6b;font-size:28px;line-height:40px}
 .attachment-choices img{width:56px;height:56px;max-width:none;flex-shrink:0;transform:none;margin:0}
-.attachment-recent-heading{font-size:26px;line-height:40px;color:#777c7b;margin:28px 0 16px}
-.attachment-recent{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.attachment-recent{margin-top:24px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
 .attachment-recent button{position:relative;aspect-ratio:1;padding:0;overflow:hidden;border-radius:20px;background:#f8f8f8;border:2px solid #eceeee}
 .attachment-recent img{width:100%;height:100%;object-fit:cover}
 .attachment-recent i{position:absolute;top:8px;right:8px;display:grid;place-items:center;width:28px;height:28px;border:2px solid white;box-shadow:0 0 0 1px #0002;border-radius:50%;font-style:normal;color:white;font-size:22px;line-height:24px;background:#fff7}
 .attachment-recent [aria-pressed="true"]{border-color:#00b5c7}
 .attachment-recent [aria-pressed="true"] i{background:#00b5c7}
-.attachment-empty{color:#999;font-size:24px;line-height:38px;margin:24px 0}
 .attachment-drafts{position:absolute;top:8px;left:32px;right:32px;height:128px;display:flex;gap:16px;overflow-x:auto;overscroll-behavior:contain;padding:8px 0}
 .attachment-chip{position:relative;display:flex;align-items:center;gap:14px;flex-shrink:0;max-width:360px;height:108px;padding:14px 54px 14px 14px;border:1px solid #e4e8e8;border-radius:20px;background:white}
 .attachment-chip>img{width:76px;height:76px;object-fit:cover;border-radius:12px;flex-shrink:0}
@@ -1194,8 +1192,7 @@ body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .des
 .voice-hold-pending{user-select:none!important;-webkit-user-select:none!important;-webkit-touch-callout:none!important}
 .composer-add,.attachment-choices,.s37{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .font-large .attachment-choices button{font-size:34px;line-height:48px}
-.font-large .attachment-recent-heading{font-size:30px;line-height:46px}
-.font-large .attachment-empty,.font-large .attachment-chip>span,.font-large .chat-user-attachments span{font-size:28px;line-height:42px}
+.font-large .attachment-chip>span,.font-large .chat-user-attachments span{font-size:28px;line-height:42px}
 .attachment-panel[hidden],.attachment-drafts[hidden]{display:none!important}
 
 .composer-attachments [data-name="Button - 发送消息"].is-stop::after{left:17px;top:17px;width:22px;height:22px;transform:none}
@@ -1232,3 +1229,15 @@ body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 button,[role="button"],a,img,svg,video{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 img,svg,video{-webkit-user-drag:none}
+
+/* Keep native app screens inside the viewport; only their content panels scroll. */
+@media(max-width:900px){
+  html.mobile-layout:has(body:is([data-page="index"],[data-page="input"],[data-page="conversation"],[data-page="workbench"])){height:100%;overflow:hidden;overscroll-behavior:none}
+  html.mobile-layout body:is([data-page="index"],[data-page="input"],[data-page="conversation"],[data-page="workbench"]){position:fixed;inset:0;width:100%;height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none}
+}
+
+/* Voice status and waveform are never selectable or draggable, including nested elements. */
+:is(.voice-panel,.voice-compact),:is(.voice-panel,.voice-compact) *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;-webkit-user-drag:none;-webkit-tap-highlight-color:transparent}
+.voice-wave:focus,.voice-wave:focus-visible{outline:none}
+
+.voice-hold-pending{-webkit-tap-highlight-color:transparent}
