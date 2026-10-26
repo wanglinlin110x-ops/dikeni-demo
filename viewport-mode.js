@@ -3,4 +3,5 @@
 (() => {
   const mobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || navigator.userAgentData?.mobile === true;
   document.documentElement.classList.toggle('mobile-layout', mobileDevice);
+  document.documentElement.classList.toggle('standalone-layout', navigator.standalone === true || matchMedia('(display-mode: standalone)').matches);
 })();

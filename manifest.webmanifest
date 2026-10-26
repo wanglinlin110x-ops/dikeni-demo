@@ -6,7 +6,7 @@
   "start_url": "./workbench.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#e1f6f9",
+  "background_color": "#ffffff",
   "theme_color": "#e1f6f9",
   "icons": [
     {

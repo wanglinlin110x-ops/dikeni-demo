@@ -97,7 +97,7 @@ body[data-page="workbench"] .design-screen{height:var(--canvas-height,1624px);mi
 /* Carry the entrance header color behind the phone's native top safe area. */
 @media(max-width:900px){
   html.mobile-layout:has(body[data-page="workbench"]),
-  html.mobile-layout body[data-page="workbench"]{background-color:#e1f6f9;background-image:var(--wb-header-background);background-repeat:no-repeat;background-size:100% calc(env(safe-area-inset-top,0px) + var(--wb-native-header-content))}
+  html.mobile-layout body[data-page="workbench"]{background-color:#fff;background-image:var(--wb-header-background);background-repeat:no-repeat;background-size:100% calc(env(safe-area-inset-top,0px) + var(--wb-native-header-content))}
 }
 
 html.mobile-layout.font-large:has(body[data-page="workbench"]){--wb-native-header-content:18.133333vw}

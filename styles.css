@@ -1241,3 +1241,10 @@ img,svg,video{-webkit-user-drag:none}
 .voice-wave:focus,.voice-wave:focus-visible{outline:none}
 
 .voice-hold-pending{-webkit-tap-highlight-color:transparent}
+
+/* Installed iOS apps use their actual app viewport, without fixing the entire document. */
+@media(max-width:900px){
+  html.mobile-layout.standalone-layout:has(body:is([data-page="index"],[data-page="input"],[data-page="conversation"],[data-page="workbench"])){height:100%;min-height:0}
+  html.mobile-layout.standalone-layout body:is([data-page="index"],[data-page="input"],[data-page="conversation"],[data-page="workbench"]){position:relative;inset:auto;height:100%;min-height:0;overflow:clip}
+  html.mobile-layout.standalone-layout body:is([data-page="index"],[data-page="input"],[data-page="conversation"],[data-page="workbench"]) .screen-shell{height:100%}
+}
