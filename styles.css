@@ -934,3 +934,34 @@ body[data-page="conversation"] .chat-answer-list>.chat-paragraph{display:list-it
 .chat-answer-list>li::marker{color:#111;font-size:.75em}
 .chat-answer-list strong{font-weight:600}
 .font-large body[data-page="conversation"] .chat-answer-list{font-size:36px;line-height:56px}
+
+/* Optional dictation presentation; default voice UI and canvas stay unchanged. */
+.voice-compact{user-select:none;position:absolute;inset:auto 0 0;height:max(100%,calc(var(--voice-tap-target,88px) + 12px));z-index:2;display:flex;align-items:center;gap:12px;padding:6px 12px;background:#f3f3f3;border-radius:60px;isolation:isolate}
+.voice-compact-hint{position:absolute;bottom:calc(100% + 14px);left:0;width:100%;text-align:center;font-size:24px;line-height:36px;color:#777;pointer-events:none}
+.voice-compact button{min-width:var(--voice-tap-target,88px);min-height:var(--voice-tap-target,88px);display:flex;align-items:center;justify-content:center;flex:0 0 88px;width:88px;height:88px;padding:0;border:0;border-radius:50%;color:#101210;background:#e7e7e7;touch-action:manipulation}
+.voice-compact [data-voice-action="cancel"]{font-family:Arial,sans-serif;font-size:60px;font-weight:300;line-height:1}
+.voice-compact [data-voice-action="review"] span{width:26px;height:26px;border-radius:4px;background:currentColor}
+.voice-compact [data-voice-action="send"]{background:#00b3c6}
+.voice-compact [data-voice-action="send"] img{width:44px;height:44px}
+.voice-compact button:disabled{opacity:.45;cursor:default}
+.voice-compact button:focus-visible{outline:3px solid #00a6ba;outline-offset:3px}
+.voice-compact-wave{display:flex;align-items:center;justify-content:space-between;flex:1;min-width:0;height:56px;gap:3px;overflow:hidden}
+.voice-compact-wave i{flex:1;min-width:2px;max-width:6px;height:6px;border-radius:6px;background:#929292}
+.voice-compact-wave i:nth-child(-n+10){opacity:.45}
+.voice-compact[data-state="recognizing"] .voice-compact-wave{opacity:.5}
+.voice-recording> :not(.voice-compact){visibility:hidden;pointer-events:none}
+.voice-alt .message-input{resize:none;overflow-y:auto;line-height:47px;display:block;font-family:inherit}
+.voice-alt.voice-review .s36:not(.voice-recording){display:grid;grid-template-columns:88px 1fr 88px;grid-template-rows:72px 88px;gap:12px;height:208px;min-height:208px;top:-78px;padding:18px 16px;background:#f5f5f5;border-radius:48px}
+.voice-alt.voice-review .s36:not(.voice-recording) .s39{grid-row:1;grid-column:1/-1;width:auto;height:72px;min-height:0;overflow:visible;margin:0 14px;display:block}
+.voice-alt.voice-review .s36:not(.voice-recording) .message-input{height:72px}
+.voice-alt.voice-review .s36:not(.voice-recording) .s37{grid-row:2;grid-column:1;display:flex;align-items:center;justify-content:center;width:88px;height:88px;margin:0}
+.voice-alt.voice-review .s36:not(.voice-recording) :is(.s41,.s47){grid-row:2;grid-column:3;justify-self:end}
+.font-large .voice-compact{border-radius:64px;padding:10px 12px}
+.font-large .voice-compact button{width:100px;height:100px;flex-basis:100px}
+.font-large .voice-compact-hint{font-size:30px;line-height:44px}
+.font-large .voice-compact [data-voice-action="cancel"]{font-size:68px}
+.font-large .voice-compact [data-voice-action="review"] span{width:32px;height:32px}
+.font-large .voice-compact [data-voice-action="send"] img{width:52px;height:52px}
+.font-large .voice-alt .message-input{line-height:54px}
+.font-large .voice-alt.voice-review .s36:not(.voice-recording){height:228px;min-height:228px;top:-78px;grid-template-rows:92px 88px}
+.font-large .voice-alt.voice-review .s36:not(.voice-recording) :is(.s39,.message-input){height:92px}

@@ -15,7 +15,7 @@
     root: $('.design-screen'), onSubmit: submitMessage, onError: toast, onStateChange: updateSend,
     onRecover: text => {
       const input = $('.message-input');
-      if (input) { input.value = [input.value.trim(), text].filter(Boolean).join(' '); updateSend(); input.focus(); }
+      if (input) { input.value = [input.value.trim(), text].filter(Boolean).join(' '); updateSend(); if (voiceInput?.mode !== 'compact' || voiceInput.restoreKeyboard) input.focus(); }
     },
     onBeforeStart: () => { if (chat?.busy) chat.stop(); },
   }) : null;
@@ -67,7 +67,17 @@
       else if (/分享/.test(name)) toast('分享功能将在后续版本接入');
     }, name.replace('Button - ', ''));
   });
-  if (voiceInput) voiceInput.bindPressGesture($('[data-name="Button - 语音输入"]'));
+  if (voiceInput) {
+    const microphone = $('[data-name="Button - 语音输入"]');
+    microphone?.addEventListener('pointerdown', event => {
+      voiceInput.restoreKeyboard = document.activeElement?.classList.contains('message-input');
+      if (voiceInput.mode === 'compact') event.preventDefault();
+    });
+    voiceInput.bindPressGesture(microphone);
+    voiceInput.bindModeSwitch($('[data-name="Button - 发送消息"], [data-name="Button - 发送"]'),
+      () => !thinking && !chat?.busy && !activeOverlay && !navigatingToChat,
+      mode => { syncVoiceComposer(); toast(mode === 'compact' ? '已切换为备选语音样式' : '已恢复当前语音样式'); });
+  }
   document.addEventListener('demo-back', event => {
     if (voiceInput?.active) { event.preventDefault(); voiceInput.cancel(false); }
     else if (activeOverlay) { event.preventDefault(); if (historyContext) closeHistoryContext(); else closeOverlay(); }
@@ -102,7 +112,7 @@
   }
   $$('[data-name^="Text Input"]').forEach(wrapper => {
     const original = wrapper.textContent.trim();
-    const input = document.createElement('input');
+    const input = document.createElement(voiceInput?.mode === 'compact' ? 'textarea' : 'input');
     input.className = 'message-input';
     input.setAttribute('aria-label', '发送消息');
     input.setAttribute('inputmode', 'text');
@@ -111,12 +121,30 @@
     input.placeholder = original === '本月' ? '发消息或按住说话...' : original;
     input.value = original === '本月' ? original : '';
     wrapper.replaceChildren(input);
-    input.addEventListener('input', updateSend);
-    input.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.isComposing) { event.preventDefault(); if (!chat?.busy) send(); } });
+    bindMessageInput(input);
   });
+  function bindMessageInput(input) {
+    if (input.tagName === 'TEXTAREA') input.rows = 1;
+    input.addEventListener('input', updateSend);
+    input.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.isComposing && !event.shiftKey) { event.preventDefault(); if (!chat?.busy) send(); } });
+  }
+  function syncVoiceComposer() {
+    const input = $('.message-input');
+    if (!input) return;
+    const tag = voiceInput.mode === 'compact' ? 'TEXTAREA' : 'INPUT';
+    if (input.tagName !== tag) {
+      const replacement = document.createElement(tag.toLowerCase());
+      for (const attr of input.attributes) replacement.setAttribute(attr.name, attr.value);
+      replacement.value = input.value;
+      input.replaceWith(replacement);
+      bindMessageInput(replacement);
+    }
+    updateSend();
+  }
   function updateSend() {
     const input = $('.message-input');
     const button = $('[data-name="Button - 发送消息"], [data-name="Button - 发送"]');
+    $('.design-screen')?.classList.toggle('voice-review', voiceInput?.mode === 'compact' && Boolean(input?.value.trim()));
     const enabled = Boolean(input?.value.trim()) && !thinking && !voiceInput?.active;
     if (button) {
       button.classList.toggle('is-stop', thinking);
@@ -537,6 +565,7 @@
     $('.design-screen').style.zoom = String(width / 750);
     shell.style.width = (mobile ? mobileWidth : width) + 'px';
     const canvas = document.querySelector('.design-screen');
+    canvas.style.setProperty('--voice-tap-target', `${44 * 750 / width}px`);
     canvas.style.setProperty('--safe-top', `calc(env(safe-area-inset-top, 0px) * ${750 / width})`);
     canvas.style.setProperty('--safe-bottom', `calc(var(--native-safe-bottom) * ${750 / width})`);
     if (isChatFlow) {
