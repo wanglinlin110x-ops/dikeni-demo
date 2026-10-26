@@ -153,7 +153,7 @@
     if (button) {
       button.classList.toggle('is-stop', thinking);
       button.setAttribute('aria-label', thinking ? '停止生成' : '发送消息');
-      button.style.backgroundColor = thinking ? '#101210' : enabled ? '#00b0c7' : '#ddd';
+      button.style.backgroundColor = thinking ? '#07B1C7' : enabled ? '#00b0c7' : '#ddd';
       button.setAttribute('aria-disabled', String(!enabled && !thinking));
     }
   }
