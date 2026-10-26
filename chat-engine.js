@@ -1,15 +1,15 @@
 /* Deterministic demo scenarios. No model API or real business data is connected. */
 window.DemoChat = (() => {
   const people = [
-    { id: 'wang', name: '王小迪', avatar: 'assets/chen-siyu-avatar.png', store: '腾势坪山4S店', region: '粤桂琼战区', monthly: [22, 25, 28, 32, 34, 42], leads: 126 },
-    { id: 'li', name: '李明轩', avatar: 'assets/li-mingxuan-avatar.png', store: '广州天河4S店', region: '粤桂琼战区', monthly: [19, 22, 24, 26, 28, 31], leads: 112 },
-    { id: 'chen', name: '陈思雨', avatar: 'assets/chen-siyu-avatar.png', store: '上海虹桥4S店', region: '华东战区', monthly: [17, 18, 21, 23, 26, 27], leads: 108 },
+    { id: 'wang', name: '王小迪', avatar: 'assets/chen-siyu-avatar.png?v=20261027-small', store: '腾势坪山4S店', region: '粤桂琼战区', monthly: [22, 25, 28, 32, 34, 42], leads: 126 },
+    { id: 'li', name: '李明轩', avatar: 'assets/li-mingxuan-avatar.png?v=20261027-small', store: '广州天河4S店', region: '粤桂琼战区', monthly: [19, 22, 24, 26, 28, 31], leads: 112 },
+    { id: 'chen', name: '陈思雨', avatar: 'assets/chen-siyu-avatar.png?v=20261027-small', store: '上海虹桥4S店', region: '华东战区', monthly: [17, 18, 21, 23, 26, 27], leads: 108 },
   ];
   const scopes = ['全国门店', '粤桂琼战区', '腾势坪山4S店'];
   const dynastyPeople = [
-    { id: 'dynasty-li', name: '李明轩', avatar: 'assets/li-mingxuan-avatar.png', store: '深圳南山王朝旗舰店', region: '华南战区', monthly: [28, 26, 31, 33, 38, 34], history: [24, 28, 26, 31, 33, 38], target: 32, storeDeliveries: 238, leads: 126 },
-    { id: 'dynasty-wang', name: '王浩', avatar: 'assets/wang-hao-avatar.png', store: '广州天河王朝店', region: '华南战区', monthly: [19, 22, 24, 28, 35, 41], leads: 112 },
-    { id: 'dynasty-chen', name: '陈思雨', avatar: 'assets/chen-siyu-avatar.png', store: '上海虹桥王朝店', region: '华东战区', monthly: [17, 18, 21, 23, 26, 27], leads: 108 },
+    { id: 'dynasty-li', name: '李明轩', avatar: 'assets/li-mingxuan-avatar.png?v=20261027-small', store: '深圳南山王朝旗舰店', region: '华南战区', monthly: [28, 26, 31, 33, 38, 34], history: [24, 28, 26, 31, 33, 38], target: 32, storeDeliveries: 238, leads: 126 },
+    { id: 'dynasty-wang', name: '王浩', avatar: 'assets/wang-hao-avatar.png?v=20261027-small', store: '广州天河王朝店', region: '华南战区', monthly: [19, 22, 24, 28, 35, 41], leads: 112 },
+    { id: 'dynasty-chen', name: '陈思雨', avatar: 'assets/chen-siyu-avatar.png?v=20261027-small', store: '上海虹桥王朝店', region: '华东战区', monthly: [17, 18, 21, 23, 26, 27], leads: 108 },
   ];
   const employeeRecords = {
     wang: { hometown: '广东惠州', joinedAt: '2021年6月8日', tenure: '5年4个月' },
