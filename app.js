@@ -181,7 +181,11 @@
     const text = button.textContent.trim();
     const rules = [
       [/冠军|最好|TOP\s*1|第一/i, '🏆'],
-      [/对比|车型/, '🚗'],
+      [/对比|车型|动力/, '🚗'],
+      [/竞品|同价位/, '🔎'],
+      [/库存|现车/, '📦'],
+      [/置换|补贴/, '📋'],
+      [/销量|订单|交付/, '📊'],
       [/跟进|客户/, '📝'],
       [/方法|经验/, '💡'],
       [/趋势|增长|个月/, '📈'],
@@ -196,13 +200,9 @@
   $$('[data-name="Section - 推荐问题"] .s28').forEach(updateSuggestionIcon);
   const suggestionPool = [
     '本月销售冠军是谁？', '本月 Z9 和 N9 销量对比', '给我一份客户跟进示例', '有哪些实用销售方法？',
-    '王小迪近6个月的销量趋势', '李明轩近6个月的销量趋势', '陈思雨近6个月的销量趋势',
-    '王小迪本月成交率是多少？', '李明轩本月成交率是多少？', '陈思雨本月成交率是多少？',
-    '王小迪本月销量是多少？', '李明轩本月销量是多少？', '陈思雨本月销量是多少？', '王小迪9月销量是多少？',
-    '王小迪的门店信息', '李明轩的门店信息', '陈思雨的门店信息', '王小迪主要卖什么车？',
-    '腾势华东战区本月销售冠军是谁？', '王朝全国门店本月销售冠军是谁？',
-    '王小迪本月与门店平均销量对比', '本月 Z9 和 N8L 销量对比',
-    '给我一份试驾前确认清单', '给我一段试驾后回访话术',
+    '本月销量复盘', '本月订单目标完成率是多少？', '本月订单量（分车型）', '上月销量怎么样？',
+    '近6个月销量趋势', '各动力形式销量占比', '推荐几款同价位车型', '看看竞品新前脸',
+    '门店区域归属查询', '置换补贴需要哪些材料？', '车型核心配置差异', '库存深度是什么意思？',
   ];
   const shuffle = items => {
     const result = [...items];
@@ -220,7 +220,7 @@
       DemoMotion.animate(container, [{ opacity: .45, transform: 'translateY(8px)' }, { opacity: 1, transform: 'translateY(0)' }], 180);
       const buttons = $$('[data-name="Button"]', container);
       const visible = buttons.map(item => item.textContent.trim());
-      // The first five refreshes exhaust 20 unseen questions. Later refreshes
+      // The first three refreshes exhaust 12 unseen questions. Later refreshes
       // sample anew rather than restarting the initial sequence.
       const next = unseenSuggestions.length >= buttons.length ? unseenSuggestions.splice(0, buttons.length)
         : shuffle(suggestionPool.filter(text => !visible.includes(text))).slice(0, buttons.length);
