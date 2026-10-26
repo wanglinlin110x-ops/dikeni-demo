@@ -31,6 +31,8 @@ window.ChatConversations = (() => {
         data.sessions = data.sessions.filter(s => typeof s.id === 'string' && Array.isArray(s.messages) && s.context && typeof s.context === 'object');
         data.sessions.forEach(session => session.messages.forEach(message => {
           if (message.reply) message.reply = DemoChat.normalizeReply(message.reply);
+          const feedback = message.feedbackDraft || message.feedback;
+          message.disliked = !message.liked && Boolean(feedback?.reasons?.length || feedback?.comment?.trim());
         }));
         return data;
       }
@@ -363,12 +365,37 @@ window.ChatConversations = (() => {
         ${r.sources.length ? `<section class="chat-source-disclosure"><button class="chat-sources" data-chat-action="sources" aria-controls="sources-${escape(message.id)}" aria-expanded="${this.expandedSources.has(message.id)}"><span><img src="assets/cff1a.svg" alt="">数据来源·${r.sources.length}项</span><span><span class="source-toggle-label">${this.expandedSources.has(message.id) ? '收起' : '展开'}</span><img src="assets/289e6.svg" alt=""></span></button><ol class="chat-source-content" id="sources-${escape(message.id)}" ${this.expandedSources.has(message.id) ? '' : 'hidden'}>${r.sources.map((source, i) => `<li><h3>${String(i + 1).padStart(2, '0')} · ${escape(source.title)}</h3>${source.description.split('。').filter(Boolean).map(line => `<p>${escape(line)}</p>`).join('')}<p>数据更新时间：${escape(source.updated)}</p></li>`).join('')}</ol></section>` : ''}
         <div class="chat-answer-actions" data-name="AnswerActions" data-current="${message === this.session.messages.at(-1)}" ${message === this.session.messages.at(-1) ? '' : 'hidden'}>
           <button data-chat-action="copy" aria-label="复制回答"><img src="assets/conversation-1dd93.svg" alt=""></button>
-          <button data-chat-action="like" aria-label="赞同回答" aria-pressed="${Boolean(message.liked)}"><img src="assets/${message.liked ? 'conversation-dc912.svg' : 'conversation-47792.svg'}" alt=""></button>
-          <button data-chat-action="dislike" aria-label="不满意" aria-pressed="${Boolean(message.disliked)}"><img src="assets/${message.disliked ? 'conversation-dc912.svg' : 'conversation-47792.svg'}" alt=""></button>
+          <button data-chat-action="like" aria-label="赞同回答" aria-pressed="${Boolean(message.liked)}"><img src="assets/${message.liked ? 'feedback-selected.svg' : 'conversation-47792.svg'}" alt=""></button>
+          <button data-chat-action="dislike" aria-label="不满意" aria-pressed="${Boolean(message.disliked)}"><img src="assets/${message.disliked ? 'feedback-selected.svg' : 'conversation-47792.svg'}" alt=""></button>
           <button data-chat-action="share" aria-label="分享回答"><img src="assets/conversation-f917c.svg" alt=""></button>
           <button data-chat-action="regenerate" aria-label="重新生成回答" ${this.busy ? 'disabled' : ''}><img src="assets/conversation-0a9d0.svg" alt=""></button>
         </div>
       </article>`;
+    }
+    updateFeedbackIcons(message, animate) {
+      const article = this.host.querySelector(`[data-message-id="${message.id}"] article`);
+      for (const kind of ['like', 'dislike']) {
+        const control = article?.querySelector(`[data-chat-action="${kind}"]`);
+        if (!control) continue;
+        const selected = Boolean(message[kind === 'like' ? 'liked' : 'disliked']);
+        control.setAttribute('aria-pressed', String(selected));
+        control.querySelector('img').src = `assets/${selected ? 'feedback-selected.svg' : 'conversation-47792.svg'}`;
+        control.classList.remove('feedback-pop');
+        if (selected && animate === kind) {
+          void control.offsetWidth; control.classList.add('feedback-pop');
+          control.addEventListener('animationend', () => control.classList.remove('feedback-pop'), { once: true });
+        }
+      }
+    }
+    setFeedbackDraft(message, draft, restoreLike = false) {
+      const selected = Boolean(draft.reasons.length || draft.comment.trim());
+      const wasSelected = Boolean(message.disliked);
+      message.disliked = selected;
+      message.liked = selected ? false : restoreLike;
+      if (selected) message.feedbackDraft = draft;
+      else { delete message.feedbackDraft; delete message.feedback; }
+      this.updateFeedbackIcons(message, selected && !wasSelected ? 'dislike' : null);
+      this.persist();
     }
     bindAnswerContext() {
       let press;
@@ -419,7 +446,7 @@ window.ChatConversations = (() => {
       this.closeAnswerContext();
       const view = document.createElement('section'); view.className = 'answer-context';
       view.innerHTML = `<button class="answer-context-veil" aria-label="关闭回答操作"></button><div class="answer-context-panel" role="dialog" aria-modal="true" aria-label="回答操作" tabindex="-1"><div class="answer-context-primary"></div><div class="answer-context-feedback"></div></div>`;
-      const labels = { copy: '复制', share: '分享', regenerate: '重新生成', like: message.liked ? '取消赞同' : '赞同', dislike: message.disliked ? '取消不满意' : '不满意' };
+      const labels = { copy: '复制', share: '分享', regenerate: '重新生成', like: message.liked ? '取消赞同' : '赞同', dislike: message.disliked ? '修改不满意反馈' : '不满意' };
       for (const action of ['copy', 'share', 'regenerate', 'like', 'dislike']) {
         const original = article.querySelector(`.chat-answer-actions [data-chat-action="${action}"]`);
         if (!original) continue;
@@ -526,24 +553,18 @@ window.ChatConversations = (() => {
       else if (action === 'copy') {
         try { await navigator.clipboard.writeText(button.closest('article').innerText); this.onError('已复制回答'); }
         catch { this.onError('当前浏览器未开放剪贴板权限'); }
-      } else if (action === 'like' || action === 'dislike') {
-        const field = action === 'like' ? 'liked' : 'disliked';
-        message[field] = !message[field];
-        if (message[field]) message[action === 'like' ? 'disliked' : 'liked'] = false;
-        for (const kind of ['like', 'dislike']) {
-          const control = button.parentElement.querySelector(`[data-chat-action="${kind}"]`);
-          const selected = Boolean(message[kind === 'like' ? 'liked' : 'disliked']);
-          control.setAttribute('aria-pressed', String(selected));
-          control.querySelector('img').src = `assets/${selected ? '5eff6.svg' : 'conversation-dc912.svg'}`;
+      } else if (action === 'like') {
+        message.liked = !message.liked;
+        if (message.liked) {
+          message.disliked = false;
+          delete message.feedback; delete message.feedbackDraft;
         }
+        this.updateFeedbackIcons(message, message.liked ? 'like' : null);
         this.persist();
-        if (message[field]) {
-          button.classList.remove('feedback-pop');
-          void button.offsetWidth;
-          button.classList.add('feedback-pop');
-          button.addEventListener('animationend', () => button.classList.remove('feedback-pop'), { once: true });
-          if (action === 'dislike') this.onFeedback?.(message, button.closest('.chat-answer-actions').hidden ? button.closest('article') : button);
-        }
+        if (button.closest('.chat-answer-actions').hidden) this.onError(message.liked ? '已赞同这条回答' : '已取消赞同');
+      } else if (action === 'dislike') {
+        // Opening the form alone is not negative feedback.
+        this.onFeedback?.(message, button.closest('.chat-answer-actions').hidden ? button.closest('article') : button);
       } else if (action === 'share') {
         const data = { title: message.reply.title, text: button.closest('article').innerText };
         try {

@@ -10,6 +10,7 @@
   let overlayTrigger;
   let navigatingToChat = false;
   let feedbackMessage;
+  let feedbackPreviousLike = false;
   let historyContext;
   const voiceInput = $('[data-name^="Text Input"]') ? new VoiceInput({
     root: $('.design-screen'), onSubmit: submitMessage, onError: toast, onStateChange: updateSend,
@@ -365,6 +366,7 @@
     $$('.overlay-backdrop, .feedback-close', host).forEach(button => button.addEventListener('click', closeOverlay));
     const updateFeedbackSubmit = () => {
       $('.feedback-submit', feedback).disabled = !$('.feedback-reasons [aria-pressed="true"]', feedback) && !$('.feedback-comment', feedback).value.trim();
+      saveFeedbackDraft();
     };
     $$('.feedback-reasons button', feedback).forEach(button => button.addEventListener('click', () => {
       button.setAttribute('aria-pressed', String(button.getAttribute('aria-pressed') !== 'true'));
@@ -378,6 +380,8 @@
         reasons: $$('.feedback-reasons [aria-pressed="true"]', feedback).map(button => button.textContent),
         comment: $('.feedback-comment', feedback).value.trim(), submittedAt: Date.now(),
       };
+      feedbackMessage.disliked = true; feedbackMessage.liked = false;
+      chat.updateFeedbackIcons(feedbackMessage);
       delete feedbackMessage.feedbackDraft; feedbackMessage = undefined;
       chat.persist(); closeOverlay(); toast('反馈已保存在当前浏览器');
     });
@@ -434,17 +438,21 @@
   }
   function saveFeedbackDraft() {
     if (activeOverlay?.dataset.overlay !== 'feedback' || !feedbackMessage) return;
-    feedbackMessage.feedbackDraft = {
+    const draft = {
       reasons: $$('.feedback-reasons [aria-pressed="true"]', activeOverlay).map(button => button.textContent),
       comment: $('.feedback-comment', activeOverlay).value,
     };
-    chat?.persist();
+    chat?.setFeedbackDraft(feedbackMessage, draft, feedbackPreviousLike);
   }
   window.addEventListener('pagehide', saveFeedbackDraft);
   function closeOverlay() {
     if (!activeOverlay) return Promise.resolve();
     if (activeOverlay.closing) return activeOverlay.closing;
     saveFeedbackDraft();
+    if (activeOverlay.dataset.overlay === 'feedback') {
+      if (feedbackMessage?.disliked) toast('已记录这条回答的不满意反馈');
+      feedbackMessage = undefined;
+    }
     closeHistoryContext();
     const overlay = activeOverlay;
     // Keep the page inert until the exiting panel is fully off screen.
@@ -556,6 +564,7 @@
       onError: toast,
       onFeedback: (message, trigger) => {
         feedbackMessage = message;
+        feedbackPreviousLike = Boolean(message.liked);
         const feedback = $('[data-overlay="feedback"]');
         const saved = message.feedbackDraft || message.feedback;
         $$('.feedback-reasons button', feedback).forEach(button => button.setAttribute('aria-pressed', String(Boolean(saved?.reasons.includes(button.textContent)))));
