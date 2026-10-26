@@ -965,3 +965,15 @@ body[data-page="conversation"] .chat-answer-list>.chat-paragraph{display:list-it
 .font-large .voice-alt .message-input{line-height:54px}
 .font-large .voice-alt.voice-review .s36:not(.voice-recording){height:228px;min-height:228px;top:-78px;grid-template-rows:92px 88px}
 .font-large .voice-alt.voice-review .s36:not(.voice-recording) :is(.s39,.message-input){height:92px}
+
+/* Only the real phone keyboard changes the welcome composition. */
+body:is([data-page="index"],[data-page="input"]) .home-keyboard .s12,
+body:is([data-page="index"],[data-page="input"]) .home-keyboard .s18,
+body:is([data-page="index"],[data-page="input"]) .home-keyboard .s31{display:none}
+body:is([data-page="index"],[data-page="input"]) .home-keyboard .s17{position:absolute;inset:0;display:block;container-type:normal;padding:0;pointer-events:none}
+body:is([data-page="index"],[data-page="input"]) .home-keyboard .s26{position:absolute;left:48px;right:48px;bottom:var(--home-keyboard-gap);width:auto;padding:0;pointer-events:auto}
+body:is([data-page="index"],[data-page="input"]) .home-keyboard .s35{height:var(--home-keyboard-composer);background:white}
+body:is([data-page="index"],[data-page="input"]) .design-screen.home-keyboard .s36:not(.voice-recording){display:flex;top:auto;bottom:0;height:var(--home-keyboard-composer);min-height:var(--home-keyboard-composer);padding:6px 16px;gap:18px;border-radius:60px}
+body:is([data-page="index"],[data-page="input"]) .design-screen.home-keyboard .s36:not(.voice-recording) .s39{display:flex;flex:1;min-width:0;width:auto;height:54px;min-height:0;margin:0;overflow:hidden}
+body:is([data-page="index"],[data-page="input"]) .design-screen.home-keyboard .s36:not(.voice-recording) .message-input{height:54px;line-height:54px}
+body:is([data-page="index"],[data-page="input"]) .design-screen.home-keyboard .s36:not(.voice-recording) .s37{width:auto;height:auto;margin:0}

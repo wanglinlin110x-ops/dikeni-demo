@@ -81,7 +81,6 @@
   document.addEventListener('demo-back', event => {
     if (voiceInput?.active) { event.preventDefault(); voiceInput.cancel(false); }
     else if (activeOverlay) { event.preventDefault(); if (historyContext) closeHistoryContext(); else closeOverlay(); }
-    else if (page === 'index') { event.preventDefault(); openOverlay('history', $('[data-name="Button - 打开菜单"]')); }
   });
   if (isChatFlow) {
     const screen = $('.design-screen');
@@ -195,6 +194,23 @@
     icon.replaceChildren();
   }
   $$('[data-name="Section - 推荐问题"] .s28').forEach(updateSuggestionIcon);
+  const suggestionPool = [
+    '本月销售冠军是谁？', '本月 Z9 和 N9 销量对比', '给我一份客户跟进示例', '有哪些实用销售方法？',
+    '王小迪近6个月的销量趋势', '李明轩近6个月的销量趋势', '陈思雨近6个月的销量趋势',
+    '王小迪本月成交率是多少？', '李明轩本月成交率是多少？', '陈思雨本月成交率是多少？',
+    '王小迪本月销量是多少？', '李明轩本月销量是多少？', '陈思雨本月销量是多少？', '王小迪9月销量是多少？',
+    '王小迪的门店信息', '李明轩的门店信息', '陈思雨的门店信息', '王小迪主要卖什么车？',
+    '腾势华东战区本月销售冠军是谁？', '王朝全国门店本月销售冠军是谁？',
+    '王小迪本月与门店平均销量对比', '本月 Z9 和 N8L 销量对比',
+    '给我一份试驾前确认清单', '给我一段试驾后回访话术',
+  ];
+  const shuffle = items => {
+    const result = [...items];
+    for (let i = result.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [result[i], result[j]] = [result[j], result[i]]; }
+    return result;
+  };
+  const initialSuggestions = $$('[data-name="Section - 推荐问题"] .s28').map(item => item.textContent.trim());
+  let unseenSuggestions = shuffle(suggestionPool.filter(text => !initialSuggestions.includes(text)));
   const routes = text => /增长|原因|成交|经验/.test(text) ? 'analysis.html' : /趋势|6个月|6 个月/.test(text) ? 'trend.html' : 'conversation.html';
   $$('[data-name="Button"]').forEach(button => {
     const text = button.textContent.trim();
@@ -202,10 +218,12 @@
       const container = $('[data-name="Section - 推荐问题"] [data-name="Container"]');
       if (!container) return;
       DemoMotion.animate(container, [{ opacity: .45, transform: 'translateY(8px)' }, { opacity: 1, transform: 'translateY(0)' }], 180);
-      const candidates = ['本月销售冠军是谁？', '本月 Z9 和 N9 销量对比', '给我一份客户跟进示例', '有哪些实用销售方法？', '王朝这个月谁卖得最好？', '王小迪近6个月的销量趋势', '王小迪本月成交率是多少?', '王小迪的门店信息'];
       const buttons = $$('[data-name="Button"]', container);
       const visible = buttons.map(item => item.textContent.trim());
-      const next = candidates.filter(item => !visible.includes(item)).slice(0, buttons.length);
+      // The first five refreshes exhaust 20 unseen questions. Later refreshes
+      // sample anew rather than restarting the initial sequence.
+      const next = unseenSuggestions.length >= buttons.length ? unseenSuggestions.splice(0, buttons.length)
+        : shuffle(suggestionPool.filter(text => !visible.includes(text))).slice(0, buttons.length);
       buttons.forEach((item, index) => {
         const label = $('[data-name="Text"] p', item) || $('[data-name="Text"]', item) || [...item.children].find(child => child.textContent.trim());
         if (label && next[index]) { label.textContent = next[index]; updateSuggestionIcon(item); }
@@ -555,6 +573,8 @@
     const focusedInput = document.activeElement?.matches('input,textarea,[contenteditable="true"]');
     const keyboard = viewport && (viewport.offsetTop > 0 ||
       fullHeight - viewportHeight > 120 && (focusedInput || viewportHeight < fullHeight * .75));
+    const homeKeyboard = mobile && ['index', 'input'].includes(page) && fullHeight - viewportHeight > 120 && Boolean(focusedInput || viewportHeight < fullHeight * .75);
+    $('.design-screen').classList.toggle('home-keyboard', homeKeyboard);
     const mobileHeight = keyboard ? viewportHeight : Math.max(fullHeight, viewportHeight);
     const occlusion = mobile ? Math.max(0, fullHeight - mobileHeight - (viewport?.offsetTop || 0)) : 0;
     document.documentElement.style.setProperty('--viewport-occlusion', `${occlusion}px`);
@@ -565,6 +585,8 @@
     $('.design-screen').style.zoom = String(width / 750);
     shell.style.width = (mobile ? mobileWidth : width) + 'px';
     const canvas = document.querySelector('.design-screen');
+    canvas.style.setProperty('--home-keyboard-gap', `${56 * 750 / width}px`);
+    canvas.style.setProperty('--home-keyboard-composer', `${50 * 750 / width}px`);
     canvas.style.setProperty('--voice-tap-target', `${44 * 750 / width}px`);
     canvas.style.setProperty('--safe-top', `calc(env(safe-area-inset-top, 0px) * ${750 / width})`);
     canvas.style.setProperty('--safe-bottom', `calc(var(--native-safe-bottom) * ${750 / width})`);
@@ -576,6 +598,8 @@
   fitSmallScreen();
   window.addEventListener('pageshow', () => { navigatingToChat = false; updateSend(); fitSmallScreen(); });
   window.addEventListener('resize', fitSmallScreen);
+  document.addEventListener('focusin', () => requestAnimationFrame(fitSmallScreen));
+  document.addEventListener('focusout', () => requestAnimationFrame(fitSmallScreen));
   window.visualViewport?.addEventListener('resize', fitSmallScreen);
   window.visualViewport?.addEventListener('scroll', fitSmallScreen);
   window.addEventListener('resize', positionHistoryContext);

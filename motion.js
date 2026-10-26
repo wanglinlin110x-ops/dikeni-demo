@@ -31,7 +31,7 @@ window.DemoMotion = (() => {
   function back() {
     if (!document.dispatchEvent(new CustomEvent('demo-back', { cancelable: true }))) return;
     const page = document.body.dataset.page;
-    navigate(page === 'conversation' || page === 'input' ? 'index.html' : 'conversation.html');
+    navigate(page === 'index' ? 'workbench.html' : 'index.html');
   }
   // Native edge/back gestures follow the product hierarchy, not previously visited examples.
   if (document.body.dataset.page !== 'workbench' && matchMedia('(pointer: coarse)').matches) {

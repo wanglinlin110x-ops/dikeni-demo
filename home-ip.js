@@ -1,29 +1,22 @@
-// One silent intro for each tool visit; internal navigation never restarts it.
+// Replay once on every home entry, including back/forward cache restoration.
 (() => {
-  const key = 'demo-ip-intro-played';
-  const read = () => { try { return sessionStorage.getItem(key) === '1'; } catch { return true; } };
-  const mark = () => { try { sessionStorage.setItem(key, '1'); } catch { /* Keep the still when storage is unavailable. */ } };
-  const reset = () => { try { sessionStorage.removeItem(key); } catch { /* Nothing to reset. */ } };
-  if (document.body.dataset.page === 'workbench') {
-    reset();
-    window.addEventListener('pageshow', reset);
-    return;
-  }
   const video = document.querySelector('.ip-intro-video');
   if (!video) return;
-  const still = () => {
-    video.pause();
-    video.removeAttribute('src');
-    video.load();
-  };
   video.muted = true;
+  video.defaultMuted = true;
   video.playsInline = true;
   video.loop = false;
-  if (!read()) {
-    mark();
-    video.src = video.dataset.src;
-    video.play().catch(still);
+  let pending = false;
+  function playEntry() {
+    pending = false;
+    video.currentTime = 0;
+    video.play().catch(() => { pending = true; });
   }
-  window.addEventListener('pagehide', still);
-  window.addEventListener('pageshow', event => { if (event.persisted) still(); });
+  // pageshow fires once for a new page and again when restoring a cached page.
+  window.addEventListener('pageshow', playEntry);
+  window.addEventListener('pagehide', () => { pending = false; video.pause(); });
+  // A browser/low-power autoplay restriction must not leave a permanently still IP.
+  document.addEventListener('pointerdown', () => {
+    if (pending && !document.hidden) { pending = false; video.play().catch(() => { pending = true; }); }
+  }, { passive: true });
 })();
