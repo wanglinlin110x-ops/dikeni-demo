@@ -124,6 +124,7 @@
   });
   function bindMessageInput(input) {
     if (input.tagName === 'TEXTAREA') input.rows = 1;
+    voiceInput?.bindComposerHold(input);
     input.addEventListener('input', updateSend);
     input.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.isComposing && !event.shiftKey) { event.preventDefault(); if (!chat?.busy) send(); } });
   }
@@ -179,27 +180,36 @@
     const icon = $('.s29', button);
     if (!icon) return;
     const text = button.textContent.trim();
+    // Icon names refer to the supplied Figma 41:13116 minimal outlined library.
+    // Specific intents precede generic sales/customer terms.
+    const iconFiles = {"User": "simple-a1133.svg", "LineChart": "simple-2983b.svg", "Car": "simple-b9004.svg", "Comment": "simple-a9335.svg", "Gift": "simple-e214c.svg", "BarChart": "simple-4fbb9.svg", "CheckList": "simple-3c9e5.svg", "Shop": "simple-b91a8.svg", "FileText": "simple-0a943.svg", "Layers": "simple-68f3a.svg", "Bulb": "simple-6f2be.svg", "Search": "simple-cd5bc.svg", "PieChart": "simple-b72aa.svg", "Sliders": "simple-faed8.svg"};
     const rules = [
-      [/冠军|最好|TOP\s*1|第一/i, '🏆'],
-      [/对比|车型|动力/, '🚗'],
-      [/竞品|同价位/, '🔎'],
-      [/库存|现车/, '📦'],
-      [/置换|补贴/, '📋'],
-      [/销量|订单|交付/, '📊'],
-      [/跟进|客户/, '📝'],
-      [/方法|经验/, '💡'],
-      [/趋势|增长|个月/, '📈'],
-      [/成交率/, '🎯'],
-      [/门店/, '🏬'],
+      [/材料|跟进|记录|进展|示例/, 'FileText'],
+      [/趋势|增长走势|近.*个月/, 'LineChart'],
+      [/经验|方法|技巧/, 'Bulb'],
+      [/冠军|销冠|最好|TOP\s*1|第一/i, 'User'],
+      [/完成率|成交率|转化率/, 'CheckList'],
+      [/占比|分布|结构/, 'PieChart'],
+      [/配置|核心.*差异/, 'Sliders'],
+      [/竞品|前脸/, 'Search'],
+      [/库存|现车/, 'Layers'],
+      [/门店|区域|战区/, 'Shop'],
+      [/置换|补贴|权益|优惠|金融/, 'Gift'],
+      [/车型|动力|Z9|N9|同价位/, 'Car'],
+      [/销量|订单|交付|复盘/, 'BarChart'],
+      [/客户|异议|有点贵|怎么接|话术/, 'Comment'],
     ];
-    icon.classList.add('suggestion-emoji');
-    icon.dataset.emoji = rules.find(([pattern]) => pattern.test(text))?.[1] || '💬';
+    const name = rules.find(([pattern]) => pattern.test(text))?.[1] || 'Comment';
+    icon.classList.remove('suggestion-emoji'); icon.classList.add('suggestion-icon');
+    delete icon.dataset.emoji; icon.dataset.icon = name;
     icon.setAttribute('aria-hidden', 'true');
-    icon.replaceChildren();
+    const image = document.createElement('img'); image.alt = '';
+    image.src = `assets/${iconFiles[name]}`;
+    icon.replaceChildren(image);
   }
   $$('[data-name="Section - 推荐问题"] .s28').forEach(updateSuggestionIcon);
   const suggestionPool = [
-    '本月销售冠军是谁？', '本月 Z9 和 N9 销量对比', '给我一份客户跟进示例', '有哪些实用销售方法？',
+    '本月销售冠军是谁？', '本月 Z9 和 N9 销量对比', '客户说有点贵，怎么接？', '置换权益和金融优惠能叠加吗？',
     '本月销量复盘', '本月订单目标完成率是多少？', '本月订单量（分车型）', '上月销量怎么样？',
     '近6个月销量趋势', '各动力形式销量占比', '推荐几款同价位车型', '看看竞品新前脸',
     '门店区域归属查询', '置换补贴需要哪些材料？', '车型核心配置差异', '库存深度是什么意思？',
@@ -323,11 +333,11 @@
       } else if (action === 'share') {
         const text = session.messages.map(message => {
           if (message.role === 'user') return `用户：${message.text}`;
-          if (message.state !== 'complete') return '迪克牛仔：（回答未完成）';
+          if (message.state !== 'complete') return '迪客牛仔：（回答未完成）';
           const r = message.reply;
           if (!r) return '';
-          if (r.kind === 'clarify') return `迪克牛仔：${r.question}\n${r.options.join('、')}`;
-          return `迪克牛仔：${[r.title, ...(r.paragraphs || []), ...(r.metrics || []).map(([value, label]) => `${label}：${value}`), ...(r.rows || []).map(row => row.join(' · ')), ...(r.chart ? r.chart.labels.map((label, i) => `${label}：${r.chart.values[i]}`) : [])].filter(Boolean).join('\n')}`;
+          if (r.kind === 'clarify') return `迪客牛仔：${r.question}\n${r.options.join('、')}`;
+          return `迪客牛仔：${[r.title, ...(r.paragraphs || []), r.quote, r.nextStep, ...(r.metrics || []).map(([value, label]) => `${label}：${value}`), ...(r.rows || []).map(row => row.join(' · ')), ...(r.chart ? r.chart.labels.map((label, i) => `${label}：${r.chart.values[i]}`) : [])].filter(Boolean).join('\n')}`;
         }).filter(Boolean).join('\n\n');
         const data = { title: session.title, text };
         try {

@@ -97,7 +97,7 @@ class VoiceInput {
       return;
     }
     this.onBeforeStart?.();
-    const compact = this.mode === 'compact';
+    const compact = this.mode === 'compact' && !held;
     this.panel = compact ? this.compactPanel : this.legacyPanel;
     this.bars = [...this.panel.querySelectorAll('i')];
     this.panel.querySelectorAll('button').forEach(button => { button.disabled = false; });
@@ -129,14 +129,14 @@ class VoiceInput {
       session.frequencies = new Uint8Array(session.analyser.frequencyBinCount);
       session.recognition = new Recognition();
       session.recognition.lang = 'zh-CN';
-      session.recognition.continuous = compact;
+      session.recognition.continuous = compact || held;
       session.recognition.interimResults = true;
       session.recognition.onresult = event => {
         if (this.session !== session) return;
         session.partialText = Array.from(event.results).map(result => result[0].transcript).join('').trim();
         session.finalText = Array.from(event.results).filter(result => result.isFinal).map(result => result[0].transcript).join('').trim();
       };
-      session.recognition.onspeechend = () => { if (!compact) this.finish(); };
+      session.recognition.onspeechend = () => { if (!compact && !held) this.finish(); };
       session.recognition.onerror = event => {
         if (this.session !== session) return;
         const messages = { 'not-allowed': '麦克风或语音识别权限被拒绝，请在浏览器设置中允许后重试', 'service-not-allowed': '浏览器未允许语音识别服务，请检查浏览器权限', 'audio-capture': '无法使用麦克风，请检查设备后重试', 'no-speech': '没有听清，请再说一次', network: '语音识别服务连接失败，请检查网络后重试', 'language-not-supported': '当前浏览器的语音识别服务不支持中文' };
@@ -222,6 +222,54 @@ class VoiceInput {
   suppressNextClick() {
     this.suppressClick = true;
     setTimeout(() => { this.suppressClick = false; }, 400);
+  }
+  bindComposerHold(input) {
+    let press;
+    const clear = () => { if (press) clearTimeout(press.timer); };
+    input.style.touchAction = 'none';
+    input.style.webkitTouchCallout = 'none';
+    input.addEventListener('contextmenu', event => { if (press?.held || this.active) event.preventDefault(); });
+    input.addEventListener('pointerdown', event => {
+      if (event.button !== 0 || !event.isPrimary || this.active) return;
+      clear();
+      // A short tap still opens the keyboard; a hold keeps it out of the way.
+      const focused = document.activeElement === input;
+      if (!focused) event.preventDefault();
+      const current = { id: event.pointerId, x: event.clientX, y: event.clientY, held: false, moved: false };
+      press = current;
+      input.setPointerCapture(event.pointerId);
+      current.timer = setTimeout(() => {
+        if (press !== current || current.moved || !input.isConnected || document.hidden) return;
+        current.held = true;
+        input.blur();
+        this.start(true);
+      }, 450);
+    });
+    input.addEventListener('pointermove', event => {
+      if (!press || press.id !== event.pointerId) return;
+      if (!press.held) {
+        if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > 12) { press.moved = true; clear(); }
+        return;
+      }
+      if (!this.active) return;
+      press.cancel = press.y - event.clientY > 60;
+      this.panel.classList.toggle('voice-cancel', press.cancel);
+      this.instruction(press.cancel ? '松手取消' : '松手发送，上滑取消');
+    });
+    input.addEventListener('pointerup', event => {
+      if (!press || press.id !== event.pointerId) return;
+      clear(); const current = press; press = undefined;
+      if (current.held) {
+        this.suppressNextClick();
+        if (current.cancel) this.cancel(false); else this.finish(true);
+      } else if (!current.moved) input.focus();
+    });
+    const abort = () => { clear(); if (press?.held) this.cancel(false); press = undefined; };
+    input.addEventListener('pointercancel', abort);
+    input.addEventListener('lostpointercapture', abort);
+    input.addEventListener('click', event => { if (this.suppressClick) { event.preventDefault(); event.stopImmediatePropagation(); input.blur(); } }, true);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) abort(); });
+    window.addEventListener('pagehide', abort);
   }
   bindPressGesture(button) {
     if (!button) return;

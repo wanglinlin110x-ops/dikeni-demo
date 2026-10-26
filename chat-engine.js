@@ -291,7 +291,10 @@ window.DemoChat = (() => {
     return order.filter(key => !seen.has(key) && (key !== 'hometown' || window.DemoAccess?.canReadEmployee('hometown', person)) && (key !== 'tenure' || window.DemoAccess?.canReadEmployee('joinedAt', person))).slice(0, 2).map(key => questions[key]);
   }
   function reply(text, previous = {}) {
+    const salesResponse = window.SalesDialogue?.reply(text, previous);
+    if (salesResponse) return salesResponse;
     const response = buildReply(text, previous);
+    if (response.context.lastIntent && !['objection', 'knowledge'].includes(response.context.lastIntent)) delete response.context.salesContext;
     if (response.kind !== 'answer' || !personById(response.context?.personId)) return response;
     const stage = stageFor(text, response.context.lastIntent);
     const key = `${response.context.personId}|${response.context.period || '2026年10月'}|${response.context.scope}`;
@@ -304,6 +307,7 @@ window.DemoChat = (() => {
     return response;
   }
   function normalizeReply(response) {
+    response = window.SalesDialogue?.normalizeReply(response) || response;
     if (response.personalParts?.length) {
       const person = personById(response.context?.personId);
       const personalParts = response.personalParts.map(part => ({ ...part, text: window.DemoAccess?.canReadEmployee(part.field, person) ? part.text : `当前账号无权查看${person?.name || '该员工'}的${part.field === 'hometown' ? '籍贯' : '入职时间及任职时长'}。` }));

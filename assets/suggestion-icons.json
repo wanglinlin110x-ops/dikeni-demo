@@ -1,0 +1,138 @@
+[
+  {
+    "name": "User",
+    "file": "assets/simple-a1133.svg",
+    "node": "41:10891",
+    "width": "24",
+    "height": "24",
+    "slot": 36
+  },
+  {
+    "name": "LineChart",
+    "file": "assets/simple-2983b.svg",
+    "node": "41:11679",
+    "width": "24",
+    "height": "24",
+    "slot": 36
+  },
+  {
+    "name": "Car",
+    "file": "assets/simple-b9004.svg",
+    "node": "41:11307",
+    "width": "24",
+    "height": "24",
+    "slot": 36
+  },
+  {
+    "name": "Comment",
+    "file": "assets/simple-a9335.svg",
+    "node": "41:11174",
+    "width": "24",
+    "height": "24",
+    "slot": 36
+  },
+  {
+    "name": "Gift",
+    "file": "assets/simple-e214c.svg",
+    "node": "41:11685",
+    "width": "24",
+    "height": "24",
+    "slot": 36
+  },
+  {
+    "name": "BarChart",
+    "file": "assets/simple-4fbb9.svg",
+    "node": "41:11713",
+    "width": "24",
+    "height": "24",
+    "slot": 36
+  },
+  {
+    "name": "CheckList",
+    "file": "assets/simple-3c9e5.svg",
+    "node": "41:11345",
+    "width": "24",
+    "height": "24",
+    "slot": 36
+  },
+  {
+    "name": "Shop",
+    "file": "assets/simple-b91a8.svg",
+    "node": "41:11283",
+    "width": "24",
+    "height": "24",
+    "slot": 36
+  },
+  {
+    "name": "FileText",
+    "file": "assets/simple-0a943.svg",
+    "node": "41:11872",
+    "width": "24",
+    "height": "24",
+    "slot": 36
+  },
+  {
+    "name": "Layers",
+    "file": "assets/simple-68f3a.svg",
+    "node": "41:11335",
+    "width": "24",
+    "height": "24",
+    "slot": 36
+  },
+  {
+    "name": "Bulb",
+    "file": "assets/simple-6f2be.svg",
+    "node": "41:11061",
+    "width": "24",
+    "height": "24",
+    "slot": 36
+  },
+  {
+    "name": "Search",
+    "file": "assets/simple-cd5bc.svg",
+    "node": "41:11653",
+    "width": "24",
+    "height": "24",
+    "slot": 36
+  },
+  {
+    "name": "PieChart",
+    "file": "assets/simple-b72aa.svg",
+    "node": "41:11733",
+    "width": "24",
+    "height": "24",
+    "slot": 36
+  },
+  {
+    "name": "Sliders",
+    "file": "assets/simple-faed8.svg",
+    "node": "41:11619",
+    "width": "24",
+    "height": "24",
+    "slot": 36
+  },
+  {
+    "name": "home-menu",
+    "file": "assets/home-menu-v2.svg",
+    "node": "41:10446",
+    "width": "48",
+    "height": "48",
+    "slot": 48
+  },
+  {
+    "name": "home-close",
+    "file": "assets/home-close-v2.svg",
+    "node": "41:10449",
+    "width": "48",
+    "height": "48",
+    "slot": 48
+  },
+  {
+    "name": "conversation-back",
+    "file": "assets/conversation-back-v2.svg",
+    "node": "41:10452",
+    "width": "48",
+    "height": "48",
+    "slot": 48
+  }
+]

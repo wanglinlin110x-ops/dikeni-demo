@@ -95,6 +95,7 @@ window.ChatConversations = (() => {
       });
       this.render();
       host.addEventListener('click', event => this.action(event));
+      this.bindAnswerContext();
       const pending = this.session.messages.find(m => ['pending', 'streaming'].includes(m.state));
       if (pending) {
         if (pending.state === 'streaming') { this.onBusy(true); this.stream(pending); }
@@ -103,6 +104,61 @@ window.ChatConversations = (() => {
       window.addEventListener('pagehide', () => { clearTimeout(this.timer); if (this.busy) this.persist(); });
     }
     get busy() { return this.session.messages.some(m => ['pending', 'streaming'].includes(m.state)); }
+    openEvidence(message, trigger, full = false) {
+      const reply = DemoChat.normalizeReply(message.reply);
+      const citation = reply.citations?.find(item => item.id === trigger.dataset.evidenceId && item.docKey === trigger.dataset.documentKey);
+      if (!citation) return this.onError('当前权限下无法查看这项依据');
+      const document = window.SalesDialogue?.getEvidence(citation.id, full, citation.docKey);
+      if (!document) return this.onError('当前权限下无法查看这项依据');
+      if (!this.evidenceOverlay) {
+        const overlay = window.document.createElement('div');
+        overlay.className = 'ui-overlay knowledge-overlay'; overlay.hidden = true;
+        overlay.innerHTML = '<button class="overlay-backdrop" data-evidence-action="close" aria-label="关闭原文依据遮罩"></button><aside class="source-sheet knowledge-sheet" role="dialog" aria-modal="true" aria-labelledby="knowledge-evidence-title" tabindex="-1"><i class="source-handle" aria-hidden="true"></i><header class="source-header"><h2 id="knowledge-evidence-title">原文依据</h2><button class="source-close" data-evidence-action="close" aria-label="关闭原文依据">×</button></header><div class="source-scroll knowledge-document"></div></aside>';
+        this.host.closest('.design-screen').append(overlay);
+        overlay.addEventListener('click', event => {
+          const action = event.target.closest('[data-evidence-action]')?.dataset.evidenceAction;
+          if (action === 'close') this.closeEvidence();
+          if (action === 'full') this.openEvidence(this.evidenceMessage, this.evidenceTrigger, true);
+        });
+        window.document.addEventListener('keydown', event => {
+          if (overlay.hidden) return;
+          if (event.key === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); this.closeEvidence(); }
+          if (event.key === 'Tab') {
+            const controls = [...overlay.querySelectorAll('button')].filter(node => node.getClientRects().length);
+            const first = controls[1], last = controls.at(-1), focused = window.document.activeElement;
+            if (event.shiftKey && (focused === first || focused === overlay.querySelector('aside'))) { event.preventDefault(); last?.focus(); }
+            else if (!event.shiftKey && focused === last) { event.preventDefault(); first?.focus(); }
+          }
+        }, true);
+        window.document.addEventListener('demo-back', event => {
+          if (!overlay.hidden) { event.preventDefault(); this.closeEvidence(); }
+        });
+        this.evidenceOverlay = overlay;
+      }
+      const overlay = this.evidenceOverlay;
+      this.evidenceMessage = message; this.evidenceTrigger = trigger;
+      this.evidenceScrollTop ??= this.scroller?.scrollTop;
+      if (overlay.hidden) {
+        this.evidenceInert = [...new Set([...overlay.parentElement.children, ...window.document.querySelectorAll('.demo-nav,.nav-toggle')])].filter(node => node !== overlay).map(node => [node, node.inert]);
+        this.evidenceInert.forEach(([node]) => { node.inert = true; });
+      }
+      overlay.querySelector('#knowledge-evidence-title').textContent = full ? '完整知识资料' : '原文依据';
+      const body = overlay.querySelector('.knowledge-document');
+      body.innerHTML = `<h3>${escape(document.title)}</h3><p class="knowledge-tag">模拟资料 · ${escape(document.id)}</p><dl class="knowledge-metadata">${[['版本', document.version], ['审核状态', document.status], ['有效期', `${document.starts}—${document.ends}`], ['适用范围', document.scope], ['资料来源', document.origin]].map(([key,value]) => `<div><dt>${escape(key)}</dt><dd>${escape(value)}</dd></div>`).join('')}</dl>${document.parts.map(part => `<section class="knowledge-part${part.id === document.selected ? ' knowledge-part-selected' : ''}" data-section="${escape(part.id)}"><h4>${escape(part.title)}</h4><blockquote>${escape(part.text)}</blockquote></section>`).join('')}${full ? '' : '<button class="knowledge-full" data-evidence-action="full">查看完整资料</button>'}<p class="chat-answer-note">仅用于演示，不作为真实优惠承诺。</p>`;
+      overlay.hidden = false;
+      const selected = body.querySelector('.knowledge-part-selected');
+      body.scrollTop = full && selected ? Math.max(0, selected.offsetTop - body.offsetTop - 16) : 0;
+      if (!full) overlay.querySelector('aside').focus({ preventScroll: true });
+      this.stickToBottom = false;
+    }
+    closeEvidence() {
+      if (!this.evidenceOverlay || this.evidenceOverlay.hidden) return;
+      this.evidenceOverlay.hidden = true;
+      this.evidenceInert?.forEach(([node, inert]) => { node.inert = inert; });
+      if (this.scroller && this.evidenceScrollTop !== undefined) this.scroller.scrollTop = this.evidenceScrollTop;
+      this.evidenceScrollTop = undefined;
+      if (this.evidenceTrigger?.isConnected) this.evidenceTrigger.focus({ preventScroll: true });
+    }
     persist() { if (!save(this.session)) this.onError('浏览器存储空间不足，当前对话暂时无法持久保存'); }
     enqueue(text) { if (this.busy) this.queue.push(text); else this.submit(text); }
     submit(text) {
@@ -177,6 +233,7 @@ window.ChatConversations = (() => {
           }
           if (visible > 0) lastText = block.element;
         } else if (visible && wasHidden && cursor) block.element.classList.add('stream-reveal');
+        if (block.element.matches('.chat-answer-actions[data-current="false"]')) block.element.hidden = true;
         remaining -= block.units;
       }
       const lists = new Set(blocks.map(block => block.element.closest('.chat-answer-list')).filter(Boolean));
@@ -238,6 +295,7 @@ window.ChatConversations = (() => {
       this.persist(); this.render(); this.onBusy(false);
     }
     render() {
+      this.closeAnswerContext?.();
       const anchor = !this.stickToBottom && this.scroller ? [...this.host.querySelectorAll('[data-message-id]')].find(node => node.getBoundingClientRect().bottom > this.scroller.getBoundingClientRect().top) : null;
       const anchorId = anchor?.dataset.messageId, anchorTop = anchor?.getBoundingClientRect().top;
       const last = this.session.messages.at(-1);
@@ -286,23 +344,135 @@ window.ChatConversations = (() => {
         <fieldset ${message.resolved ? 'disabled' : ''}><legend>${escape(r.question)}</legend><p class="clarification-hint">${escape(r.multiple ? '请选择两款车型，选满后自动发送；也可以直接输入需要对比的车型。' : r.hint)}</p>
         <div class="clarification-options">${r.options.map(text => `<button type="button" data-chat-action="select" aria-pressed="false">${escape(text)}</button>`).join('')}</div>
         ${message.resolved ? '<p class="clarification-resolved">已补充 / 已继续对话</p>' : ''}</fieldset></form>`;
-      return `<article class="chat-answer${r.profile ? ' chat-answer-champion' : ''}${r.chart?.labels.every(text => /^\d+月$/.test(text)) ? ' chat-answer-trend' : ''}" data-name="Article">
-        ${r.profile ? `<header class="chat-champion-profile">${r.profile.avatar ? `<img class="chat-champion-avatar" src="${escape(r.profile.avatar)}" alt="${escape(r.profile.name)}头像">` : `<span class="chat-champion-avatar chat-avatar-initial avatar-tone-${Number.isInteger(r.profile.avatarTone) && r.profile.avatarTone >= 0 && r.profile.avatarTone < 6 ? r.profile.avatarTone : 0}" aria-hidden="true">${escape((r.profile.name || '访').slice(0, 1))}</span>`}<div><h2>${escape(r.profile.name)}</h2><div class="chat-champion-tags"><span><img src="assets/8e521.svg" alt="">${escape(r.profile.badge)}</span><span>${escape(r.profile.store)}</span></div>${r.profile.role ? `<p class="chat-person-role">${escape(r.profile.role)}${r.profile.tenure ? ` · 入职约${escape(r.profile.tenure)}` : ''}</p>` : ''}</div></header>` : `<h2>${escape(r.title)}</h2>`}
+      return `<article tabindex="0" aria-haspopup="dialog" class="chat-answer${r.profile ? ' chat-answer-champion' : ''}${r.chart?.labels.every(text => /^\d+月$/.test(text)) ? ' chat-answer-trend' : ''}" data-name="Article">
+        ${r.profile ? `<header class="chat-champion-profile">${r.profile.avatar ? `<img class="chat-champion-avatar" src="${escape(r.profile.avatar)}" alt="${escape(r.profile.name)}头像">` : `<span class="chat-champion-avatar chat-avatar-initial avatar-tone-${Number.isInteger(r.profile.avatarTone) && r.profile.avatarTone >= 0 && r.profile.avatarTone < 6 ? r.profile.avatarTone : 0}" aria-hidden="true">${escape((r.profile.name || '访').slice(0, 1))}</span>`}<div class="chat-profile-info"><div class="chat-profile-heading"><h2>${escape(r.profile.name)}</h2><span class="chat-profile-badge"><img src="assets/conversation-d3bb4.svg" alt="">${escape(r.profile.badge)}</span></div><p class="chat-profile-store">${escape(r.profile.store)}</p>${r.profile.role ? `<p class="chat-person-role">${escape(r.profile.role)}${r.profile.tenure ? ` · 入职约${escape(r.profile.tenure)}` : ''}</p>` : ''}</div></header>` : `<h2>${escape(r.title)}</h2>`}
         ${paragraphMarkup(r.paragraphs)}
+        ${r.contextLabel ? `<p class="chat-answer-note">${escape(r.contextLabel)}</p>` : ''}
+        ${r.rationale ? `<p class="chat-answer-note">${escape(r.rationale)}</p>` : ''}
+        ${r.quote ? `<section class="chat-script">${r.quoteLabel ? `<h3>${escape(r.quoteLabel)}</h3>` : ''}<blockquote>${escape(r.quote)}</blockquote><button class="chat-copy-script" data-chat-action="copy-script"><img src="assets/96cd7.svg" alt="">复制话术</button></section>` : ''}
+        ${r.citations?.length ? `<div class="chat-citations">${r.citations.map(citation => `<button class="chat-citation" data-chat-action="citation" data-evidence-id="${escape(citation.id)}" data-document-key="${escape(citation.docKey)}"><img src="assets/cff1a.svg" alt=""><span>[${escape(citation.number)}] ${escape(citation.label)}</span><span aria-hidden="true">›</span></button>`).join('')}</div>` : ''}
+        ${r.afterCitation ? `<p class="chat-paragraph">${escape(r.afterCitation)}</p>` : ''}
+        ${r.quoteNote ? `<p class="chat-answer-note">${escape(r.quoteNote)}</p>` : ''}
+        ${r.nextStep ? `<section class="chat-next-step"><h3>下一步</h3><p class="chat-paragraph">${escape(r.nextStep)}</p></section>` : ''}
+        ${r.notice ? `<p class="chat-answer-note">${escape(r.notice)}</p>` : ''}
         ${r.profile?.fields?.length ? `<dl class="chat-person-facts">${r.profile.fields.map(field => `<div><dt>${escape(field.label)}</dt><dd>${escape(field.value)}</dd></div>`).join('')}</dl>` : ''}
         ${r.metrics?.length ? `<div class="chat-metrics">${r.metrics.map(([value, label]) => `<div><strong${/^[+-]?\d+(?:\.\d+)?%$/.test(String(value)) ? ' class="metric-percentage"' : ''}>${metricMarkup(value)}</strong><span>${escape(r.chart?.labels.every(text => /^\d+月$/.test(text)) ? label.replace('6个月累计（辆）', '累计销量').replace('月均销量（辆）', '月均销量') : label)}</span></div>`).join('')}</div>` : ''}
         ${r.chart ? this.renderChart(message) : ''}
         ${r.chart?.note ? `<p class="chat-paragraph">${escape(r.chart.note)}</p>` : ''}
         ${r.rows && !r.profile ? `<div class="chat-table-wrap"><table><thead><tr>${r.headers.map(text => `<th>${escape(text)}</th>`).join('')}</tr></thead><tbody>${r.rows.map(row => `<tr>${row.map(text => `<td>${escape(text)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
         ${r.sources.length ? `<section class="chat-source-disclosure"><button class="chat-sources" data-chat-action="sources" aria-controls="sources-${escape(message.id)}" aria-expanded="${this.expandedSources.has(message.id)}"><span><img src="assets/cff1a.svg" alt="">数据来源·${r.sources.length}项</span><span><span class="source-toggle-label">${this.expandedSources.has(message.id) ? '收起' : '展开'}</span><img src="assets/289e6.svg" alt=""></span></button><ol class="chat-source-content" id="sources-${escape(message.id)}" ${this.expandedSources.has(message.id) ? '' : 'hidden'}>${r.sources.map((source, i) => `<li><h3>${String(i + 1).padStart(2, '0')} · ${escape(source.title)}</h3>${source.description.split('。').filter(Boolean).map(line => `<p>${escape(line)}</p>`).join('')}<p>数据更新时间：${escape(source.updated)}</p></li>`).join('')}</ol></section>` : ''}
-        <div class="chat-answer-actions" data-name="AnswerActions">
-          <button data-chat-action="copy" aria-label="复制回答"><img src="assets/96cd7.svg" alt=""></button>
-          <button data-chat-action="like" aria-label="赞同回答" aria-pressed="${Boolean(message.liked)}"><img src="assets/${message.liked ? '5eff6' : '6f511'}.svg" alt=""></button>
-          <button data-chat-action="dislike" aria-label="不满意" aria-pressed="${Boolean(message.disliked)}"><img src="assets/${message.disliked ? '5eff6' : '6f511'}.svg" alt=""></button>
-          <button data-chat-action="share" aria-label="分享回答"><img src="assets/31ba3.svg" alt=""></button>
-          <button data-chat-action="regenerate" aria-label="重新生成回答" ${this.busy ? 'disabled' : ''}><img src="assets/be1d6.svg" alt=""></button>
+        <div class="chat-answer-actions" data-name="AnswerActions" data-current="${message === this.session.messages.at(-1)}" ${message === this.session.messages.at(-1) ? '' : 'hidden'}>
+          <button data-chat-action="copy" aria-label="复制回答"><img src="assets/conversation-1dd93.svg" alt=""></button>
+          <button data-chat-action="like" aria-label="赞同回答" aria-pressed="${Boolean(message.liked)}"><img src="assets/${message.liked ? 'conversation-dc912.svg' : 'conversation-47792.svg'}" alt=""></button>
+          <button data-chat-action="dislike" aria-label="不满意" aria-pressed="${Boolean(message.disliked)}"><img src="assets/${message.disliked ? 'conversation-dc912.svg' : 'conversation-47792.svg'}" alt=""></button>
+          <button data-chat-action="share" aria-label="分享回答"><img src="assets/conversation-f917c.svg" alt=""></button>
+          <button data-chat-action="regenerate" aria-label="重新生成回答" ${this.busy ? 'disabled' : ''}><img src="assets/conversation-0a9d0.svg" alt=""></button>
         </div>
       </article>`;
+    }
+    bindAnswerContext() {
+      let press;
+      const clear = () => { clearTimeout(press?.timer); press = undefined; };
+      const articleFor = target => target.closest('article.chat-answer');
+      this.host.addEventListener('pointerdown', event => {
+        if (event.button !== 0 || !event.isPrimary || event.target.closest('button,a,input,textarea')) return;
+        const article = articleFor(event.target); if (!article) return;
+        clear(); const current = { x: event.clientX, y: event.clientY };
+        press = current;
+        current.timer = setTimeout(() => {
+          if (press === current && article.isConnected && !document.hidden) this.openAnswerContext(article, { x: current.x, y: current.y, held: true });
+        }, 450);
+      });
+      this.host.addEventListener('pointermove', event => { if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > 10) clear(); });
+      ['pointerup', 'pointercancel', 'pointerleave'].forEach(name => this.host.addEventListener(name, clear));
+      this.scroller?.addEventListener('scroll', clear, { passive: true });
+      this.host.addEventListener('contextmenu', event => {
+        const article = articleFor(event.target); if (!article || event.target.closest('button,a')) return;
+        event.preventDefault(); clear(); this.openAnswerContext(article, { x: event.clientX, y: event.clientY });
+      });
+      this.host.addEventListener('keydown', event => {
+        if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+          const article = articleFor(event.target); if (!article) return;
+          event.preventDefault(); this.openAnswerContext(article);
+        }
+      });
+      document.addEventListener('keydown', event => {
+        if (!this.answerContext) return;
+        if (event.key === 'Escape') { event.preventDefault(); this.closeAnswerContext(); }
+        else if (event.key === 'Tab') {
+          const controls = [...this.answerContext.view.querySelectorAll('button:not(:disabled)')];
+          const first = controls[0], last = controls.at(-1);
+          if (event.shiftKey && (document.activeElement === first || document.activeElement === this.answerContext.view.querySelector('[role="dialog"]'))) { event.preventDefault(); last.focus(); }
+          else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+        }
+      });
+      document.addEventListener('demo-back', event => { if (this.answerContext) { event.preventDefault(); this.closeAnswerContext(); } });
+      const reposition = () => requestAnimationFrame(() => this.positionAnswerContext());
+      window.addEventListener('resize', reposition); window.visualViewport?.addEventListener('resize', reposition);
+      window.addEventListener('pagehide', () => { clear(); this.closeAnswerContext(); });
+      document.addEventListener('visibilitychange', () => { if (document.hidden) clear(); });
+    }
+    openAnswerContext(article, origin) {
+      const id = article.closest('[data-message-id]')?.dataset.messageId;
+      const message = this.session.messages.find(item => item.id === id);
+      if (message?.state !== 'complete' || this.answerContext?.id === id) return;
+      this.closeAnswerContext();
+      const view = document.createElement('section'); view.className = 'answer-context';
+      view.innerHTML = `<button class="answer-context-veil" aria-label="关闭回答操作"></button><div class="answer-context-panel" role="dialog" aria-modal="true" aria-label="回答操作" tabindex="-1"><div class="answer-context-primary"></div><div class="answer-context-feedback"></div></div>`;
+      const labels = { copy: '复制', share: '分享', regenerate: '重新生成', like: message.liked ? '取消赞同' : '赞同', dislike: message.disliked ? '取消不满意' : '不满意' };
+      for (const action of ['copy', 'share', 'regenerate', 'like', 'dislike']) {
+        const original = article.querySelector(`.chat-answer-actions [data-chat-action="${action}"]`);
+        if (!original) continue;
+        const control = document.createElement('button'); control.dataset.answerAction = action;
+        control.setAttribute('aria-label', original.getAttribute('aria-label'));
+        if (original.hasAttribute('aria-pressed')) control.setAttribute('aria-pressed', original.getAttribute('aria-pressed'));
+        control.disabled = original.disabled;
+        const image = original.querySelector('img').cloneNode(true), label = document.createElement('span'); label.textContent = labels[action];
+        control.append(image, label); view.querySelector(action === 'like' || action === 'dislike' ? '.answer-context-feedback' : '.answer-context-primary').append(control);
+        control.addEventListener('click', () => {
+          this.closeAnswerContext();
+          // Reuse the card's handlers and state, including hidden historical actions.
+          original.click();
+        });
+      }
+      const screen = this.host.closest('.design-screen');
+      const blocked = [screen.firstElementChild, document.querySelector('.demo-nav'), document.querySelector('.nav-toggle')].filter(Boolean).map(node => ({ node, inert: node.inert }));
+      blocked.forEach(({ node }) => { node.inert = true; });
+      this.answerContext = { view, article, id, origin, blocked, suppressRelease: Boolean(origin?.held) };
+      // The release of the opening hold must not click the newly appeared menu.
+      view.addEventListener('pointerdown', () => { if (this.answerContext) this.answerContext.suppressRelease = false; });
+      view.addEventListener('click', event => {
+        if (this.answerContext?.suppressRelease) {
+          this.answerContext.suppressRelease = false;
+          event.preventDefault(); event.stopImmediatePropagation();
+        }
+      }, true);
+      document.getSelection()?.removeAllRanges(); document.activeElement?.blur(); screen.append(view);
+      this.positionAnswerContext();
+      DemoMotion.animate(view.querySelector('.answer-context-panel'), [{ opacity: 0, transform: 'scale(.97)' }, { opacity: 1, transform: 'scale(1)' }], 140);
+      view.querySelector('.answer-context-veil').addEventListener('click', () => this.closeAnswerContext());
+      view.querySelector('[role="dialog"]').focus({ preventScroll: true });
+    }
+    positionAnswerContext() {
+      const context = this.answerContext; if (!context) return;
+      const screen = this.host.closest('.design-screen'), rect = screen.getBoundingClientRect(), scale = rect.width / screen.offsetWidth;
+      const panel = context.view.querySelector('[role="dialog"]');
+      const header = screen.querySelector('[data-name="Header"]').getBoundingClientRect();
+      const top = Math.max(24, (header.bottom - rect.top) / scale + 16);
+      const bottom = document.documentElement.classList.contains('mobile-layout') ? 24 : 88;
+      panel.style.setProperty('--answer-target', `${44 / scale}px`);
+      panel.style.maxHeight = `${Math.max(80, rect.height / scale - top - bottom)}px`;
+      const source = context.article.getBoundingClientRect();
+      const x = ((context.origin?.x ?? source.right) - rect.left) / scale;
+      const y = ((context.origin?.y ?? source.top) - rect.top) / scale;
+      panel.style.left = `${Math.max(24, Math.min(x - panel.offsetWidth / 2, screen.offsetWidth - panel.offsetWidth - 24))}px`;
+      panel.style.top = `${Math.max(top, Math.min(y - panel.offsetHeight / 4, rect.height / scale - panel.offsetHeight - bottom))}px`;
+    }
+    closeAnswerContext() {
+      const context = this.answerContext; if (!context) return;
+      context.view.remove(); context.blocked.forEach(({ node, inert }) => { node.inert = inert; });
+      if (context.article.isConnected) context.article.focus({ preventScroll: true });
+      this.answerContext = undefined;
     }
     async action(event) {
       const button = event.target.closest('[data-chat-action]');
@@ -310,6 +480,13 @@ window.ChatConversations = (() => {
       const message = this.session.messages.find(m => m.id === button.closest('[data-message-id]')?.dataset.messageId);
       const action = button.dataset.chatAction;
       if (action === 'followup') this.submit(button.textContent);
+      else if (action === 'citation') this.openEvidence(message, button);
+      else if (action === 'copy-script') {
+        const reply = DemoChat.normalizeReply(message.reply);
+        if (!reply.quote) return this.onError('当前权限下无法复制这段话术');
+        try { await navigator.clipboard.writeText(reply.quote); this.onError('已复制话术'); }
+        catch { this.onError('当前浏览器未开放剪贴板权限'); }
+      }
       else if (action === 'select') {
         if (this.busy) return;
         const form = button.closest('form'), multiple = message.reply.multiple;
@@ -357,7 +534,7 @@ window.ChatConversations = (() => {
           const control = button.parentElement.querySelector(`[data-chat-action="${kind}"]`);
           const selected = Boolean(message[kind === 'like' ? 'liked' : 'disliked']);
           control.setAttribute('aria-pressed', String(selected));
-          control.querySelector('img').src = `assets/${selected ? '5eff6' : '6f511'}.svg`;
+          control.querySelector('img').src = `assets/${selected ? '5eff6.svg' : 'conversation-dc912.svg'}`;
         }
         this.persist();
         if (message[field]) {
@@ -365,7 +542,7 @@ window.ChatConversations = (() => {
           void button.offsetWidth;
           button.classList.add('feedback-pop');
           button.addEventListener('animationend', () => button.classList.remove('feedback-pop'), { once: true });
-          if (action === 'dislike') this.onFeedback?.(message, button);
+          if (action === 'dislike') this.onFeedback?.(message, button.closest('.chat-answer-actions').hidden ? button.closest('article') : button);
         }
       } else if (action === 'share') {
         const data = { title: message.reply.title, text: button.closest('article').innerText };

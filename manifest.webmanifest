@@ -1,7 +1,7 @@
 {
   "id": "./",
-  "name": "迪克牛仔",
-  "short_name": "迪克牛仔",
+  "name": "迪客牛仔",
+  "short_name": "迪客牛仔",
   "lang": "zh-CN",
   "start_url": "./workbench.html",
   "scope": "./",
