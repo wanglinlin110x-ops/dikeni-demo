@@ -343,10 +343,10 @@
       <div class="history-context-panel" role="dialog" aria-modal="true" aria-label="对话操作" tabindex="-1">
         <div class="history-context-preview"><img src="assets/f56ba.png" alt=""><span></span></div>
         <div class="history-context-actions">
-          <button data-history-action="pin"><span>置顶</span><img src="assets/history-pin.svg" alt=""></button>
-          <button data-history-action="rename"><span>编辑对话名称</span><img src="assets/history-edit.svg" alt=""></button>
-          <button data-history-action="share"><span>分享对话</span><img src="assets/31ba3.svg" alt=""></button>
-          <button data-history-action="delete"><span>从对话列表删除</span><img src="assets/history-trash.svg" alt=""></button>
+          <button data-history-action="pin"><span>置顶</span><img src="assets/history-menu-top.svg" alt=""></button>
+          <button data-history-action="rename"><span>编辑对话名称</span><img src="assets/history-menu-edit.svg" alt=""></button>
+          <button data-history-action="share"><span>分享对话</span><img src="assets/history-menu-share.svg" alt=""></button>
+          <button data-history-action="delete"><span>从对话列表删除</span><img src="assets/history-menu-trash.svg" alt=""></button>
         </div>
         <form class="history-rename" hidden><label for="history-title-input">编辑对话名称</label><input id="history-title-input" aria-label="对话名称" maxlength="60" autocomplete="off"><div><button type="button" data-history-action="cancel-rename">取消</button><button type="submit">保存</button></div></form>
       </div>`;
