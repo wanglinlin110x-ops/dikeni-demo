@@ -1165,3 +1165,10 @@ body:is([data-page="index"],[data-page="input"]) .design-screen:not(.home-keyboa
 
 /* Match the uploaded first frame's near-white backdrop to the white welcome canvas. */
 .ip-intro-fallback{filter:brightness(1.008)}
+
+/* Final canvas/composer geometry is present before application initialization. */
+body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .screen-shell{width:var(--initial-width,375px)}
+body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .design-screen{zoom:var(--initial-zoom,.5);--canvas-height:var(--initial-height,1624px)}
+html:not(.demo-ready) body:is([data-page="index"],[data-page="input"]) .s27{visibility:hidden}
+
+.composer-attachments :is(.s41,.s47){background-color:transparent}

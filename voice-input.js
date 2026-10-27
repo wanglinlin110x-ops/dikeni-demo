@@ -115,7 +115,9 @@ class VoiceInput {
     try {
       session.recognition = new Recognition();
       session.recognition.lang = 'zh-CN';
-      session.recognition.continuous = compact || held;
+      // Push-to-talk uses the same one-utterance recognizer as a normal voice tap.
+      // Only the explicit dictation/review mode needs continuous recognition.
+      session.recognition.continuous = compact;
       session.recognition.interimResults = true;
       session.recognition.onstart = () => {
         if (this.session !== session) return;
@@ -323,7 +325,7 @@ class VoiceInput {
         this.start(true);
       }, 450);
     });
-    surface.addEventListener('pointermove', event => {
+    document.addEventListener('pointermove', event => {
       if (!press || press.id !== event.pointerId) return;
       if (!press.held) {
         if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > 12) { press.moved = true; clear(); }
@@ -334,7 +336,7 @@ class VoiceInput {
       this.panel.classList.toggle('voice-cancel', press.cancel);
       this.instruction(press.cancel ? '松手取消' : '松手发送，上滑取消');
     });
-    surface.addEventListener('pointerup', event => {
+    document.addEventListener('pointerup', event => {
       if (!press || press.id !== event.pointerId) return;
       clear(); restoreInput(); const current = press; press = undefined;
       if (current.held) {
@@ -342,9 +344,13 @@ class VoiceInput {
         if (current.cancel) this.cancel(false); else this.finish(true);
       } else if (!current.moved) input.focus();
     });
-    const abort = () => { clear(); restoreInput(); if (press?.held) this.cancel(false); press = undefined; };
-    surface.addEventListener('pointercancel', abort);
-    surface.addEventListener('lostpointercapture', abort);
+    const abort = event => {
+      if (event?.pointerId !== undefined && press?.id !== event.pointerId) return;
+      clear(); restoreInput(); if (press?.held) this.cancel(false); press = undefined;
+    };
+    // Capture may be lost when the input is blurred/hidden; it is not a release.
+    // The document still receives the matching pointerup or pointercancel.
+    document.addEventListener('pointercancel', abort);
     surface.addEventListener('click', event => { if (this.suppressClick) { event.preventDefault(); event.stopImmediatePropagation(); input.blur(); } }, true);
     document.addEventListener('visibilitychange', () => { if (document.hidden) abort(); });
     window.addEventListener('pagehide', abort);
@@ -356,36 +362,42 @@ class VoiceInput {
     button.style.webkitTouchCallout = 'none';
     button.addEventListener('contextmenu', event => event.preventDefault());
     button.addEventListener('selectstart', event => event.preventDefault());
-    let timer, held = false, startY = 0, cancel = false;
+    let timer, pointerId, held = false, startY = 0, cancel = false;
     button.addEventListener('pointerdown', event => {
-      if (event.button !== 0 || this.active) return;
+      if (event.button !== 0 || !event.isPrimary || this.active) return;
       this.suppressClick = false;
       if (this.mode === 'compact') return;
       event.preventDefault(); document.getSelection()?.removeAllRanges();
+      pointerId = event.pointerId;
       startY = event.clientY;
       cancel = false;
       held = false;
       button.setPointerCapture(event.pointerId);
       timer = setTimeout(() => { held = true; surface.setPointerCapture(event.pointerId); this.start(true); }, 250);
     });
-    surface.addEventListener('pointermove', event => {
-      if (!held || !this.active) return;
+    document.addEventListener('pointermove', event => {
+      if (event.pointerId !== pointerId || !held || !this.active) return;
       cancel = startY - event.clientY > 60;
       this.panel.classList.toggle('voice-cancel', cancel);
       this.instruction(cancel ? '松手取消' : '松手发送，上移取消');
     });
-    surface.addEventListener('pointerup', () => {
+    document.addEventListener('pointerup', event => {
+      if (event.pointerId !== pointerId) return;
+      pointerId = undefined;
       clearTimeout(timer);
       if (!held) return;
       this.suppressNextClick();
       if (cancel) this.cancel(); else this.finish();
       held = false;
     });
-    surface.addEventListener('pointercancel', () => { clearTimeout(timer); if (held) { this.suppressNextClick(); this.cancel(); held = false; } });
-    surface.addEventListener('lostpointercapture', event => {
-      if (surface.hasPointerCapture(event.pointerId)) return;
-      clearTimeout(timer); if (held) { held = false; this.suppressNextClick(); this.cancel(false); }
-    });
+    const abort = event => {
+      if (event?.pointerId !== undefined && event.pointerId !== pointerId) return;
+      clearTimeout(timer); pointerId = undefined;
+      if (held) { held = false; this.suppressNextClick(); this.cancel(false); }
+    };
+    document.addEventListener('pointercancel', abort);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) abort(); });
+    window.addEventListener('pagehide', abort);
   }
   bindSwipe(element) {
     let startY;

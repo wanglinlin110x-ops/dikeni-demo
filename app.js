@@ -115,6 +115,8 @@
     screen.addEventListener('touchcancel', () => { swipe = undefined; }, { passive: true });
   }
   $$('[data-name^="Text Input"]').forEach(wrapper => {
+    const existing = wrapper.querySelector('.message-input');
+    if (existing) { bindMessageInput(existing); return; }
     const original = wrapper.textContent.trim();
     const input = document.createElement(voiceInput?.mode === 'compact' ? 'textarea' : 'input');
     input.className = 'message-input';
@@ -170,25 +172,45 @@
     if (voiceInput?.active) return;
     submitMessage(input?.value || '', input?.dataset.voiceDraft !== undefined && input.dataset.voiceDraft === input.value ? { source: 'voice' } : {});
   }
-  function submitMessage(text, options = {}) {
+  async function submitMessage(text, options = {}) {
     const message = text.trim();
     if ((!message && !attachments?.items.length) || thinking || navigatingToChat || attachments?.pending) return;
     const files = attachments?.items.map(item => ({ ...item })) || [];
     voiceInput?.cancel(false);
     const input = $('.message-input');
     input?.blur();
-    if (page === 'conversation') {
-      if (chat.submit(message, files, options)) { input.value = ''; delete input.dataset.voiceDraft; attachments?.clear(); updateSend(); }
-    } else {
-      navigatingToChat = true;
-      if (['index', 'input'].includes(page)) ChatConversations.create();
-      else if (['answer', 'trend', 'analysis'].includes(page)) ChatConversations.create({ network: 'wangchao', personId: 'dynasty-li', period: '2026年10月', scope: '全国门店', lastIntent: 'rank' });
-      sessionStorage.setItem('demo-pending-message', message);
-      sessionStorage.setItem('demo-pending-input-source', options.source === 'voice' ? 'voice' : 'text');
-      sessionStorage.setItem('demo-pending-attachments', JSON.stringify(files));
-      attachments?.clear();
-      DemoMotion.navigate('conversation.html');
+    let staged = false;
+    const pendingKeys = ['demo-pending-message', 'demo-pending-input-source', 'demo-pending-attachments'];
+    let previousPending;
+    try {
+      if (page === 'conversation') {
+        if (chat.submit(message, files, options)) { input.value = ''; delete input.dataset.voiceDraft; attachments?.clear(); }
+        else {
+          input.value = message;
+          if (options.source === 'voice') input.dataset.voiceDraft = message;
+          toast('消息未发送，已保留输入和附件，请检查浏览器存储后重试');
+        }
+      } else {
+        navigatingToChat = true;
+        previousPending = pendingKeys.map(key => sessionStorage.getItem(key));
+        staged = true;
+        sessionStorage.setItem(pendingKeys[0], message);
+        sessionStorage.setItem(pendingKeys[1], options.source === 'voice' ? 'voice' : 'text');
+        sessionStorage.setItem(pendingKeys[2], JSON.stringify(files));
+        if (['index', 'input'].includes(page)) ChatConversations.create({}, { requireSave: true });
+        else if (['answer', 'trend', 'analysis'].includes(page)) ChatConversations.create({ network: 'wangchao', personId: 'dynasty-li', period: '2026年10月', scope: '全国门店', lastIntent: 'rank' }, { requireSave: true });
+        await DemoMotion.navigate('conversation.html');
+        attachments?.clear();
+      }
+    } catch {
+      navigatingToChat = false;
+      if (staged) pendingKeys.forEach((key, index) => {
+        try { if (previousPending[index] === null) sessionStorage.removeItem(key); else sessionStorage.setItem(key, previousPending[index]); } catch { /* Preserve input even if browser storage is entirely unavailable. */ }
+      });
+      if (input) { input.value = message; if (options.source === 'voice') input.dataset.voiceDraft = message; }
+      toast('消息未发送，已保留输入。请检查浏览器存储空间或权限后重试');
     }
+    updateSend();
   }
   updateSend();
   function updateSuggestionIcon(button) {
@@ -240,17 +262,29 @@
     const label = $('[data-name="Text"] p', button) || $('[data-name="Text"]', button) || [...button.children].find(child => child.textContent.trim());
     if (label && text) { button.dataset.question = text; label.textContent = window.DemoText?.format(text) || text; updateSuggestionIcon(button); }
   };
+  const suggestionsKey = 'demo-home-recommendations-state';
+  let restoredSuggestions;
   if (homeQuestions.length) {
     let firstEntry = true;
     try {
       firstEntry = sessionStorage.getItem('demo-home-recommendations-seen') !== '1';
+      const saved = JSON.parse(sessionStorage.getItem(suggestionsKey) || 'null');
+      if (!firstEntry && saved?.version === 1 && Array.isArray(saved.questions) && saved.questions.length === homeQuestions.length && new Set(saved.questions).size === homeQuestions.length && saved.questions.every(text => suggestionPool.includes(text))) restoredSuggestions = saved;
       sessionStorage.setItem('demo-home-recommendations-seen', '1');
     } catch { /* A restricted browser still supports random refreshes. */ }
-    const initial = firstEntry ? [championSuggestion, ...shuffle(suggestionPool.filter(text => text !== championSuggestion)).slice(0, homeQuestions.length - 1)] : shuffle(suggestionPool).slice(0, homeQuestions.length);
+    const initial = restoredSuggestions?.questions || (firstEntry ? [championSuggestion, ...shuffle(suggestionPool.filter(text => text !== championSuggestion)).slice(0, homeQuestions.length - 1)] : shuffle(suggestionPool).slice(0, homeQuestions.length));
     homeQuestions.forEach((button, index) => setQuestion(button, initial[index]));
   }
   const initialSuggestions = homeQuestions.map(item => item.dataset.question || item.textContent.trim());
-  let unseenSuggestions = shuffle(suggestionPool.filter(text => !initialSuggestions.includes(text)));
+  let unseenSuggestions = Array.isArray(restoredSuggestions?.unseen)
+    ? [...new Set(restoredSuggestions.unseen.filter(text => suggestionPool.includes(text) && !initialSuggestions.includes(text)))]
+    : shuffle(suggestionPool.filter(text => !initialSuggestions.includes(text)));
+  function saveSuggestions() {
+    if (!homeQuestions.length) return;
+    try { sessionStorage.setItem(suggestionsKey, JSON.stringify({ version: 1, questions: homeQuestions.map(item => item.dataset.question), unseen: unseenSuggestions })); }
+    catch { /* Suggestions remain usable when session storage is unavailable. */ }
+  }
+  saveSuggestions();
   const routes = text => /增长|原因|成交|经验/.test(text) ? 'analysis.html' : /趋势|6个月|6 个月/.test(text) ? 'trend.html' : 'conversation.html';
   $$('[data-name="Button"]').forEach(button => {
     const text = button.textContent.trim();
@@ -265,6 +299,7 @@
       }
       const next = unseenSuggestions.splice(0, count);
       buttons.forEach((item, index) => setQuestion(item, next[index]));
+      saveSuggestions();
     });
     else if (text === '确定' || text === '跳过') interactive(button, () => toast(text === '确定' ? '已选择对比范围' : '已跳过范围选择'));
     else if (text === '重新生成') interactive(button, () => toast('当前为预置回答，暂不支持重新生成'));
@@ -606,14 +641,22 @@
         openOverlay('feedback', trigger);
       },
     });
-    const pending = sessionStorage.getItem('demo-pending-message');
-    sessionStorage.removeItem('demo-pending-message');
-    let files = [];
-    try { files = JSON.parse(sessionStorage.getItem('demo-pending-attachments') || '[]'); } catch {}
-    sessionStorage.removeItem('demo-pending-attachments');
-    const source = sessionStorage.getItem('demo-pending-input-source');
-    sessionStorage.removeItem('demo-pending-input-source');
-    if (pending || files.length) chat.submit(pending || '', files, { source });
+    try {
+      const pending = sessionStorage.getItem('demo-pending-message');
+      let files = [];
+      try { files = JSON.parse(sessionStorage.getItem('demo-pending-attachments') || '[]'); } catch {}
+      const source = sessionStorage.getItem('demo-pending-input-source');
+      ['demo-pending-message', 'demo-pending-attachments', 'demo-pending-input-source'].forEach(key => sessionStorage.removeItem(key));
+      if ((pending || files.length) && !chat.submit(pending || '', files, { source })) {
+        const input = $('.message-input');
+        input.value = pending || '';
+        if (source === 'voice') input.dataset.voiceDraft = input.value;
+        attachments.items = files; attachments.render();
+        toast('消息未发送，已保留输入和附件，请检查浏览器存储后重试');
+      }
+    } catch {
+      toast('浏览器存储不可用，请检查权限后重试');
+    }
   }
   // Fill narrow viewports while retaining the 750px design canvas.
   function fitSmallScreen() {
@@ -652,7 +695,9 @@
       $('.design-screen').style.setProperty('--canvas-height', `${height * 750 / width}px`);
     }
   }
+  syncVoiceComposer();
   fitSmallScreen();
+  window.DemoStartup?.ready();
   window.addEventListener('pageshow', () => { navigatingToChat = false; updateSend(); fitSmallScreen(); });
   window.addEventListener('resize', fitSmallScreen);
   document.addEventListener('focusin', () => requestAnimationFrame(fitSmallScreen));

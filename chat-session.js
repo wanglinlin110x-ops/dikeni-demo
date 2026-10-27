@@ -48,9 +48,9 @@ window.ChatConversations = (() => {
     try { localStorage.setItem(key, JSON.stringify(data)); return true; }
     catch { return false; }
   }
-  function create(context = {}) {
+  function create(context = {}, requireSave = false) {
     const data = read(), session = { id: id(), title: '新对话', updated: Date.now(), messages: [], context };
-    data.sessions.push(session); data.activeId = session.id; write(data); return session;
+    data.sessions.push(session); data.activeId = session.id; const saved = write(data); if (!saved && requireSave) throw new Error('conversation-storage'); return session;
   }
   function current() {
     const data = read(); return data.sessions.find(s => s.id === data.activeId) || create();
@@ -70,7 +70,7 @@ window.ChatConversations = (() => {
   class Conversation {
     static get storageKey() { return key; }
     static list() { return read().sessions.filter(s => s.messages.length).sort((a, b) => b.updated - a.updated); }
-    static create(context) { return create(context); }
+    static create(context, options = {}) { return create(context, options.requireSave); }
     static activate(sessionId) { const data = read(); if (data.sessions.some(s => s.id === sessionId)) { data.activeId = sessionId; write(data); } }
     static update(sessionId, patch) {
       const data = read(), session = data.sessions.find(item => item.id === sessionId);
@@ -103,12 +103,18 @@ window.ChatConversations = (() => {
       this.render();
       host.addEventListener('click', event => this.action(event));
       this.bindAnswerContext();
+      this.resumeGeneration();
+      window.addEventListener('pagehide', () => { this.suspended = true; clearTimeout(this.timer); if (this.busy) this.persist(); });
+      window.addEventListener('pageshow', event => {
+        if (event.persisted && this.suspended) { this.suspended = false; this.resumeGeneration(); }
+      });
+    }
+    resumeGeneration() {
+      clearTimeout(this.timer);
       const pending = this.session.messages.find(m => ['pending', 'streaming'].includes(m.state));
-      if (pending) {
-        if (pending.state === 'streaming') { this.onBusy(true); this.stream(pending); }
-        else this.finish(pending, 450);
-      }
-      window.addEventListener('pagehide', () => { clearTimeout(this.timer); if (this.busy) this.persist(); });
+      if (!pending) { this.onBusy(false); return; }
+      if (pending.state === 'streaming') { this.onBusy(true); this.stream(pending); }
+      else this.finish(pending, 450);
     }
     get busy() { return this.session.messages.some(m => ['pending', 'streaming'].includes(m.state)); }
     openEvidence(message, trigger, full = false) {
@@ -166,17 +172,18 @@ window.ChatConversations = (() => {
       this.evidenceScrollTop = undefined;
       if (this.evidenceTrigger?.isConnected) this.evidenceTrigger.focus({ preventScroll: true });
     }
-    persist() { if (!save(this.session)) this.onError('浏览器存储空间不足，当前对话暂时无法持久保存'); }
+    persist() { const saved = save(this.session); if (!saved) this.onError('浏览器存储不可用或空间不足，内容未能保存'); return saved; }
     enqueue(text) { if (this.busy) this.queue.push(text); else this.submit(text); }
     submit(text, attachments = [], options = {}) {
       text = text.trim();
       if ((!text && !attachments.length) || this.busy) return false;
-      this.session.messages.forEach(message => { if (message.reply?.kind === 'clarify') message.resolved = true; });
+      const previous = structuredClone(this.session);
       const voice = options.source === 'voice' ? window.VoiceUnderstanding?.understand(text, this.session.context) : null;
       const response = attachments.length ? {
         kind: 'answer', title: '附件已收到', paragraphs: [`已添加${attachments.length}个附件。`, '当前暂不支持自动解读附件内容；你可以把需要处理的文字粘贴到输入框中继续提问。'],
         context: { ...this.session.context, pending: null, journey: null, lastIntent: 'attachment' }, sources: [], followups: [],
       } : DemoChat.reply(voice?.query || text, this.session.context);
+      this.session.messages.forEach(message => { if (message.reply?.kind === 'clarify') message.resolved = true; });
       this.session.messages.push({ id: id(), role: 'user', text, ...(voice ? { inputSource: 'voice', voice } : {}), ...(attachments.length ? { attachments } : {}) });
       const message = { id: id(), role: 'assistant', reply: response, state: 'pending' };
       this.session.messages.push(message);
@@ -184,7 +191,8 @@ window.ChatConversations = (() => {
       if (this.session.title === '新对话') this.session.title = (text || attachments[0]?.name || '附件消息').slice(0, 26);
       this.session.updated = Date.now();
       this.stickToBottom = true;
-      this.persist(); this.render(); this.finish(message); return true;
+      if (!this.persist()) { this.session = previous; return false; }
+      this.render(); this.finish(message); return true;
     }
     finish(message, delay = 550 + Math.random() * 300) {
       this.onBusy(true);

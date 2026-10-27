@@ -39,7 +39,9 @@ window.ComposerAttachments = class {
     this.albumSamples = ["IMG_0011.PNG", "IMG_0009.PNG", "IMG_0008.PNG", "IMG_0007.PNG", "IMG_0006.PNG", "IMG_2685.PNG", "IMG_2684.PNG", "IMG_2683.PNG"].map(name=>({id:`sample-album:${name}`,name,type:'image/png',previewUrl:`assets/album-samples/${name}?v=thumb240`}));
     this.composer = root.querySelector('.s36'); this.footer = this.composer.parentElement;
     root.classList.add('composer-attachments');
-    this.add = document.createElement('button'); this.add.type = 'button'; this.add.className = 'composer-add'; this.add.setAttribute('aria-label','添加照片或文件'); this.add.setAttribute('aria-expanded','false'); this.add.setAttribute('aria-controls','attachment-panel'); this.add.innerHTML = '<img src="assets/composer-add.svg" alt="">'; this.composer.prepend(this.add);
+    this.add = this.composer.querySelector('.composer-add') || document.createElement('button'); this.add.type = 'button'; this.add.className = 'composer-add'; this.add.setAttribute('aria-label','添加照片或文件'); this.add.setAttribute('aria-expanded','false'); this.add.setAttribute('aria-controls','attachment-panel');
+    if (!this.add.firstElementChild) this.add.innerHTML = '<img src="assets/composer-add.svg" alt="">';
+    if (!this.add.isConnected) this.composer.prepend(this.add);
     this.panel = document.createElement('section'); this.panel.id = 'attachment-panel'; this.panel.className = 'attachment-panel'; this.panel.hidden = true; this.panel.setAttribute('aria-label','添加附件');
     this.panel.innerHTML = '<div class="attachment-choices"><button type="button" data-pick="camera"><img src="assets/attachment-camera.svg" alt=""><span>相机</span></button><button type="button" data-pick="album"><img src="assets/attachment-album.svg" alt=""><span>相册</span></button><button type="button" data-pick="files"><img src="assets/attachment-file.svg" alt=""><span>文件</span></button></div><div class="attachment-recent" aria-label="相册图片"></div>';
     this.footer.append(this.panel);
