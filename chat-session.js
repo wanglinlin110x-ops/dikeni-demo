@@ -383,7 +383,7 @@ window.ChatConversations = (() => {
         ${r.chart ? this.renderChart(message) : ''}
         ${r.chart?.note ? `<p class="chat-paragraph">${escape(r.chart.note)}</p>` : ''}
         ${r.rows && !r.profile ? `<div class="chat-table-wrap"><table><thead><tr>${r.headers.map(text => `<th>${escape(text)}</th>`).join('')}</tr></thead><tbody>${r.rows.map(row => `<tr>${row.map(text => `<td>${escape(text)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
-        ${r.sources.length ? `<section class="chat-source-disclosure"><button class="chat-sources" data-chat-action="sources" aria-controls="sources-${escape(message.id)}" aria-expanded="${this.expandedSources.has(message.id)}"><span><img src="assets/cff1a.svg" alt="">数据来源·${r.sources.length}项</span><span><span class="source-toggle-label">${this.expandedSources.has(message.id) ? '收起' : '展开'}</span><img src="assets/289e6.svg" alt=""></span></button><ol class="chat-source-content" id="sources-${escape(message.id)}" ${this.expandedSources.has(message.id) ? '' : 'hidden'}>${r.sources.map((source, i) => `<li><h3>${String(i + 1).padStart(2, '0')} · ${escape(source.title)}</h3>${source.description.split('。').filter(Boolean).map(line => `<p>${escape(line)}</p>`).join('')}<p>数据更新时间：${escape(source.updated)}</p>${source.url ? `<a href="${escape(source.url)}" target="_blank" rel="noopener noreferrer">查看公开来源 ↗</a>` : ''}</li>`).join('')}</ol></section>` : ''}
+        ${r.sources.length ? `<section class="chat-source-disclosure"><button type="button" class="chat-sources" data-chat-action="sources" aria-controls="sources-${escape(message.id)}" aria-expanded="${this.expandedSources.has(message.id)}"><span><img src="assets/cff1a.svg" alt="">数据来源·${r.sources.length}项</span><span><span class="source-toggle-label">${this.expandedSources.has(message.id) ? '收起' : '展开'}</span><img src="assets/289e6.svg" alt=""></span></button><ol class="chat-source-content" id="sources-${escape(message.id)}" ${this.expandedSources.has(message.id) ? '' : 'hidden'}>${r.sources.map((source, i) => `<li><h3>${String(i + 1).padStart(2, '0')} · ${escape(source.title)}</h3>${source.description.split('。').filter(Boolean).map(line => `<p>${escape(line)}</p>`).join('')}<p>数据更新时间：${escape(source.updated)}</p>${source.url ? `<a href="${escape(source.url)}" target="_blank" rel="noopener noreferrer">查看公开来源 ↗</a>` : ''}</li>`).join('')}</ol></section>` : ''}
         <div class="chat-answer-actions" data-name="AnswerActions" data-current="${message === this.session.messages.at(-1)}" ${message === this.session.messages.at(-1) ? '' : 'hidden'}>
           <button data-chat-action="copy" aria-label="复制回答"><img src="assets/conversation-1dd93.svg" alt=""></button>
           <button data-chat-action="like" aria-label="赞同回答" aria-pressed="${Boolean(message.liked)}"><img src="assets/${message.liked ? 'feedback-selected.svg' : 'conversation-47792.svg'}" alt=""></button>
@@ -421,7 +421,11 @@ window.ChatConversations = (() => {
     bindAnswerContext() {
       let press;
       const clear = () => { clearTimeout(press?.timer); press = undefined; };
-      const articleFor = target => target.closest('article.chat-answer');
+      const sourceFor = target => target.closest('.chat-source-disclosure');
+      const articleFor = target => sourceFor(target) ? null : target.closest('article.chat-answer');
+      ['selectstart', 'contextmenu', 'dragstart'].forEach(name => this.host.addEventListener(name, event => {
+        if (sourceFor(event.target)) event.preventDefault();
+      }));
       this.host.addEventListener('pointerdown', event => {
         if (event.button !== 0 || !event.isPrimary || event.target.closest('button,a,input,textarea')) return;
         const article = articleFor(event.target); if (!article) return;
@@ -551,27 +555,36 @@ window.ChatConversations = (() => {
         button.setAttribute('aria-expanded', String(expanded));
         button.querySelector('.source-toggle-label').textContent = expanded ? '收起' : '展开';
         const list = button.nextElementSibling;
-        list.getAnimations().forEach(animation => animation.cancel());
+        const currentStyle = getComputedStyle(list);
+        const current = list.hidden ? { height: '0px', marginTop: '0px', paddingTop: '0px', opacity: 0 } : {
+          height: currentStyle.height, marginTop: currentStyle.marginTop,
+          paddingTop: currentStyle.paddingTop, opacity: currentStyle.opacity,
+        };
+        // Capture the visible frame before cancelling, so repeated taps reverse smoothly.
+        list.getAnimations().forEach(animation => { animation.onfinish = null; animation.cancel(); });
         list.hidden = false;
-        const height = list.scrollHeight;
         const style = getComputedStyle(list);
-        const margin = style.marginTop, padding = style.paddingTop;
+        const target = expanded ? { height: `${list.offsetHeight}px`, marginTop: style.marginTop, paddingTop: style.paddingTop, opacity: 1 }
+          : { height: '0px', marginTop: '0px', paddingTop: '0px', opacity: 0 };
+        this.stickToBottom = false;
         const buttonTop = button.getBoundingClientRect().top;
         const viewportTop = this.scroller?.getBoundingClientRect().top;
         if (!expanded && buttonTop < viewportTop) {
           const zoom = parseFloat(getComputedStyle(document.querySelector('.design-screen')).zoom) || 1;
           this.scroller.scrollTop += (buttonTop - viewportTop) / zoom;
         }
-        if (matchMedia('(prefers-reduced-motion: reduce)').matches) list.hidden = !expanded;
-        else {
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          list.hidden = !expanded; list.style.overflow = ''; list.sourceAnimation = null;
+        } else {
           list.style.overflow = 'hidden';
-          const animation = list.animate([
-            { height: expanded ? '0px' : `${height}px`, marginTop: expanded ? '0px' : margin, paddingTop: expanded ? '0px' : padding, opacity: expanded ? 0 : 1 },
-            { height: expanded ? `${height}px` : '0px', marginTop: expanded ? margin : '0px', paddingTop: expanded ? padding : '0px', opacity: expanded ? 1 : 0 },
-          ], { duration: 200, easing: 'ease-out' });
-          animation.onfinish = () => { list.hidden = !expanded; list.style.overflow = ''; };
+          const animation = list.animate([current, target], { duration: 200, easing: 'ease-out' });
+          list.sourceAnimation = animation;
+          animation.onfinish = () => {
+            if (list.sourceAnimation !== animation) return;
+            list.hidden = button.getAttribute('aria-expanded') !== 'true';
+            list.style.overflow = ''; list.sourceAnimation = null;
+          };
         }
-        this.stickToBottom = false;
       }
       else if (action === 'copy') {
         try { await navigator.clipboard.writeText(button.closest('article').innerText); this.onError('已复制回答'); }

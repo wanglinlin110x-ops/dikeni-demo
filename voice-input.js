@@ -133,11 +133,18 @@ class VoiceInput {
       session.recognition.onresult = event => {
         if (this.session !== session) return;
         const results = Array.from(event.results || []);
-        if (!results.length) return; // An empty event must not erase a completed transcript.
+        if (!results.length) {
+          // A removed interim hypothesis is not a usable transcript; retain committed finals.
+          if (!session.finalText) { session.partialText = ''; session.lastText = ''; session.hasInterim = false; }
+          return;
+        }
         this.watchResponse(session);
-        session.partialText = results.map(result => result[0].transcript).join('').trim();
-        session.finalText = results.filter(result => result.isFinal).map(result => result[0].transcript).join('').trim();
-        session.hasInterim = results.some(result => !result.isFinal && result[0].transcript.trim());
+        session.partialText = results.map(result => result[0]?.transcript || '').join('').trim();
+        if (session.partialText) session.lastText = session.partialText;
+        else if (!results.every(result => result.isFinal)) session.lastText = '';
+        session.finalText = results.filter(result => result.isFinal).map(result => result[0]?.transcript || '').join('').trim();
+        session.hasInterim = results.some(result => !result.isFinal && String(result[0]?.transcript || '').trim());
+        if (session.finalizing && session.finalText && !session.hasInterim) this.complete(session);
       };
       session.recognition.onspeechstart = () => {
         if (this.session !== session || session.ending) return;
@@ -165,10 +172,10 @@ class VoiceInput {
           session.starting = false; session.recognitionEnded = true;
           clearTimeout(session.limit); clearTimeout(session.startDeadline); cancelAnimationFrame(session.frame);
           this.releaseAudio(session); this.panel.dataset.state = 'ready';
-          this.instruction(session.hasInterim ? '识别未完成，松手后保留文字' : session.finalText ? '已识别，松手发送，上移取消' : '没有听清，松手后再试一次');
+          this.instruction(session.partialText || session.finalText || session.lastText ? '已识别，松手发送，上移取消' : '没有听清，松手后再试一次');
           return;
         }
-        this.complete(session);
+        this.settle(session);
       };
       // Recognition starts before any awaited microphone/AudioContext work.
       session.recognition.start();
@@ -193,18 +200,25 @@ class VoiceInput {
     });
     session.frame = requestAnimationFrame(() => this.drawActivity(session));
   }
+  settle(session) {
+    if (this.session !== session || session.finalizing) return;
+    session.finalizing = true; session.ending = true; session.starting = false;
+    for (const key of ['startDeadline', 'limit', 'deadline', 'responseDeadline', 'speechEndDeadline']) clearTimeout(session[key]);
+    cancelAnimationFrame(session.frame); this.releaseAudio(session);
+    this.panel.dataset.state = 'recognizing'; this.instruction('正在整理识别文字…');
+    // Some native services end with useful text but never mark it isFinal.
+    // Allow a short, bounded final correction; a normal end then accepts the latest raw text.
+    if (session.finalText && !session.hasInterim) this.complete(session);
+    else session.completeTimer = setTimeout(() => this.complete(session), 450);
+  }
   complete(session) {
     if (this.session !== session) return;
-    const text = session.finalText;
-    const unfinished = session.hasInterim || !text && Boolean(session.partialText);
+    const text = (session.partialText || session.finalText || session.lastText || '').trim();
     this.cleanup(session);
-    if (unfinished) {
-      this.onRecover?.(session.partialText || text || '');
-      this.onError('识别尚未完成，已保留原文，请检查后发送');
-      return;
-    }
-    if (text) { if (session.submit) this.onSubmit(session.compact ? [session.draft, text].filter(Boolean).join(' ') : text); else this.onRecover?.(text); }
-    else { this.onRecover?.(session.partialText || ''); this.onError(session.partialText ? '识别未完成，已保留文字，请检查后发送' : '未识别到文字，请再说一次'); }
+    if (/[\p{L}\p{N}]/u.test(text)) {
+      if (session.submit) this.onSubmit(session.compact ? [session.draft, text].filter(Boolean).join(' ') : text);
+      else this.onRecover?.(text);
+    } else this.onError('未识别到文字，请再说一次');
   }
   async startMeter(session) {
     const Audio = window.AudioContext || window.webkitAudioContext;
@@ -248,7 +262,7 @@ class VoiceInput {
       this.panel.dataset.state = 'recognizing'; this.instruction('正在等待语音就绪并完成识别…');
       return; // A release during the permission/start handshake is fulfilled once onstart arrives.
     }
-    if (session.recognitionEnded) this.complete(session); else this.stopRecognition(session);
+    if (session.recognitionEnded) this.settle(session); else this.stopRecognition(session);
   }
   stopRecognition(session) {
     this.panel.dataset.state = 'recognizing';
@@ -274,6 +288,7 @@ class VoiceInput {
     clearTimeout(session.startDeadline);
     clearTimeout(session.limit);
     clearTimeout(session.deadline);
+    clearTimeout(session.completeTimer);
     clearTimeout(session.responseDeadline);
     clearTimeout(session.speechEndDeadline);
     cancelAnimationFrame(session.frame);
@@ -285,7 +300,7 @@ class VoiceInput {
     this.bars.forEach(bar => bar.style.height = '6px');
     this.onStateChange();
   }
-  fail(session, message) { if (this.session === session) { const text = session.partialText || session.finalText; this.cleanup(session); if (text) this.onRecover?.(text); this.onError(text ? `${message}，已保留识别文字` : message); } }
+  fail(session, message) { if (this.session === session) { const text = session.partialText || session.finalText || session.lastText; this.cleanup(session); if (text) this.onRecover?.(text); this.onError(text ? `${message}，已保留识别文字` : message); } }
   cancel(notify = true) {
     if (!this.active) return;
     this.cleanup(this.session);

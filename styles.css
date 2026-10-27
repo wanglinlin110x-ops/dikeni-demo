@@ -1172,3 +1172,45 @@ body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .des
 html:not(.demo-ready) body:is([data-page="index"],[data-page="input"]) .s27{visibility:hidden}
 
 .composer-attachments :is(.s41,.s47){background-color:transparent}
+
+/* Figma 16:6780: champion summary presentation; business data stays unchanged. */
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics){gap:40px;color:#101210}
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-champion-avatar{width:94px;height:94px}
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-profile-store{line-height:36px}
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-person-role{display:none}
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics)>.chat-paragraph{margin-top:-8px}
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-person-facts{gap:24px 8px;padding:0;border:0}
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-person-facts>div{position:relative;padding-left:24px}
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-person-facts>div::before{content:"";position:absolute;left:-1px;top:0;bottom:0;width:2px;background:url("assets/champion-fact-rule.svg") center/2px 100% no-repeat}
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-person-facts dt{margin:0;line-height:40px}
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-person-facts dd{font-size:30px;line-height:42px}
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:stretch;padding:0;background:transparent;border-radius:0}
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-metrics>div{align-items:flex-start;justify-content:center;gap:0;padding:20px 24px;min-width:0;background:#fff;border-radius:24px;text-align:left}
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-metrics>div>span{order:-1;padding:0;font-size:26px;line-height:40px;text-align:left;overflow-wrap:anywhere}
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-metrics strong,
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-metrics .metric-digits{font-size:40px;line-height:56px;font-weight:500;color:#101210}
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-metrics .metric-percentage{justify-content:flex-start;gap:2px;line-height:56px}
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-metrics .metric-symbol{font-size:32px;line-height:52px}
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-metrics+.chat-source-disclosure{margin-top:-20px}
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-sources{line-height:36px}
+.font-large body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-profile-store{line-height:44px}
+.font-large body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-person-facts dt{line-height:44px}
+.font-large body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-person-facts dd{font-size:36px;line-height:54px}
+.font-large body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-metrics>div>span{font-size:30px;line-height:44px;text-align:left}
+.font-large body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-metrics strong,
+.font-large body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-metrics .metric-digits{font-size:52px;line-height:72px}
+.font-large body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-metrics .metric-percentage{line-height:72px}
+.font-large body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-metrics .metric-symbol{font-size:36px;line-height:64px}
+
+
+/* Figma 16:6986: inline sources, with no native selection/callout/tap overlay. */
+body[data-page="conversation"] .chat-source-disclosure,
+body[data-page="conversation"] .chat-source-disclosure *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;-webkit-tap-highlight-color:transparent;-webkit-user-drag:none}
+body[data-page="conversation"] .chat-source-disclosure{overflow-anchor:none;touch-action:pan-y}
+body[data-page="conversation"] .chat-source-disclosure:has(>.chat-sources[aria-expanded="true"]){padding:24px 0;border-radius:20px}
+body[data-page="conversation"] .chat-source-disclosure .chat-sources{touch-action:pan-y;cursor:pointer;outline:none}
+body[data-page="conversation"] .chat-source-disclosure .chat-sources:focus-visible{outline:2px solid #07b1c7;outline-offset:-4px;border-radius:12px}
+body[data-page="conversation"] .chat-source-disclosure:has(>.chat-sources[aria-expanded="true"]) .chat-sources{line-height:33.8px}
+body[data-page="conversation"] .chat-source-content{margin:24px 0 0;padding:24px 24px 0;border-top:1px solid transparent;background:url("assets/source-divider.svg") top center/100% 1px no-repeat}
+body[data-page="conversation"] .chat-source-content h3{color:#101210;line-height:36px}
+.font-large body[data-page="conversation"] .chat-thread .chat-source-content h3{line-height:50px}
