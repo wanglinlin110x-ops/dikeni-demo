@@ -227,10 +227,15 @@ class VoiceInput {
   }
   waitForSilence(session) {
     clearTimeout(session.speechEndDeadline);
-    if (this.session !== session || session.ending || session.held || session.compact || session.speaking) return;
+    if (this.session !== session || session.ending || session.held || session.compact) return;
+    // speechend is advisory: some native services leave speaking=true after returning text.
+    // This is a bounded result-inactivity guard, not an audio silence measurement.
+    const prefixOnly = /^(?:请问|帮我查(?:一下)?|查一下)?(?:本月|这个月|这月|上月|上个月|2026年(?:9|10)月)(?:的|销|销售|是谁)?[，。！？?\s]*$/.test(session.partialText || '');
+    const finalReady = Boolean(session.finalText && !session.hasInterim && !prefixOnly);
+    const delay = session.speaking && !finalReady ? 3000 : 1400;
     session.speechEndDeadline = setTimeout(() => {
-      if (this.session === session && !session.speaking) this.finish();
-    }, 1400);
+      if (this.session === session) this.finish();
+    }, delay);
   }
   recognitionFinished(session) {
     if (this.session !== session) return;
