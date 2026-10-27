@@ -125,8 +125,11 @@ class VoiceInput {
       };
       session.recognition.onresult = event => {
         if (this.session !== session) return;
-        session.partialText = Array.from(event.results).map(result => result[0].transcript).join('').trim();
-        session.finalText = Array.from(event.results).filter(result => result.isFinal).map(result => result[0].transcript).join('').trim();
+        const results = Array.from(event.results || []);
+        if (!results.length) return; // An empty event must not erase a completed transcript.
+        session.partialText = results.map(result => result[0].transcript).join('').trim();
+        session.finalText = results.filter(result => result.isFinal).map(result => result[0].transcript).join('').trim();
+        session.hasInterim = results.some(result => !result.isFinal && result[0].transcript.trim());
       };
       session.recognition.onspeechend = () => { if (!compact && !held) this.finish(); };
       session.recognition.onerror = event => {
@@ -140,7 +143,7 @@ class VoiceInput {
           session.starting = false; session.recognitionEnded = true;
           clearTimeout(session.limit); clearTimeout(session.startDeadline); cancelAnimationFrame(session.frame);
           this.releaseAudio(session); this.panel.dataset.state = 'ready';
-          this.instruction(session.partialText || session.finalText ? '已识别，松手发送，上移取消' : '没有听清，松手后再试一次');
+          this.instruction(session.hasInterim ? '识别未完成，松手后保留文字' : session.finalText ? '已识别，松手发送，上移取消' : '没有听清，松手后再试一次');
           return;
         }
         this.complete(session);
@@ -153,8 +156,14 @@ class VoiceInput {
   }
   complete(session) {
     if (this.session !== session) return;
-    const text = session.ending ? session.partialText || session.finalText : session.finalText;
+    const text = session.finalText;
+    const unfinished = session.hasInterim || !text && Boolean(session.partialText);
     this.cleanup(session);
+    if (unfinished) {
+      this.onRecover?.(session.partialText || text || '');
+      this.onError('识别尚未完成，已保留原文，请检查后发送');
+      return;
+    }
     if (text) { if (session.submit) this.onSubmit(session.compact ? [session.draft, text].filter(Boolean).join(' ') : text); else this.onRecover?.(text); }
     else { this.onRecover?.(session.partialText || ''); this.onError(session.partialText ? '识别未完成，已保留文字，请检查后发送' : '未识别到文字，请再说一次'); }
   }

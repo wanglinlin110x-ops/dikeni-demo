@@ -1146,7 +1146,6 @@ img,svg,video{-webkit-user-drag:none}
 /* Stable recommendation rows: replace copy without moving or fading the container. */
 body:is([data-page="index"],[data-page="input"]) .s28{height:80px;min-height:80px}
 body:is([data-page="index"],[data-page="input"]) .s30{line-height:40px;min-width:0;flex-shrink:1;overflow:hidden;text-overflow:ellipsis}
-body[data-page="conversation"] .s51 .font-size-switch{position:absolute;right:24px;top:32px;margin:0}
 /* Reserve the enabled button's slot so only its disc and icon change size. */
 .composer-attachments :is(.s41,.s47){width:68px;height:68px;grid-template-columns:68px;grid-template-rows:68px;border-radius:34px}
 .composer-attachments .s42{position:relative;width:56px;height:56px;background:var(--send-color,#ddd);border-radius:50%}
@@ -1160,3 +1159,6 @@ body[data-page="conversation"] .s51 .font-size-switch{position:absolute;right:24
 body:is([data-page="index"],[data-page="input"]) .design-screen:not(.home-keyboard) .s24{display:flex}
 body:is([data-page="index"],[data-page="input"]) .s23{font-size:48px}
 body:is([data-page="index"],[data-page="input"]) .s25{font-size:26px;line-height:38px;color:#939693;white-space:normal;overflow-wrap:anywhere}
+
+/* Move the welcome artwork and copy together without shifting recommendations. */
+body:is([data-page="index"],[data-page="input"]) .design-screen:not(.home-keyboard) .s18{transform:translateY(20px)}

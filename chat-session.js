@@ -168,15 +168,16 @@ window.ChatConversations = (() => {
     }
     persist() { if (!save(this.session)) this.onError('浏览器存储空间不足，当前对话暂时无法持久保存'); }
     enqueue(text) { if (this.busy) this.queue.push(text); else this.submit(text); }
-    submit(text, attachments = []) {
+    submit(text, attachments = [], options = {}) {
       text = text.trim();
       if ((!text && !attachments.length) || this.busy) return false;
       this.session.messages.forEach(message => { if (message.reply?.kind === 'clarify') message.resolved = true; });
+      const voice = options.source === 'voice' ? window.VoiceUnderstanding?.understand(text, this.session.context) : null;
       const response = attachments.length ? {
         kind: 'answer', title: '附件已收到', paragraphs: [`已添加${attachments.length}个附件。`, '当前暂不支持自动解读附件内容；你可以把需要处理的文字粘贴到输入框中继续提问。'],
         context: { ...this.session.context, pending: null, journey: null, lastIntent: 'attachment' }, sources: [], followups: [],
-      } : DemoChat.reply(text, this.session.context);
-      this.session.messages.push({ id: id(), role: 'user', text, ...(attachments.length ? { attachments } : {}) });
+      } : DemoChat.reply(voice?.query || text, this.session.context);
+      this.session.messages.push({ id: id(), role: 'user', text, ...(voice ? { inputSource: 'voice', voice } : {}), ...(attachments.length ? { attachments } : {}) });
       const message = { id: id(), role: 'assistant', reply: response, state: 'pending' };
       this.session.messages.push(message);
       this.session.context = response.context;
@@ -310,7 +311,7 @@ window.ChatConversations = (() => {
       const anchorId = anchor?.dataset.messageId, anchorTop = anchor?.getBoundingClientRect().top;
       const last = this.session.messages.at(-1);
       this.host.innerHTML = this.session.messages.length ? this.session.messages.map(message => {
-        if (message.role === 'user') return `<div class="chat-user" data-message-id="${escape(message.id)}">${message.attachments?.length ? `<div class="chat-user-attachments">${message.attachments.map(file => `<button type="button" data-chat-action="attachment" data-attachment-id="${escape(file.id)}" aria-label="下载附件：${escape(file.name)}">${file.type?.startsWith('image/') ? `<img data-attachment-id="${escape(file.id)}" alt="${escape(file.name)}">` : '<img src="assets/attachment-file.svg" alt="">'}<span>${escape(file.name)}</span></button>`).join('')}</div>` : ''}${message.text ? `<p>${escape(message.text)}</p>` : ''}</div>`;
+        if (message.role === 'user') return `<div class="chat-user" data-input-source="${message.inputSource === 'voice' ? 'voice' : 'text'}" data-message-id="${escape(message.id)}">${message.attachments?.length ? `<div class="chat-user-attachments">${message.attachments.map(file => `<button type="button" data-chat-action="attachment" data-attachment-id="${escape(file.id)}" aria-label="下载附件：${escape(file.name)}">${file.type?.startsWith('image/') ? `<img data-attachment-id="${escape(file.id)}" alt="${escape(file.name)}">` : '<img src="assets/attachment-file.svg" alt="">'}<span>${escape(file.name)}</span></button>`).join('')}</div>` : ''}${message.text ? `<p>${escape(message.text)}</p>` : ''}</div>`;
         if (message.state === 'pending') return `${message.regeneration ? `<div class="chat-response" data-message-id="${escape(message.id)}">${this.renderReply(message)}</div>` : ''}<div class="thinking-status" role="status"><span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>正在思考...</span></div>`;
         return `<div class="chat-response" data-message-id="${escape(message.id)}" data-generation-state="${escape(message.state)}">${this.renderReply(message)}${last === message && message.state === 'complete' && !message.reply.unavailable && message.reply.followups?.length ? `<section class="followup-section"><h2>推荐追问</h2><div class="followup-options">${message.reply.followups.map(text => `<button data-chat-action="followup">${escape(text)}</button>`).join('')}</div></section>` : ''}</div>`;
       }).join('') : '<p class="chat-empty">开始一段新对话。你可以查询销量、对比车型，或整理客户跟进。</p>';
@@ -594,7 +595,7 @@ window.ChatConversations = (() => {
         const question = preceding.findLast(item => item.role === 'user');
         if (!question) return;
         const context = preceding.findLast(item => item.role === 'assistant')?.reply.context || {};
-        message.regeneration = { original: { reply: message.reply, state: message.state, ...(message.progress !== undefined ? { progress: message.progress } : {}) }, nextReply: question.attachments?.length ? { ...message.reply, context: { ...context, pending: null, journey: null, lastIntent: 'attachment' } } : DemoChat.reply(question.text, context) };
+        message.regeneration = { original: { reply: message.reply, state: message.state, ...(message.progress !== undefined ? { progress: message.progress } : {}) }, nextReply: question.attachments?.length ? { ...message.reply, context: { ...context, pending: null, journey: null, lastIntent: 'attachment' } } : DemoChat.reply(question.inputSource === 'voice' ? question.voice?.query || question.text : question.text, context) };
         message.state = 'pending'; delete message.progress;
         this.session.updated = Date.now();
         this.persist(); this.render(); this.finish(message);

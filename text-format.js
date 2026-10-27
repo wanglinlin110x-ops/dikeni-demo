@@ -4,7 +4,7 @@ window.DemoText = (() => {
     .replace(/([\p{Script=Han}])[ \t\u00a0\u3000]+(?=[A-Za-z0-9])/gu, '$1')
     .replace(/([A-Za-z0-9])[ \t\u00a0\u3000]+(?=[\p{Script=Han}])/gu, '$1')
     .replace(/\b(TOP)[ \t\u00a0\u3000]+(?=\d)/gi, '$1');
-  const excluded = 'script,style,textarea,input,pre,code,[contenteditable="true"],.attachment-chip,.attachment-recent,.chat-user-attachments';
+  const excluded = 'script,style,textarea,input,pre,code,[contenteditable="true"],.attachment-chip,.attachment-recent,.chat-user-attachments,.chat-user[data-input-source="voice"]';
   function update(node) {
     if (!node.isConnected || node.parentElement?.closest(excluded)) return;
     const text = format(node.data);

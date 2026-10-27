@@ -7,7 +7,7 @@
   video.playsInline = true;
   video.loop = false;
   // Keep a real image below the video: iOS may discard the video surface when
-  // autoplay is blocked, decoding fails, or the clip finishes in low-power mode.
+  // autoplay is blocked or decoding fails. Successful playback keeps its last frame.
   const poster = new Image();
   poster.className = 'ip-intro-fallback'; poster.alt = '';
   poster.setAttribute('aria-hidden', 'true'); poster.src = video.poster;
@@ -18,7 +18,8 @@
     if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(ready);
     else ready();
   });
-  for (const name of ['ended', 'error', 'emptied']) video.addEventListener(name, showPoster);
+  // Do not swap to the poster on ended: retain the decoded final video frame.
+  for (const name of ['error', 'emptied']) video.addEventListener(name, showPoster);
   let pending = false;
   function playEntry() {
     pending = false;

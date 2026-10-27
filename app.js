@@ -14,18 +14,15 @@
   let feedbackPreviousLike = false;
   let historyContext;
   const voiceInput = $('[data-name^="Text Input"]') ? new VoiceInput({
-    root: $('.design-screen'), onSubmit: submitMessage, onError: toast, onStateChange: updateSend,
+    root: $('.design-screen'), onSubmit: text => submitMessage(text, { source: 'voice' }), onError: toast, onStateChange: updateSend,
     onRecover: text => {
       const input = $('.message-input');
-      if (input) { input.value = [input.value.trim(), text].filter(Boolean).join(' '); updateSend(); if (voiceInput?.mode !== 'compact' || voiceInput.restoreKeyboard) input.focus(); }
+      if (input) { input.value = [input.value.trim(), text].filter(Boolean).join(' '); if (text.trim()) input.dataset.voiceDraft = input.value; else delete input.dataset.voiceDraft; updateSend(); if (voiceInput?.mode !== 'compact' || voiceInput.restoreKeyboard) input.focus(); }
     },
     onBeforeStart: () => { attachments?.close(false); if (chat?.busy) chat.stop(); },
   }) : null;
   if (isChatFlow) {
     setupOverlays();
-    const sizeSwitch = $('.font-size-switch');
-    if (page === 'conversation') $('[data-name="Header"]').append(sizeSwitch);
-    else sizeSwitch?.remove();
   }
   const activeLink = $(`a[href="${page}.html"]`, nav);
   activeLink?.setAttribute('aria-current', 'page');
@@ -134,7 +131,7 @@
   function bindMessageInput(input) {
     if (input.tagName === 'TEXTAREA') input.rows = 1;
     voiceInput?.bindComposerHold(input);
-    input.addEventListener('input', updateSend);
+    input.addEventListener('input', () => { delete input.dataset.voiceDraft; updateSend(); });
     input.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.isComposing && !event.shiftKey) { event.preventDefault(); if (!chat?.busy) send(); } });
   }
   function syncVoiceComposer() {
@@ -171,9 +168,9 @@
     const input = $('.message-input');
     if (chat?.busy) { chat.stop(); return; }
     if (voiceInput?.active) return;
-    submitMessage(input?.value || '');
+    submitMessage(input?.value || '', input?.dataset.voiceDraft !== undefined && input.dataset.voiceDraft === input.value ? { source: 'voice' } : {});
   }
-  function submitMessage(text) {
+  function submitMessage(text, options = {}) {
     const message = text.trim();
     if ((!message && !attachments?.items.length) || thinking || navigatingToChat || attachments?.pending) return;
     const files = attachments?.items.map(item => ({ ...item })) || [];
@@ -181,12 +178,13 @@
     const input = $('.message-input');
     input?.blur();
     if (page === 'conversation') {
-      if (chat.submit(message, files)) { input.value = ''; attachments?.clear(); updateSend(); }
+      if (chat.submit(message, files, options)) { input.value = ''; delete input.dataset.voiceDraft; attachments?.clear(); updateSend(); }
     } else {
       navigatingToChat = true;
       if (['index', 'input'].includes(page)) ChatConversations.create();
       else if (['answer', 'trend', 'analysis'].includes(page)) ChatConversations.create({ network: 'wangchao', personId: 'dynasty-li', period: '2026年10月', scope: '全国门店', lastIntent: 'rank' });
       sessionStorage.setItem('demo-pending-message', message);
+      sessionStorage.setItem('demo-pending-input-source', options.source === 'voice' ? 'voice' : 'text');
       sessionStorage.setItem('demo-pending-attachments', JSON.stringify(files));
       attachments?.clear();
       DemoMotion.navigate('conversation.html');
@@ -613,7 +611,9 @@
     let files = [];
     try { files = JSON.parse(sessionStorage.getItem('demo-pending-attachments') || '[]'); } catch {}
     sessionStorage.removeItem('demo-pending-attachments');
-    if (pending || files.length) chat.submit(pending || '', files);
+    const source = sessionStorage.getItem('demo-pending-input-source');
+    sessionStorage.removeItem('demo-pending-input-source');
+    if (pending || files.length) chat.submit(pending || '', files, { source });
   }
   // Fill narrow viewports while retaining the 750px design canvas.
   function fitSmallScreen() {
