@@ -1,0 +1,698 @@
+{
+  "version": 1,
+  "referenceDate": "2026-10-27",
+  "purpose": "真实模型验收输入与预期槽位；不以模拟流程测试替代模型准确率。",
+  "cases": [
+    {
+      "id": "intent-001",
+      "text": "本月销售冠军是谁？",
+      "context": {},
+      "expected": {
+        "intent": "rank",
+        "period": "2026年10月",
+        "metric": "delivered_vehicles"
+      }
+    },
+    {
+      "id": "intent-002",
+      "text": "本月销冠是谁",
+      "context": {},
+      "expected": {
+        "intent": "rank",
+        "period": "2026年10月",
+        "metric": "delivered_vehicles"
+      }
+    },
+    {
+      "id": "intent-003",
+      "text": "这个月谁卖得最好",
+      "context": {},
+      "expected": {
+        "intent": "rank",
+        "period": "2026年10月",
+        "metric": "delivered_vehicles"
+      }
+    },
+    {
+      "id": "intent-004",
+      "text": "这个月哪位顾问交车最多",
+      "context": {},
+      "expected": {
+        "intent": "rank",
+        "period": "2026年10月",
+        "metric": "delivered_vehicles"
+      }
+    },
+    {
+      "id": "intent-005",
+      "text": "这月个人交付排第一的是谁",
+      "context": {},
+      "expected": {
+        "intent": "rank",
+        "period": "2026年10月",
+        "metric": "delivered_vehicles"
+      }
+    },
+    {
+      "id": "intent-006",
+      "text": "这个月销售第一名是谁",
+      "context": {},
+      "expected": {
+        "intent": "rank",
+        "period": "2026年10月",
+        "metric": "delivered_vehicles"
+      }
+    },
+    {
+      "id": "intent-007",
+      "text": "上月王朝网华南销冠是谁",
+      "context": {},
+      "expected": {
+        "intent": "rank",
+        "period": "2026年9月",
+        "network": "wangchao",
+        "scope": "华南战区",
+        "metric": "delivered_vehicles"
+      }
+    },
+    {
+      "id": "intent-008",
+      "text": "上个月王朝华南谁交得最多",
+      "context": {},
+      "expected": {
+        "intent": "rank",
+        "period": "2026年9月",
+        "network": "wangchao",
+        "scope": "华南战区",
+        "metric": "delivered_vehicles"
+      }
+    },
+    {
+      "id": "intent-009",
+      "text": "九月份王朝网华南战区销售第一是谁",
+      "context": {},
+      "expected": {
+        "intent": "rank",
+        "period": "2026年9月",
+        "network": "wangchao",
+        "scope": "华南战区",
+        "metric": "delivered_vehicles"
+      }
+    },
+    {
+      "id": "intent-010",
+      "text": "2026年9月华南王朝网谁是销冠",
+      "context": {},
+      "expected": {
+        "intent": "rank",
+        "period": "2026年9月",
+        "network": "wangchao",
+        "scope": "华南战区",
+        "metric": "delivered_vehicles"
+      }
+    },
+    {
+      "id": "intent-011",
+      "text": "她主要卖啥车",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "distribution",
+        "personId": "national-wang"
+      }
+    },
+    {
+      "id": "intent-012",
+      "text": "这位销冠的主销车型是什么",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "distribution",
+        "personId": "national-wang"
+      }
+    },
+    {
+      "id": "intent-013",
+      "text": "她哪些车型卖得好",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "distribution",
+        "personId": "national-wang"
+      }
+    },
+    {
+      "id": "intent-014",
+      "text": "她交付的车型占比呢",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "distribution",
+        "personId": "national-wang"
+      }
+    },
+    {
+      "id": "intent-015",
+      "text": "具体卖的都是哪些车",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "distribution",
+        "personId": "national-wang"
+      }
+    },
+    {
+      "id": "intent-016",
+      "text": "王小迪的车型构成给我看看",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "distribution",
+        "personId": "national-wang"
+      }
+    },
+    {
+      "id": "intent-017",
+      "text": "她近六个月表现怎么样",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "trend",
+        "personId": "national-wang"
+      }
+    },
+    {
+      "id": "intent-018",
+      "text": "她过去半年交付走势",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "trend",
+        "personId": "national-wang"
+      }
+    },
+    {
+      "id": "intent-019",
+      "text": "这个销冠一直这么厉害吗",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "trend",
+        "personId": "national-wang"
+      }
+    },
+    {
+      "id": "intent-020",
+      "text": "近6个月销量趋势给我看一下",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "trend",
+        "personId": "national-wang"
+      }
+    },
+    {
+      "id": "intent-021",
+      "text": "她比第二名多交了几台",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "gap",
+        "personId": "national-wang"
+      }
+    },
+    {
+      "id": "intent-022",
+      "text": "领先第二名多少辆",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "gap",
+        "personId": "national-wang"
+      }
+    },
+    {
+      "id": "intent-023",
+      "text": "和第二名差几辆",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "gap",
+        "personId": "national-wang"
+      }
+    },
+    {
+      "id": "intent-024",
+      "text": "第二名是谁",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "runnerup",
+        "period": "2026年10月"
+      }
+    },
+    {
+      "id": "intent-025",
+      "text": "排第二的是哪位顾问",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "runnerup",
+        "period": "2026年10月"
+      }
+    },
+    {
+      "id": "intent-026",
+      "text": "她在哪家店上班",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "profile",
+        "personId": "national-wang"
+      }
+    },
+    {
+      "id": "intent-027",
+      "text": "这个人是什么时候入职的",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "profile",
+        "personId": "national-wang"
+      }
+    },
+    {
+      "id": "intent-028",
+      "text": "她在公司干了多久",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "profile",
+        "personId": "national-wang"
+      }
+    },
+    {
+      "id": "intent-029",
+      "text": "王小迪是哪儿人",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "profile",
+        "personId": "national-wang"
+      }
+    },
+    {
+      "id": "intent-030",
+      "text": "帮我写个客户跟进记录",
+      "context": {},
+      "expected": {
+        "intent": "progress"
+      }
+    },
+    {
+      "id": "intent-031",
+      "text": "试驾完了怎么写跟进进展",
+      "context": {},
+      "expected": {
+        "intent": "progress"
+      }
+    },
+    {
+      "id": "intent-032",
+      "text": "给我一段客户回访记录示例",
+      "context": {},
+      "expected": {
+        "intent": "progress"
+      }
+    },
+    {
+      "id": "intent-033",
+      "text": "客户说有点贵再看看，我该怎么接",
+      "context": {},
+      "expected": {
+        "intent": "objection"
+      }
+    },
+    {
+      "id": "intent-034",
+      "text": "他说超预算了，帮我组织一下话术",
+      "context": {},
+      "expected": {
+        "intent": "objection"
+      }
+    },
+    {
+      "id": "intent-035",
+      "text": "置换和金融优惠能不能一起用",
+      "context": {},
+      "expected": {
+        "intent": "knowledge"
+      }
+    },
+    {
+      "id": "intent-036",
+      "text": "置换权益可以跟金融优惠叠加吗",
+      "context": {},
+      "expected": {
+        "intent": "knowledge"
+      }
+    },
+    {
+      "id": "intent-037",
+      "text": "元PLUS和元UP有什么配置区别",
+      "context": {},
+      "expected": {
+        "intent": "models",
+        "metric": "configuration"
+      },
+      "expectedFinalIntent": "clarify"
+    },
+    {
+      "id": "intent-038",
+      "text": "宋ProDM-i和秦PLUSDM-i怎么选",
+      "context": {},
+      "expected": {
+        "intent": "models",
+        "metric": "configuration"
+      },
+      "expectedFinalIntent": "clarify"
+    },
+    {
+      "id": "intent-039",
+      "text": "小订转大订的转化率多少",
+      "context": {},
+      "expected": {
+        "intent": "clarify"
+      }
+    },
+    {
+      "id": "intent-040",
+      "text": "这个月开票最多的是谁",
+      "context": {},
+      "expected": {
+        "intent": "clarify"
+      }
+    },
+    {
+      "id": "intent-041",
+      "text": "今年谁是销冠",
+      "context": {},
+      "expected": {
+        "intent": "clarify"
+      }
+    },
+    {
+      "id": "intent-042",
+      "text": "她过去三个月表现如何",
+      "context": {},
+      "expected": {
+        "intent": "clarify"
+      }
+    },
+    {
+      "id": "intent-043",
+      "text": "宋的销量怎么样",
+      "context": {},
+      "expected": {
+        "intent": "clarify"
+      }
+    },
+    {
+      "id": "intent-044",
+      "text": "谁的订单最多谁就是交付销冠吗",
+      "context": {},
+      "expected": {
+        "intent": "clarify"
+      }
+    },
+    {
+      "id": "intent-045",
+      "text": "这月小冠是谁",
+      "context": {},
+      "expected": {
+        "intent": "clarify"
+      }
+    },
+    {
+      "id": "intent-046",
+      "text": "他交了最多的是谁",
+      "context": {},
+      "expected": {
+        "intent": "clarify"
+      }
+    },
+    {
+      "id": "intent-047",
+      "text": "今天会不会下雨",
+      "context": {},
+      "expected": {
+        "intent": "unavailable"
+      }
+    },
+    {
+      "id": "intent-048",
+      "text": "世界杯冠军是谁",
+      "context": {},
+      "expected": {
+        "intent": "unavailable"
+      }
+    },
+    {
+      "id": "intent-049",
+      "text": "帮我写段Python程序",
+      "context": {},
+      "expected": {
+        "intent": "unavailable"
+      }
+    },
+    {
+      "id": "intent-050",
+      "text": "不对，我说的是上个月",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "rank",
+        "period": "2026年9月"
+      },
+      "expectedFinalIntent": "clarify"
+    },
+    {
+      "id": "intent-051",
+      "text": "不是交付量，我要看订单数",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "clarify"
+      }
+    },
+    {
+      "id": "intent-052",
+      "text": "深圳福田王朝新店本月销冠是谁",
+      "context": {},
+      "expected": {
+        "intent": "clarify",
+        "scope": "unknown"
+      }
+    },
+    {
+      "id": "intent-053",
+      "text": "海洋网本月销冠是谁",
+      "context": {},
+      "expected": {
+        "intent": "clarify",
+        "network": "unknown"
+      }
+    },
+    {
+      "id": "intent-054",
+      "text": "海豹06这个月销量呢",
+      "context": {},
+      "expected": {
+        "intent": "clarify"
+      }
+    },
+    {
+      "id": "intent-055",
+      "text": "她元优皮交了多少",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "sales",
+        "models": [
+          "元 UP"
+        ]
+      },
+      "expectedFinalIntent": "distribution"
+    },
+    {
+      "id": "intent-056",
+      "text": "她主销的是元普拉斯吗",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "distribution",
+        "models": [
+          "元 PLUS"
+        ]
+      }
+    },
+    {
+      "id": "intent-057",
+      "text": "她比亚军多交了几辆",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "gap"
+      }
+    },
+    {
+      "id": "intent-058",
+      "text": "上月，不对，我说本月",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "rank",
+        "period": "2026年10月"
+      }
+    },
+    {
+      "id": "intent-059",
+      "text": "不要看冠军，我只想看她卖啥车",
+      "context": {
+        "network": "wangchao-national",
+        "personId": "national-wang",
+        "period": "2026年10月",
+        "scope": "全国门店",
+        "lastIntent": "rank"
+      },
+      "expected": {
+        "intent": "distribution"
+      }
+    }
+  ]
+}
