@@ -49,7 +49,7 @@ window.ComposerAttachments = class {
     this.inputs = {};
     for (const kind of ['camera','album','files']) {
       const input=document.createElement('input'); input.type='file'; input.hidden=true; input.dataset.attachmentPicker=kind;
-      if(kind!=='files')input.accept='image/*'; if(kind==='camera')input.setAttribute('capture','environment'); else input.multiple=true;
+      if(kind==='files')input.accept='.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.rtf,.md,.json,.zip,.pages,.numbers,.key,application/pdf,text/plain,text/csv,application/zip'; else input.accept='image/*'; if(kind==='camera')input.setAttribute('capture','environment'); else input.multiple=true;
       input.addEventListener('change',()=>{this.select([...input.files]);input.value=''});this.footer.append(input);this.inputs[kind]=input;
     }
     this.composer.querySelector('.s37 img').src='assets/composer-voice.svg'; this.composer.querySelector('.s43 img').src='assets/composer-send-disabled.svg';

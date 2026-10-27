@@ -671,7 +671,7 @@
   syncVoiceComposer();
   fitSmallScreen();
   window.DemoStartup?.ready();
-  window.addEventListener('pageshow', () => { navigatingToChat = false; updateSend(); fitSmallScreen(); });
+  window.addEventListener('pageshow', () => { navigatingToChat = false; voiceInput?.cancel(false); updateSend(); fitSmallScreen(); });
   window.addEventListener('resize', fitSmallScreen);
   document.addEventListener('focusin', () => requestAnimationFrame(fitSmallScreen));
   document.addEventListener('focusout', () => requestAnimationFrame(fitSmallScreen));

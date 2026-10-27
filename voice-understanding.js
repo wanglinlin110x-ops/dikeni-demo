@@ -1,9 +1,9 @@
-// A bounded, voice-only intent adapter. It never rewrites the displayed transcript.
+// Voice-only intent adapter; VoiceInput corrects known automotive homophones before display.
 window.VoiceUnderstanding = (() => {
   function understand(transcript, context = {}) {
     const original = String(transcript ?? '').trim();
     const result = (query, intent = null) => ({ version: 1, original, query, intent, matched: intent !== null });
-    let text = original;
+    let text = typeof VoiceInput !== 'undefined' ? VoiceInput.normalizeTranscript(original) : original;
     // Apply an explicit spoken correction only to the internal query, preserving the original.
     const correction = text.match(/(?:不对|不是)[^，,。；;]*[，,。；;]\s*(?:我是说|我说的是|我问的是|是|我要看|我要查)?([\s\S]+)/);
     if (correction) text = correction[1];
@@ -11,7 +11,7 @@ window.VoiceUnderstanding = (() => {
     // Do not turn unrelated requests into sales queries through a generic word such as “冠军”.
     if (/足球|篮球|奥运|世界杯|天气|股票|股价|治病|感冒|写诗|写代码|旅游|菜谱/.test(text)) return result(original);
     text = text.replace(/上个月|前一个月/g, '上月').replace(/这个月|这一个月|这月|今个月/g, '本月');
-    // Unsupported periods and ambiguous homophones require clarification, not an invented scope.
+    // Unsupported periods still require clarification; known sales homophones are normalized above.
     if (/去年|前年|今年|上半年|下半年|季度/.test(text) || /(?:近|最近|过去)(?:[一二两三四五七八九十]|[1-57-9]|\d{2,})个?月/.test(text)) return result('查一下', 'clarify');
     if (/(?:小冠|销管|销关)/.test(text) && /谁|哪个|哪位/.test(text)) return result('查一下', 'clarify');
     let intent, request;

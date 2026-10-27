@@ -1,8 +1,25 @@
 // Native speech recognition supplies text; Web Audio supplies the live waveform.
 class VoiceInput {
+  // Automotive voice vocabulary only. Never apply this to keyboard input.
+  static normalizeTranscript(value) {
+    const text = String(value ?? '');
+    const aliases = /(?:销关|销管|销官|销罐|消冠|消关|消管|消官|小冠|小关|小管|小官|校冠|校官|肖冠|萧冠|肖观|萧观|小观|销观|消观|校观|xi[aāáǎà]o[1-5]?\s*[-']?\s*gu[aāáǎà]n[1-5]?)/gi;
+    return text.replace(aliases, (term, offset) => {
+      const before = text.slice(Math.max(0, offset - 18), offset);
+      const after = text.slice(offset + term.length, offset + term.length + 18);
+      // An explicitly named person, military rank or compound word keeps its literal meaning.
+      if (/[A-Za-z]$/.test(before) || /^[A-Za-z]/.test(after)) return term;
+      if (/(?:我叫|名叫|名字叫|姓名是|人名是|外号叫|昵称叫|同事|朋友|顾问|员工|经理|姓)\s*$/.test(before)
+        || /^(?:经理|老师|同事|先生|女士|这个人|是人名|的名字|的姓名)/.test(after)) return term;
+      if (/^(?:家|理|道|线|状|辖|控|局|所)/.test(after)) return term;
+      if (/(?:军衔|军官|军队|军人|上校|中校|少校|军事)/.test(text) && /校官/.test(term)) return term;
+      return '销冠';
+    });
+  }
   constructor({ root, onSubmit, onError, onStateChange, onBeforeStart, onRecover }) {
     Object.assign(this, { root, onSubmit, onError, onStateChange, onBeforeStart, onRecover });
     this.session = null;
+    this.isMobile = /Android|iPad|iPhone|iPod/i.test(navigator.userAgent) || navigator.userAgentData?.mobile === true || navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
     this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
     try { this.mode = sessionStorage.getItem('demo-voice-style') === 'compact' ? 'compact' : 'current'; } catch { this.mode = 'current'; }
     this.root.classList.toggle('voice-alt', this.mode === 'compact');
@@ -47,6 +64,7 @@ class VoiceInput {
     document.addEventListener('selectstart', event => { if (this.active) event.preventDefault(); }, true);
     document.addEventListener('visibilitychange', () => { if (document.hidden) this.cancel(false); });
     window.addEventListener('pagehide', () => this.cancel(false));
+    window.addEventListener('pageshow', () => { this.cancel(false); this.resetView(); });
   }
   get active() { return Boolean(this.session); }
   toggle() {
@@ -120,13 +138,13 @@ class VoiceInput {
       session.recognition.continuous = compact;
       session.recognition.interimResults = true;
       session.recognition.onstart = () => {
-        if (this.session !== session) return;
+        if (this.session !== session || session.retryPending) return;
         session.starting = false; clearTimeout(session.startDeadline);
         if (session.ending) { this.stopRecognition(session); return; }
         this.panel.dataset.state = 'listening';
         this.instruction(compact ? '正在聆听…' : held ? '松手发送，上移取消' : '说完自动发送，点击结束');
         if (session.analyser) this.draw(session);
-        else if (this.isIOS) this.drawActivity(session);
+        else this.drawActivity(session);
         this.watchResponse(session);
         session.limit = setTimeout(() => this.finish(), 60000);
       };
@@ -135,16 +153,21 @@ class VoiceInput {
         const results = Array.from(event.results || []);
         if (!results.length) {
           // A removed interim hypothesis is not a usable transcript; retain committed finals.
-          if (!session.finalText) { session.partialText = ''; session.lastText = ''; session.hasInterim = false; }
+          if (!session.finalText) { session.partialText = ''; session.lastText = ''; session.hasInterim = false; clearTimeout(session.stopTextDeadline); }
           return;
         }
         this.watchResponse(session);
-        session.partialText = results.map(result => result[0]?.transcript || '').join('').trim();
+        session.rawPartialText = results.map(result => result[0]?.transcript || '').join('').trim();
+        session.partialText = VoiceInput.normalizeTranscript(session.rawPartialText);
         if (session.partialText) session.lastText = session.partialText;
         else if (!results.every(result => result.isFinal)) session.lastText = '';
-        session.finalText = results.filter(result => result.isFinal).map(result => result[0]?.transcript || '').join('').trim();
+        session.rawFinalText = results.filter(result => result.isFinal).map(result => result[0]?.transcript || '').join('').trim();
+        session.finalText = VoiceInput.normalizeTranscript(session.rawFinalText);
         session.hasInterim = results.some(result => !result.isFinal && String(result[0]?.transcript || '').trim());
-        if (session.finalizing && session.finalText && !session.hasInterim) this.complete(session);
+        if (session.retryPending && this.hasText(session)) { session.retryPending = false; clearTimeout(session.retryDeadline); this.recognitionFinished(session); return; }
+        if (session.finalizing && session.finalText && !session.hasInterim) { this.complete(session); return; }
+        if (!session.compact && !session.held && session.finalText && !session.hasInterim) { this.settle(session); return; }
+        if (session.ending && session.stopRequested) this.finishStoppedText(session, true);
       };
       session.recognition.onspeechstart = () => {
         if (this.session !== session || session.ending) return;
@@ -161,28 +184,57 @@ class VoiceInput {
       };
       session.recognition.onerror = event => {
         if (this.session !== session) return;
-        const messages = { 'not-allowed': '麦克风或语音识别权限被拒绝，请在浏览器设置中允许后重试', 'service-not-allowed': '浏览器未允许语音识别服务，请检查浏览器权限', 'audio-capture': '无法使用麦克风，请检查设备后重试', 'no-speech': '没有听清，请再说一次', network: '语音识别服务连接失败，请检查网络后重试', 'language-not-supported': '当前浏览器的语音识别服务不支持中文' };
-        this.fail(session, messages[event.error] || '语音识别未完成，请重试');
+        if (session.stopRequested && ['aborted', 'no-speech', 'network'].includes(event.error) && this.hasText(session)) { this.settle(session); return; }
+        // Native services can report an ordinary recognizer termination as aborted.
+        // Preserve valid results; never turn a completed utterance into an interruption toast.
+        if (['aborted', 'no-speech'].includes(event.error) && this.hasText(session) && (event.error === 'aborted' || session.held || session.finalText && !session.hasInterim)) { this.recognitionFinished(session); return; }
+        if (event.error === 'aborted' && !session.ending && !session.retryCount && !document.hidden) {
+          session.retryCount = 1; session.retryPending = true;
+          for (const key of ['startDeadline','responseDeadline','speechEndDeadline','limit']) clearTimeout(session[key]);
+          cancelAnimationFrame(session.frame);
+          this.panel.dataset.state = 'requesting'; this.instruction('正在恢复语音识别…');
+          // Wait for the native end event before restarting the same recognizer.
+          session.retryDeadline = setTimeout(() => this.fail(session, '语音识别未能启动，请点击麦克风重试'), 1500);
+          return;
+        }
+        const messages = { aborted: '语音识别未能继续，请点击麦克风重试', 'not-allowed': '麦克风或语音识别权限被拒绝，请在浏览器设置中允许后重试', 'service-not-allowed': '浏览器未允许语音识别服务，请检查浏览器权限', 'audio-capture': '无法使用麦克风，请检查设备后重试', 'no-speech': '没有听清，请再说一次', network: '语音识别服务连接失败，请检查网络后重试', 'language-not-supported': '当前浏览器的语音识别服务不支持中文' };
+        this.fail(session, messages[event.error] || '语音服务中断，请重新说一次');
       };
       session.recognition.onend = () => {
         if (this.session !== session) return;
-        session.recognitionEnded = true;
-        clearTimeout(session.responseDeadline); clearTimeout(session.speechEndDeadline);
-        if (session.held && !session.ending) {
-          session.starting = false; session.recognitionEnded = true;
-          clearTimeout(session.limit); clearTimeout(session.startDeadline); cancelAnimationFrame(session.frame);
-          this.releaseAudio(session); this.panel.dataset.state = 'ready';
-          this.instruction(session.partialText || session.finalText || session.lastText ? '已识别，松手发送，上移取消' : '没有听清，松手后再试一次');
+        if (session.retryPending) {
+          clearTimeout(session.retryDeadline); session.retryPending = false;
+          if (session.ending || document.hidden) { this.fail(session, '未识别到文字，请再说一次'); return; }
+          session.starting = true; session.recognitionEnded = false;
+          try {
+            session.recognition.start();
+            if (this.session === session && session.starting) session.startDeadline = setTimeout(() => this.fail(session, '语音识别启动超时，请重试'), 12000);
+          } catch { this.fail(session, '无法恢复语音识别，请点击麦克风重试'); }
           return;
         }
-        this.settle(session);
+        this.recognitionFinished(session);
       };
       // Recognition starts before any awaited microphone/AudioContext work.
       session.recognition.start();
       if (this.session === session && session.starting) session.startDeadline = setTimeout(() => this.fail(session, '语音识别启动超时，请检查权限或网络后重试'), 12000);
-      // iOS owns a single speech audio session: a second capture for metering can interrupt it.
-      if (this.session === session && !this.isIOS) this.startMeter(session);
+      // Metering is optional: never create a second permission prompt just to animate bars.
+      if (!this.isMobile && navigator.permissions?.query) navigator.permissions.query({ name: 'microphone' }).then(permission => {
+        if (permission.state === 'granted' && this.session === session && !session.ending) this.startMeter(session);
+      }).catch(() => {});
     } catch { this.fail(session, '无法启动语音输入，请检查麦克风权限后重试'); }
+  }
+  recognitionFinished(session) {
+    if (this.session !== session) return;
+    session.recognitionEnded = true;
+    for (const key of ['responseDeadline','speechEndDeadline','retryDeadline']) clearTimeout(session[key]);
+    if (session.held && !session.ending) {
+      session.starting = false;
+      clearTimeout(session.limit); clearTimeout(session.startDeadline); cancelAnimationFrame(session.frame);
+      this.releaseAudio(session); this.panel.dataset.state = 'ready';
+      this.instruction(this.hasText(session) ? '已识别，松手发送，上移取消' : '没有听清，松手后再试一次');
+      return;
+    }
+    this.settle(session);
   }
   watchResponse(session) {
     clearTimeout(session.responseDeadline);
@@ -190,7 +242,13 @@ class VoiceInput {
     session.responseDeadline = setTimeout(() => this.fail(session, '语音服务未返回结果，请检查网络及语音识别权限后重试'), 20000);
   }
   drawActivity(session) {
-    if (this.session !== session || session.ending || session.recognitionEnded) return;
+    if (this.session !== session || session.ending || session.recognitionEnded || session.analyser) return;
+    // Mobile animation must not acquire a second audio stream or update 30 bars every display frame.
+    const now = performance.now();
+    if (this.isMobile && session.lastWaveFrame !== undefined && now - session.lastWaveFrame < 32) {
+      session.frame = requestAnimationFrame(() => this.drawActivity(session)); return;
+    }
+    session.lastWaveFrame = now;
     // Speech activity only; iOS cannot expose true volume without a second microphone capture.
     const pulse = session.speaking ? .75 + .25 * Math.sin(performance.now() / 130) : .35;
     this.bars.forEach((bar, index) => {
@@ -203,7 +261,7 @@ class VoiceInput {
   settle(session) {
     if (this.session !== session || session.finalizing) return;
     session.finalizing = true; session.ending = true; session.starting = false;
-    for (const key of ['startDeadline', 'limit', 'deadline', 'responseDeadline', 'speechEndDeadline']) clearTimeout(session[key]);
+    for (const key of ['startDeadline', 'limit', 'deadline', 'responseDeadline', 'speechEndDeadline', 'stopTextDeadline', 'retryDeadline']) clearTimeout(session[key]);
     cancelAnimationFrame(session.frame); this.releaseAudio(session);
     this.panel.dataset.state = 'recognizing'; this.instruction('正在整理识别文字…');
     // Some native services end with useful text but never mark it isFinal.
@@ -213,7 +271,7 @@ class VoiceInput {
   }
   complete(session) {
     if (this.session !== session) return;
-    const text = (session.partialText || session.finalText || session.lastText || '').trim();
+    const text = VoiceInput.normalizeTranscript(session.partialText || session.finalText || session.lastText || '').trim();
     this.cleanup(session);
     if (/[\p{L}\p{N}]/u.test(text)) {
       if (session.submit) this.onSubmit(session.compact ? [session.draft, text].filter(Boolean).join(' ') : text);
@@ -258,6 +316,7 @@ class VoiceInput {
     if (!session || session.ending) return;
     if (session.compact) session.submit = submit === true;
     session.ending = true;
+    if (session.retryPending) { this.fail(session, '未识别到文字，请再说一次'); return; }
     if (session.starting) {
       this.panel.dataset.state = 'recognizing'; this.instruction('正在等待语音就绪并完成识别…');
       return; // A release during the permission/start handshake is fulfilled once onstart arrives.
@@ -275,7 +334,25 @@ class VoiceInput {
     // Keep the microphone alive until onend delivers the final recognition result.
     session.deadline = setTimeout(() => this.fail(session, '语音识别超时，请重试'), 8000);
     try { session.recognition.stop(); }
-    catch { this.fail(session, '语音识别未完成，请重试'); return; }
+    catch { if (this.hasText(session)) this.settle(session); else this.fail(session, '未识别到文字，请再说一次'); return; }
+    this.finishStoppedText(session, Boolean(session.finalText && !session.hasInterim));
+  }
+  hasText(session) { return /[\p{L}\p{N}]/u.test(session.partialText || session.finalText || session.lastText || ''); }
+  finishStoppedText(session, freshResult = false) {
+    clearTimeout(session.stopTextDeadline);
+    if (this.session !== session || session.finalizing || !this.hasText(session)) return;
+    if (freshResult && session.finalText && !session.hasInterim) { this.settle(session); return; }
+    // The user has finished speaking. Keep accepting corrections, but do not depend on a missing onend.
+    session.stopTextDeadline = setTimeout(() => { if (this.session === session) this.complete(session); }, 1000);
+  }
+  resetView() {
+    for (const panel of [this.legacyPanel, this.compactPanel]) {
+      panel.getAnimations().forEach(animation => animation.cancel()); panel.hidden = true;
+      panel.dataset.state = 'idle'; panel.classList.remove('voice-cancel');
+      panel.querySelector('p').textContent = '';
+      panel.querySelectorAll('i').forEach(bar => { bar.style.height = '6px'; });
+    }
+    this.composer?.classList.remove('voice-recording');
   }
   releaseAudio(session) {
     session.stream?.getTracks().forEach(track => track.stop());
@@ -286,23 +363,22 @@ class VoiceInput {
     if (this.session !== session) return;
     this.session = null;
     clearTimeout(session.startDeadline);
+    clearTimeout(session.retryDeadline);
     clearTimeout(session.limit);
     clearTimeout(session.deadline);
     clearTimeout(session.completeTimer);
+    clearTimeout(session.stopTextDeadline);
     clearTimeout(session.responseDeadline);
     clearTimeout(session.speechEndDeadline);
     cancelAnimationFrame(session.frame);
     this.releaseAudio(session);
     try { session.recognition?.abort(); } catch { /* Already ended. */ }
-    this.panel.hidden = true;
-    this.composer?.classList.remove('voice-recording');
-    this.panel.classList.remove('voice-cancel');
-    this.bars.forEach(bar => bar.style.height = '6px');
+    this.resetView();
     this.onStateChange();
   }
   fail(session, message) { if (this.session === session) { const text = session.partialText || session.finalText || session.lastText; this.cleanup(session); if (text) this.onRecover?.(text); this.onError(text ? `${message}，已保留识别文字` : message); } }
   cancel(notify = true) {
-    if (!this.active) return;
+    if (!this.active) { this.resetView(); return; }
     this.cleanup(this.session);
     if (notify) this.onError('已取消语音输入');
   }
