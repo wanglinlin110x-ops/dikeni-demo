@@ -1162,3 +1162,6 @@ body:is([data-page="index"],[data-page="input"]) .s25{font-size:26px;line-height
 
 /* Move the welcome artwork and copy together without shifting recommendations. */
 body:is([data-page="index"],[data-page="input"]) .design-screen:not(.home-keyboard) .s18{transform:translateY(20px)}
+
+/* Match the uploaded first frame's near-white backdrop to the white welcome canvas. */
+.ip-intro-fallback{filter:brightness(1.008)}

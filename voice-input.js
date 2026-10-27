@@ -3,6 +3,7 @@ class VoiceInput {
   constructor({ root, onSubmit, onError, onStateChange, onBeforeStart, onRecover }) {
     Object.assign(this, { root, onSubmit, onError, onStateChange, onBeforeStart, onRecover });
     this.session = null;
+    this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
     try { this.mode = sessionStorage.getItem('demo-voice-style') === 'compact' ? 'compact' : 'current'; } catch { this.mode = 'current'; }
     this.root.classList.toggle('voice-alt', this.mode === 'compact');
     this.panel = document.createElement('section');
@@ -43,6 +44,7 @@ class VoiceInput {
     document.addEventListener('keydown', event => {
       if (event.key === 'Escape' && this.active) { event.preventDefault(); this.cancel(); }
     });
+    document.addEventListener('selectstart', event => { if (this.active) event.preventDefault(); }, true);
     document.addEventListener('visibilitychange', () => { if (document.hidden) this.cancel(false); });
     window.addEventListener('pagehide', () => this.cancel(false));
   }
@@ -116,22 +118,38 @@ class VoiceInput {
       session.recognition.continuous = compact || held;
       session.recognition.interimResults = true;
       session.recognition.onstart = () => {
-        if (this.session !== session || session.ending) return;
+        if (this.session !== session) return;
         session.starting = false; clearTimeout(session.startDeadline);
+        if (session.ending) { this.stopRecognition(session); return; }
         this.panel.dataset.state = 'listening';
         this.instruction(compact ? '正在聆听…' : held ? '松手发送，上移取消' : '说完自动发送，点击结束');
         if (session.analyser) this.draw(session);
+        else if (this.isIOS) this.drawActivity(session);
+        this.watchResponse(session);
         session.limit = setTimeout(() => this.finish(), 60000);
       };
       session.recognition.onresult = event => {
         if (this.session !== session) return;
         const results = Array.from(event.results || []);
         if (!results.length) return; // An empty event must not erase a completed transcript.
+        this.watchResponse(session);
         session.partialText = results.map(result => result[0].transcript).join('').trim();
         session.finalText = results.filter(result => result.isFinal).map(result => result[0].transcript).join('').trim();
         session.hasInterim = results.some(result => !result.isFinal && result[0].transcript.trim());
       };
-      session.recognition.onspeechend = () => { if (!compact && !held) this.finish(); };
+      session.recognition.onspeechstart = () => {
+        if (this.session !== session || session.ending) return;
+        session.speaking = true; clearTimeout(session.speechEndDeadline); this.watchResponse(session);
+      };
+      session.recognition.onspeechend = () => {
+        if (this.session !== session || session.ending) return;
+        session.speaking = false;
+        // Let the browser finalize naturally; a pause is not an immediate stop.
+        if (!compact && !held) {
+          clearTimeout(session.speechEndDeadline);
+          session.speechEndDeadline = setTimeout(() => { if (this.session === session) this.finish(); }, 1400);
+        }
+      };
       session.recognition.onerror = event => {
         if (this.session !== session) return;
         const messages = { 'not-allowed': '麦克风或语音识别权限被拒绝，请在浏览器设置中允许后重试', 'service-not-allowed': '浏览器未允许语音识别服务，请检查浏览器权限', 'audio-capture': '无法使用麦克风，请检查设备后重试', 'no-speech': '没有听清，请再说一次', network: '语音识别服务连接失败，请检查网络后重试', 'language-not-supported': '当前浏览器的语音识别服务不支持中文' };
@@ -139,6 +157,8 @@ class VoiceInput {
       };
       session.recognition.onend = () => {
         if (this.session !== session) return;
+        session.recognitionEnded = true;
+        clearTimeout(session.responseDeadline); clearTimeout(session.speechEndDeadline);
         if (session.held && !session.ending) {
           session.starting = false; session.recognitionEnded = true;
           clearTimeout(session.limit); clearTimeout(session.startDeadline); cancelAnimationFrame(session.frame);
@@ -151,8 +171,25 @@ class VoiceInput {
       // Recognition starts before any awaited microphone/AudioContext work.
       session.recognition.start();
       if (this.session === session && session.starting) session.startDeadline = setTimeout(() => this.fail(session, '语音识别启动超时，请检查权限或网络后重试'), 12000);
-      if (this.session === session) this.startMeter(session);
+      // iOS owns a single speech audio session: a second capture for metering can interrupt it.
+      if (this.session === session && !this.isIOS) this.startMeter(session);
     } catch { this.fail(session, '无法启动语音输入，请检查麦克风权限后重试'); }
+  }
+  watchResponse(session) {
+    clearTimeout(session.responseDeadline);
+    if (session.ending) return;
+    session.responseDeadline = setTimeout(() => this.fail(session, '语音服务未返回结果，请检查网络及语音识别权限后重试'), 20000);
+  }
+  drawActivity(session) {
+    if (this.session !== session || session.ending || session.recognitionEnded) return;
+    // Speech activity only; iOS cannot expose true volume without a second microphone capture.
+    const pulse = session.speaking ? .75 + .25 * Math.sin(performance.now() / 130) : .35;
+    this.bars.forEach((bar, index) => {
+      const target = session.compact ? 6 + (this.restHeights[index] - 6) * pulse * .65 : this.restHeights[index] * (.7 + .3 * pulse);
+      session.heights[index] += (target - session.heights[index]) * .25;
+      bar.style.height = `${session.heights[index].toFixed(2)}px`;
+    });
+    session.frame = requestAnimationFrame(() => this.drawActivity(session));
   }
   complete(session) {
     if (this.session !== session) return;
@@ -203,21 +240,26 @@ class VoiceInput {
   finish(submit) {
     const session = this.session;
     if (!session || session.ending) return;
-    if (session.starting) { this.cancel(false); this.onError('语音尚未就绪，请等开启后再说一次'); return; }
     if (session.compact) session.submit = submit === true;
     session.ending = true;
+    if (session.starting) {
+      this.panel.dataset.state = 'recognizing'; this.instruction('正在等待语音就绪并完成识别…');
+      return; // A release during the permission/start handshake is fulfilled once onstart arrives.
+    }
     if (session.recognitionEnded) this.complete(session); else this.stopRecognition(session);
   }
   stopRecognition(session) {
     this.panel.dataset.state = 'recognizing';
     this.instruction(session.compact ? '正在转成文字…' : '正在识别...');
     this.panel.querySelectorAll('[data-voice-action]:not([data-voice-action=cancel])').forEach(button => { button.disabled = true; });
-    if (!session.recognition) return; // Permission is still pending; honor release once ready.
+    if (this.session !== session || !session.recognition || session.stopRequested) return;
+    session.stopRequested = true;
+    clearTimeout(session.limit); clearTimeout(session.responseDeadline); clearTimeout(session.speechEndDeadline);
     cancelAnimationFrame(session.frame);
     // Keep the microphone alive until onend delivers the final recognition result.
+    session.deadline = setTimeout(() => this.fail(session, '语音识别超时，请重试'), 8000);
     try { session.recognition.stop(); }
     catch { this.fail(session, '语音识别未完成，请重试'); return; }
-    session.deadline = setTimeout(() => this.fail(session, '语音识别超时，请重试'), 8000);
   }
   releaseAudio(session) {
     session.stream?.getTracks().forEach(track => track.stop());
@@ -230,6 +272,8 @@ class VoiceInput {
     clearTimeout(session.startDeadline);
     clearTimeout(session.limit);
     clearTimeout(session.deadline);
+    clearTimeout(session.responseDeadline);
+    clearTimeout(session.speechEndDeadline);
     cancelAnimationFrame(session.frame);
     this.releaseAudio(session);
     try { session.recognition?.abort(); } catch { /* Already ended. */ }
@@ -338,7 +382,10 @@ class VoiceInput {
       held = false;
     });
     surface.addEventListener('pointercancel', () => { clearTimeout(timer); if (held) { this.suppressNextClick(); this.cancel(); held = false; } });
-    surface.addEventListener('lostpointercapture', () => { clearTimeout(timer); if (held) { held = false; this.suppressNextClick(); this.cancel(false); } });
+    surface.addEventListener('lostpointercapture', event => {
+      if (surface.hasPointerCapture(event.pointerId)) return;
+      clearTimeout(timer); if (held) { held = false; this.suppressNextClick(); this.cancel(false); }
+    });
   }
   bindSwipe(element) {
     let startY;
