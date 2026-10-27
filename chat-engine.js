@@ -258,6 +258,10 @@ window.DemoChat = (() => {
     Object.assign(state, values, { pending: null, lastIntent: intent });
     const index = values.period === '2026年9月' ? 4 : 5;
     const period = values.period || '2026年10月';
+    if (['rank','runnerup'].includes(intent) && network === 'wangchao-national' && values.scope === scopes[0] && period === '2026年9月' && window.HomeReplies) {
+      const archive = window.HomeReplies.reply('上个月王朝全国销冠是谁？', {});
+      return intent === 'runnerup' ? window.HomeReplies.reply('第二名是谁？', archive.context) : archive;
+    }
     const p = personById(values.personId);
     if (intent === 'profile') {
       const personal = requestedFields(text).length > 0;
@@ -365,7 +369,7 @@ window.DemoChat = (() => {
     const seen = previous.journey?.key === key ? [...previous.journey.seen] : [];
     const fields = requestedFields(text);
     for (const item of [stage, ...(fields.includes('hometown') ? ['hometown'] : []), ...(fields.includes('joinedAt') ? ['tenure'] : [])]) if (item && !seen.includes(item)) seen.push(item);
-    if (isDynasty(response.context.network) || response.context.lastIntent === 'rank') response.championDataVersion = 8;
+    if (isDynasty(response.context.network) || response.context.lastIntent === 'rank') response.championDataVersion = 9;
     response.context = { ...response.context, journey: { key, seen, stage } };
     const followups = nextQuestions(response.context, stage);
     if (followups) response.followups = followups;
@@ -375,7 +379,7 @@ window.DemoChat = (() => {
     if (response.homeReply) return window.HomeReplies?.normalizeReply(response) || response;
     // Refresh older simulated champion answers without changing employee permissions.
     const updatedPrompts = { rank: '销冠是谁？', runnerup: '第二名呢？', trend: '他近6个月的销量趋势', growth: '销量增长原因', distribution: '主要卖什么车？', sales: '他的销量是多少？', gap: '他比第二名多卖多少辆？' };
-    if (response.kind === 'answer' && (isDynasty(response.context?.network) || response.context?.lastIntent === 'rank') && (response.championDataVersion !== 8 || response.context.lastIntent === 'rank' && !response.profile?.fields) && updatedPrompts[response.context.lastIntent]) response = reply(updatedPrompts[response.context.lastIntent], response.context);
+    if (response.kind === 'answer' && (isDynasty(response.context?.network) || response.context?.lastIntent === 'rank') && (response.championDataVersion !== 9 || response.context.lastIntent === 'rank' && !response.profile?.fields) && updatedPrompts[response.context.lastIntent]) response = reply(updatedPrompts[response.context.lastIntent], response.context);
     response = window.SalesDialogue?.normalizeReply(response) || response;
     if (response.personalParts?.length) {
       const person = personById(response.context?.personId);

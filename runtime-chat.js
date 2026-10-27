@@ -321,25 +321,27 @@ window.HomeReplies = (() => {
     zhou: { id: 'home-zhou', name: '周雨桐', store, region: '华南战区', avatar: 'assets/chen-siyu-avatar.png?v=20261027-small', month: '2026年10月截至26日', deliveries: 26, target: 25, runner: '陈思雨', second: 23, names: ['宋 Pro DM-i', '元 PLUS', '秦 PLUS DM-i', '汉 DM-i'], counts: [11, 7, 5, 3], history: [13, 15, 18, 20, 24, 26], months: ['5月','6月','7月','8月','9月','10月'] },
     li: { id: 'home-national-li', name: '李明轩', store, region: '华南战区', avatar: 'assets/li-mingxuan-avatar.png?v=20261027-small', month: '2026年9月', deliveries: 58, target: 50, runner: '王浩', second: 53, names: ['元 PLUS','元 UP','宋 Pro DM-i','秦 PLUS DM-i','汉 DM-i','唐 DM-i'], counts: [21,14,10,7,4,2], history: [35,39,37,44,49,58], months: ['4月','5月','6月','7月','8月','9月'] },
   };
+  people.storeLi = { id:'home-store-li', name:'李明轩', store, region:'华南战区', avatar:'assets/li-mingxuan-avatar.png?v=20261027-small', month:'2026年9月', deliveries:38, target:32, runner:'周雨桐', second:24, names:['元 PLUS','元 UP','宋 Pro DM-i','秦 PLUS DM-i','汉 DM-i','唐 DM-i'], counts:[12,9,8,5,3,1], history:[24,28,26,31,33,38], months:['4月','5月','6月','7月','8月','9月'] };
   const policyUrl = 'https://www.sz.gov.cn/cn/xxgk/zfxxgj/tzgg/content/post_12664246.html';
   const policySource = () => ({ kind: 'public', title: '官方政策 · 深圳市2026年汽车置换更新补贴实施指引', description: '深圳市商务局发布。区分政府置换更新补贴与厂家置换权益、金融产品；厂家活动是否叠加仍须核对对应条款。申请材料见第四部分，申请条件见第三部分。政策期内资金使用完毕即止，不表示当前已取得申请资格。', updated: '2026-03-03', url: policyUrl });
   const internal = (title, description) => ({ kind: 'simulated', title: `模拟台账 · ${title}`, description, updated: '2026-10-26' });
   const make = (key, title, paragraphs, extra = {}, data = {}) => ({ kind:'answer', homeReplyVersion:1, homeReply:true, title, paragraphs, sources:[], followups:[], context:{ pending:null, lastIntent:`home-${key}`, homeScenario:{key,...data} }, ...extra });
   const pct = (value,total) => `${(value / total * 100).toFixed(1)}%`;
   function champion(id, section = 'rank') {
-    const p = people[id], national = id === 'li', key = national ? 'nationalChampion' : 'currentChampion';
+    const p = people[id], national = id === 'li', archive = id === 'storeLi', past = national || archive, key = national ? 'nationalChampion' : archive ? 'previousStoreChampion' : 'currentChampion';
     const scope = national ? '王朝网全国' : store;
     const sources = [internal(`${p.month}个人交付`, `范围：${scope}。${p.name}${p.deliveries}辆；第二名${p.runner}${p.second}辆；个人目标${p.target}辆。人物、门店、排名及业绩均为演示编写；按已交付车辆数统计，排除取消及未交付订单。`)];
     const data = { person:id, section };
-    if (section === 'distribution') return make(key, `${p.name}的主销车型`, [`${p.month}，${p.names[0]}交付${p.counts[0]}辆，占个人交付的${pct(p.counts[0],p.deliveries)}。${national ? '元 PLUS与元 UP合计35辆，是主要交付来源。' : '宋 Pro DM-i与元 PLUS合计18辆，贡献了大部分交付。'}`], { chart:{ type:'horizontal', title:`${p.month}个人车型交付`, labels:p.names, values:p.counts, total:p.deliveries, highlight:0, note:`合计${p.deliveries}辆 · 模拟个人交付` }, sources, followups:national ? ['他近半年表现怎么样？','哪些销售做法值得推广？'] : ['她的目标完成了吗？','她最近表现怎么样？'] }, data);
-    if (section === 'trend') return make(key, `${p.name}的近期交付表现`, national ? ['4—9月累计交付262辆。6月略有回落，7月起连续增长；9月58辆，较8月49辆增长18.4%。'] : ['5—9月完整月交付从13辆提升至24辆；10月截至26日已交付26辆。10月尚未结束，不作为完整月份环比。'], { chart:{ labels:p.months, values:p.history, note:national?'2026年4—9月完整月 · 模拟个人交付':'2026年5—9月完整月；10月截至26日 · 模拟个人交付' }, sources, followups:national?['主要卖什么车型？','哪些销售做法值得推广？']:['她的目标完成了吗？','主要卖哪些车型？'] }, data);
+    if (section === 'distribution') return make(key, `${p.name}的主销车型`, [`${p.month}，${p.names[0]}交付${p.counts[0]}辆，占个人交付的${pct(p.counts[0],p.deliveries)}。${national ? '元 PLUS与元 UP合计35辆，是主要交付来源。' : archive ? '元 PLUS与元 UP合计21辆，占个人交付的55.3%。' : '宋 Pro DM-i与元 PLUS合计18辆，贡献了大部分交付。'}`], { chart:{ type:'horizontal', title:`${p.month}个人车型交付`, labels:p.names, values:p.counts, total:p.deliveries, highlight:0, note:`合计${p.deliveries}辆 · 模拟个人交付` }, sources, followups:past ? ['他近半年表现怎么样？','哪些销售做法值得推广？'] : ['她的目标完成了吗？','她最近表现怎么样？'] }, data);
+    if (section === 'trend') return make(key, `${p.name}的近期交付表现`, national ? ['4—9月累计交付262辆。6月略有回落，7月起连续增长；9月58辆，较8月49辆增长18.4%。'] : archive ? ['4—9月累计交付180辆，月均30辆。6月略有回落，7月起连续增长；9月38辆，较8月33辆增长15.2%。'] : ['5—9月完整月交付从13辆提升至24辆；10月截至26日已交付26辆。10月尚未结束，不作为完整月份环比。'], { chart:{ labels:p.months, values:p.history, note:past?'2026年4—9月完整月 · 模拟个人交付':'2026年5—9月完整月；10月截至26日 · 模拟个人交付' }, sources, followups:past?['主要卖什么车型？','哪些销售做法值得推广？']:['她的目标完成了吗？','主要卖哪些车型？'] }, data);
     if (section === 'target') return make(key, `${p.name}的目标完成情况`, [`${p.month}已交付${p.deliveries}辆，个人目标${p.target}辆，完成率${pct(p.deliveries,p.target)}，超出目标${p.deliveries-p.target}辆。`], { progressCard:{value:p.deliveries,target:p.target,label:'个人交付目标'}, sources, followups:['主要卖哪些车型？'] }, data);
-    if (section === 'learning') return make(key, '可供推广的销售做法', national ? ['李明轩的模拟复盘中，重点是先确认预算和补能条件，再安排针对性试驾；试驾当天发送配置与费用清单，并约定回访时间。','建议先选客群相近的门店试行两周，以回访完成率和交付变化评估效果，不仅凭销冠排名判断因果。'] : ['周雨桐的模拟复盘重点是宋 Pro DM-i家庭客群：试驾前确认空间和日常出行需求，试驾后当天核对配置及费用。','先把本月待交付订单逐单确认，记录交付时间和客户尚未解决的问题，再复盘是否适合其他顾问。'], { sources:[internal('销售复盘访谈','访谈及推广建议为模拟内容，不是已验证的经营结论。')], followups:['整理一份门店推广清单'] }, data);
+    if (section === 'learning') return make(key, '可供推广的销售做法', past ? ['李明轩的模拟复盘中，重点是先确认预算和补能条件，再安排针对性试驾；试驾当天发送配置与费用清单，并约定回访时间。','建议先选客群相近的门店试行两周，以回访完成率和交付变化评估效果，不仅凭销冠排名判断因果。'] : ['周雨桐的模拟复盘重点是宋 Pro DM-i家庭客群：试驾前确认空间和日常出行需求，试驾后当天核对配置及费用。','先把本月待交付订单逐单确认，记录交付时间和客户尚未解决的问题，再复盘是否适合其他顾问。'], { sources:[internal('销售复盘访谈','访谈及推广建议为模拟内容，不是已验证的经营结论。')], followups:['整理一份门店推广清单'] }, data);
     if (section === 'checklist') return make(key,'门店试行清单',['先选择两家客群相近的门店，试行两周后复盘。'],{headers:['环节','动作'],rows:[['需求确认','记录预算、补能条件和两项重点需求'],['试驾跟进','围绕关注点体验，当天发送费用清单'],['评估','记录回访完成率及交付变化']],sources,followups:[]},data);
-    if (section === 'runnerup') return make(key, national?'9月全国第二名':'本月门店第二名', [`${p.month}，${p.runner}交付${p.second}辆，落后${p.name}${p.deliveries-p.second}辆。${national?'所属门店为广州天河王朝店。':'统计范围为深圳南山王朝旗舰店。'}`], { sources, followups:[] }, data);
+    if (section === 'runnerup') return make(key, national?'9月全国第二名':archive?'9月门店第二名':'本月门店第二名', [`${p.month}，${p.runner}交付${p.second}辆，落后${p.name}${p.deliveries-p.second}辆。${national?'所属门店为广州天河王朝店。':'统计范围为深圳南山王朝旗舰店。'}`], { sources, followups:[] }, data);
     const currentCopy = [`截至10月26日，深圳南山王朝旗舰店本月交付排名第一的是周雨桐，已交付26辆，领先第二名3辆。宋 Pro DM-i交付11辆，是她本月的主销车型。`];
+    const previousCopy = ['2026年9月，深圳南山王朝旗舰店月度交付冠军是李明轩，交付38辆，目标32辆，完成率118.8%，领先第二名周雨桐14辆。元 PLUS交付12辆，占31.6%，是上月主销车型。'];
     const nationalCopy = ['9月王朝网全国销冠是李明轩，来自深圳南山王朝旗舰店，交付58辆，超过个人目标8辆，领先第二名5辆。元 PLUS交付21辆，占个人交付的36.2%。'];
-    return make(key,national?'9月王朝网全国销冠':'本月门店交付当前第一',national?nationalCopy:currentCopy,{profile:{personId:p.id,name:p.name,store:p.store,role:'销售顾问',avatar:p.avatar,badge:national?'王朝网全国销冠':'本月门店第一',fields:national?[{label:'9月完整月交付',value:'58辆'},{label:'目标完成率',value:'116.0%'}]:[{label:'本月交付',value:'26辆'},{label:'领先第二名',value:'3辆'}]},contextLabel:`${p.month} · ${scope} · 模拟业绩`,sources,followups:national?['他近半年表现怎么样？','哪些销售做法值得推广？']:['她的目标完成了吗？','主要卖哪些车型？']},data);
+    return make(key,national?'9月王朝网全国销冠':archive?'上月门店交付冠军':'本月门店交付当前第一',national?nationalCopy:archive?previousCopy:currentCopy,{profile:{personId:p.id,name:p.name,store:p.store,role:'销售顾问',avatar:p.avatar,badge:national?'王朝网全国销冠':archive?'上月门店销冠':'本月门店第一',fields:archive?[{label:'9月完整月交付',value:'38辆'},{label:'目标完成率',value:'118.8%'}]:national?[{label:'9月完整月交付',value:'58辆'},{label:'目标完成率',value:'116.0%'}]:[{label:'本月交付',value:'26辆'},{label:'领先第二名',value:'3辆'}]},contextLabel:`${p.month} · ${scope} · 模拟业绩`,sources,followups:past?['他近半年表现怎么样？','哪些销售做法值得推广？']:['她的目标完成了吗？','主要卖哪些车型？']},data);
   }
   function materials(script = false) {
     if (!window.DemoAccess?.canReadKnowledge('sales')) return make('materials','当前账号无权查看这项知识',['请使用具有销售知识查看权限的账号。']);
@@ -357,6 +359,13 @@ window.HomeReplies = (() => {
   }
   function reply(text, previous = {}) {
     const q=clean(text), old=previous.homeScenario;
+    const rankText = clean(String(text).replace(/[；;]销售冠军是谁[？?]?$/, '')).replace(/^(?:请问|帮我查一下|帮我看看|查一下|看看)+/, '').replace(/[啊呀呢吧]+$/, '');
+    const match = rankText.match(/^(本月|这个月|这月|今个月|10月|2026年10月|上个月|上月|前一个月|9月|2026年9月)(?:的)?(?:(?:销售冠军|销量冠军|销冠|销量第一名|销售第一名|销量TOP1)(?:是谁|谁|是哪位|是哪个)?|谁是(?:销售冠军|销冠)|谁(?:卖得|卖的|卖)(?:最好|最多)|(?:呢)?)$/i);
+    if (match && (!previous.scope || old)) {
+      const previousMonth = /上月|上个月|前一个月|9月/.test(match[1]);
+      return champion(previousMonth ? (old?.person === 'li' ? 'li' : 'storeLi') : 'zhou');
+    }
+
     if (/^(本月|这个月)(销售冠军|销量冠军|销冠|销量第一名|销售第一名|销量TOP1)(是谁|谁|是哪位)$/i.test(q)) return champion('zhou');
     if (/^(上个月|上月|9月|2026年9月)王朝(网)?全国(销售冠军|销量冠军|销冠|销量第一名|销量TOP1)(是谁|谁|是哪位)$/i.test(q)) return champion('li');
     if (q==='门店区域归属查询'||q==='门店归属查询') return make('store','当前门店的区域归属',[`${store}属于王朝网，业务组织归属为华南战区 → 深圳区域。`],{contextLabel:'当前演示门店 · 模拟组织关系',headers:['项目','内容'],rows:[['销售网络','王朝网'],['所属战区','华南战区'],['所属区域','深圳区域'],['所在地','广东省深圳市'],['门店类型','授权经销门店']],sources:[internal('门店组织档案','此门店及战区、区域关系为演示设定；地理位置不等于业务组织归属。')],followups:['该店本月目标完成情况','该店销售排名']});
@@ -371,7 +380,7 @@ window.HomeReplies = (() => {
     if (!old) return null;
     if (old.person) {
       const p=people[old.person];
-      if (/^(上个月|上月)(呢|销冠是谁)?$/.test(q)) return champion('li');
+      if (/^(上个月|上月)(呢|销冠是谁)?$/.test(q)) return champion(old.person === 'li' ? 'li' : 'storeLi');
       if (/^(本月|这个月)(呢|销冠是谁)?$/.test(q)) return champion('zhou');
       if (/主要卖|主销|车型.*(结构|构成|分布)|哪[个款].*车型.*(最多|最高)|哪款卖得最多/.test(q)) return champion(old.person,'distribution');
       if (/趋势|半年|最近.*表现|一直.*好/.test(q)) return champion(old.person,'trend');
@@ -383,7 +392,7 @@ window.HomeReplies = (() => {
       if (/哪里人|籍贯|入职|任职/.test(q)) {
         const field=/哪里人|籍贯/.test(q)?'hometown':'joinedAt';
         const allowed=window.DemoAccess?.canReadEmployee(field,p);
-        return make(old.key,allowed?`${p.name}的人员资料`:'无权查看这项人员资料',[allowed ? field==='hometown'?`${p.name}籍贯${old.person==='li'?'广东梅州':'广东汕头'}。`:`${p.name}于${old.person==='li'?'2022年3月15日':'2023年7月10日'}入职。`:`当前账号无权查看${p.name}的${field==='hometown'?'籍贯':'入职时间'}。`],{followups:['主要卖哪些车型？']},{...old,section:'personal',field});
+        return make(old.key,allowed?`${p.name}的人员资料`:'无权查看这项人员资料',[allowed ? field==='hometown'?`${p.name}籍贯${old.person!=='zhou'?'广东梅州':'广东汕头'}。`:`${p.name}于${old.person!=='zhou'?'2022年3月15日':'2023年7月10日'}入职。`:`当前账号无权查看${p.name}的${field==='hometown'?'籍贯':'入职时间'}。`],{followups:['主要卖哪些车型？']},{...old,section:'personal',field});
       }
     }
     if (old.key==='store' && /该店销售排名/.test(q)) return make('store','本月门店交付排名',['截至10月26日，周雨桐暂列第一。'],{headers:['销售顾问','交付（辆）'],rows:[['周雨桐','26'],['陈思雨','23'],['李明轩','21']],sources:[internal('门店交付排名','10月截至26日：26、23、21辆；未完月排名，区别于9月全国完整月。')],followups:['本月销售冠军是谁？']});
@@ -671,6 +680,10 @@ window.DemoChat = (() => {
     Object.assign(state, values, { pending: null, lastIntent: intent });
     const index = values.period === '2026年9月' ? 4 : 5;
     const period = values.period || '2026年10月';
+    if (['rank','runnerup'].includes(intent) && network === 'wangchao-national' && values.scope === scopes[0] && period === '2026年9月' && window.HomeReplies) {
+      const archive = window.HomeReplies.reply('上个月王朝全国销冠是谁？', {});
+      return intent === 'runnerup' ? window.HomeReplies.reply('第二名是谁？', archive.context) : archive;
+    }
     const p = personById(values.personId);
     if (intent === 'profile') {
       const personal = requestedFields(text).length > 0;
@@ -778,7 +791,7 @@ window.DemoChat = (() => {
     const seen = previous.journey?.key === key ? [...previous.journey.seen] : [];
     const fields = requestedFields(text);
     for (const item of [stage, ...(fields.includes('hometown') ? ['hometown'] : []), ...(fields.includes('joinedAt') ? ['tenure'] : [])]) if (item && !seen.includes(item)) seen.push(item);
-    if (isDynasty(response.context.network) || response.context.lastIntent === 'rank') response.championDataVersion = 8;
+    if (isDynasty(response.context.network) || response.context.lastIntent === 'rank') response.championDataVersion = 9;
     response.context = { ...response.context, journey: { key, seen, stage } };
     const followups = nextQuestions(response.context, stage);
     if (followups) response.followups = followups;
@@ -788,7 +801,7 @@ window.DemoChat = (() => {
     if (response.homeReply) return window.HomeReplies?.normalizeReply(response) || response;
     // Refresh older simulated champion answers without changing employee permissions.
     const updatedPrompts = { rank: '销冠是谁？', runnerup: '第二名呢？', trend: '他近6个月的销量趋势', growth: '销量增长原因', distribution: '主要卖什么车？', sales: '他的销量是多少？', gap: '他比第二名多卖多少辆？' };
-    if (response.kind === 'answer' && (isDynasty(response.context?.network) || response.context?.lastIntent === 'rank') && (response.championDataVersion !== 8 || response.context.lastIntent === 'rank' && !response.profile?.fields) && updatedPrompts[response.context.lastIntent]) response = reply(updatedPrompts[response.context.lastIntent], response.context);
+    if (response.kind === 'answer' && (isDynasty(response.context?.network) || response.context?.lastIntent === 'rank') && (response.championDataVersion !== 9 || response.context.lastIntent === 'rank' && !response.profile?.fields) && updatedPrompts[response.context.lastIntent]) response = reply(updatedPrompts[response.context.lastIntent], response.context);
     response = window.SalesDialogue?.normalizeReply(response) || response;
     if (response.personalParts?.length) {
       const person = personById(response.context?.personId);
