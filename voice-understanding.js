@@ -40,7 +40,20 @@ window.VoiceUnderstanding = (() => {
     }
     // Keep every explicitly spoken entity/number in the internal query as well.
     const queryText = intent && intent !== 'rank' ? text.replace(/销售冠军|销冠/g, '这位销售顾问') : text;
-    return intent ? result(`${queryText}；${request}`, intent) : result(original);
+    const interpreted = intent ? result(`${queryText}；${request}`, intent) : result(original);
+    if (intent === 'rank' && window.HomeReplies?.reply(text, context)?.profile) return result(text, 'rank');
+    if (intent === 'rank' && !context.scope && !context.personId && !context.network
+      && !/上月|上个月|9月|九月|全国|华南|华东|战区|门店|王朝|腾势|比亚迪/.test(text)
+      && canAnswerDirectly(interpreted, { kind:'answer', profile:{} })) {
+      return result('本月销售冠军是谁？', 'rank');
+    }
+    return interpreted;
   }
-  return { understand };
+  function canAnswerDirectly(voice, reply) {
+    if (voice?.intent !== 'rank' || reply?.kind !== 'answer' || !reply.profile || reply.unavailable) return false;
+    // Only a fully covered business query can bypass the model. Unknown names, scopes and metrics remain.
+    const covered = /2026年(?:9|10)月|全国门店|销售冠军|销量最高|交付最多|华南战区|华东战区|王朝网|比亚迪|销售第一|销量第一|上个月|这个月|前一个月|今个月|本月|上月|这月|九月|十月|9月|10月|全国|华南|华东|王朝|腾势|销冠|销售|销量|交付|个人|卖车|卖得|卖的|最多|最好|最厉害|最牛|最猛|第一|排名|哪个|哪位|是谁|谁|排|拿到|拿|卖|得|的|是|请问|帮我查一下|帮我|查一下|看看|告诉我|一下|查|看|啊|呀|呢|吧/g;
+    return !voice.query.replace(covered, '').replace(/[\s，,。！？?；;：:、]/g, '');
+  }
+  return { understand, canAnswerDirectly };
 })();

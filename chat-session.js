@@ -215,8 +215,9 @@ window.ChatConversations = (() => {
       } : DemoChat.reply(voice?.query || text, this.session.context);
       this.session.messages.forEach(message => { if (message.reply?.kind === 'clarify') message.resolved = true; });
       this.session.messages.push({ id: id(), role: 'user', text, ...(voice ? { inputSource: 'voice', voice } : {}), ...(attachments.length ? { attachments } : {}) });
-      const message = { id: id(), role: 'assistant', reply: response, state: 'pending',
-        ...(!attachments.length && !response.homeReply && window.DemoUnderstanding?.enabled ? { modelRequest: { text, context: previous.context } } : {}) };
+      const directVoice = window.VoiceUnderstanding?.canAnswerDirectly(voice, response);
+      const message = { id: id(), role: 'assistant', reply: response, state: 'pending', ...(voice ? { voiceReply: true } : {}),
+        ...(!attachments.length && !response.homeReply && !directVoice && window.DemoUnderstanding?.enabled ? { modelRequest: { text, context: previous.context } } : {}) };
       this.session.messages.push(message);
       this.session.context = response.context;
       if (this.session.title === '新对话') this.session.title = (text || attachments[0]?.name || '附件消息').slice(0, 26);
@@ -225,7 +226,7 @@ window.ChatConversations = (() => {
       if (!this.persist()) { this.session = previous; return false; }
       this.render(); this.finish(message); return true;
     }
-    finish(message, delay = 550 + Math.random() * 300) {
+    finish(message, delay = message.voiceReply ? 0 : 550 + Math.random() * 300) {
       this.onBusy(true);
       clearTimeout(this.timer);
       this.timer = setTimeout(async () => {
@@ -337,7 +338,7 @@ window.ChatConversations = (() => {
           return;
         }
         const blockRemaining = offset - (message.progress || 0);
-        let chunk = currentBlock.text === null ? 1 : Math.min(3 + Math.floor(Math.random() * 3), blockRemaining);
+        let chunk = currentBlock.text === null ? 1 : Math.min((message.voiceReply ? 8 : 3) + Math.floor(Math.random() * 3), blockRemaining);
         if (currentBlock.text !== null) {
           const upcoming = Array.from(currentBlock.text).slice(currentBlock.units - blockRemaining, currentBlock.units - blockRemaining + chunk);
           const punctuation = upcoming.findIndex(char => /[。！？；，、：]/.test(char));
@@ -352,7 +353,7 @@ window.ChatConversations = (() => {
         const pause = currentBlock.text === null ? 220 + Math.random() * 110
           : boundary ? 280 + Math.random() * 150
           : /[。！？；]$/.test(shown) ? 160 + Math.random() * 90
-          : /[，、：]$/.test(shown) ? 110 + Math.random() * 50 : 80 + Math.random() * 35;
+          : /[，、：]$/.test(shown) ? 110 + Math.random() * 50 : (message.voiceReply ? 40 : 80) + Math.random() * 35;
         this.timer = setTimeout(tick, pause);
       };
       tick();

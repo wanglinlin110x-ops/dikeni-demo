@@ -3,11 +3,12 @@ class VoiceInput {
   // Automotive voice vocabulary only. Never apply this to keyboard input.
   static normalizeTranscript(value) {
     const text = String(value ?? '');
-    const aliases = /(?:销关|销管|销官|销罐|消冠|消关|消管|消官|小冠|小关|小管|小官|校冠|校官|肖冠|萧冠|肖观|萧观|小观|销观|消观|校观|xi[aāáǎà]o[1-5]?\s*[-']?\s*gu[aāáǎà]n[1-5]?)/gi;
+    const aliases = /(?:销\s+冠|小\s+冠|销\s+关|销\s+管|销售\s*冠(?!军)|效冠|笑冠|销关|销管|销官|销罐|消冠|消关|消管|消官|小冠|小关|小管|小官|校冠|校官|肖冠|萧冠|肖观|萧观|小观|销观|消观|校观|xi[aāáǎà]o[1-5]?\s*[-']?\s*gu[aāáǎà]n[1-5]?)/gi;
     return text.replace(aliases, (term, offset) => {
       const before = text.slice(Math.max(0, offset - 18), offset);
       const after = text.slice(offset + term.length, offset + term.length + 18);
       // An explicitly named person, military rank or compound word keeps its literal meaning.
+      if (['效冠','笑冠'].includes(term) && !/(?:本月|这个月|这月|上月|上个月|九月|十月|9月|10月|王朝|腾势|销售|交付|排名|谁|哪位|哪个)/.test(text)) return term;
       if (/[A-Za-z]$/.test(before) || /^[A-Za-z]/.test(after)) return term;
       if (/(?:我叫|名叫|名字叫|姓名是|人名是|外号叫|昵称叫|同事|朋友|顾问|员工|经理|姓)\s*$/.test(before)
         || /^(?:经理|老师|同事|先生|女士|这个人|是人名|的名字|的姓名)/.test(after)) return term;
@@ -133,9 +134,8 @@ class VoiceInput {
     try {
       session.recognition = new Recognition();
       session.recognition.lang = 'zh-CN';
-      // Push-to-talk uses the same one-utterance recognizer as a normal voice tap.
-      // Only the explicit dictation/review mode needs continuous recognition.
-      session.recognition.continuous = compact;
+      // A phone utterance may contain several final segments. A final segment is not a release.
+      session.recognition.continuous = this.isMobile || compact;
       session.recognition.interimResults = true;
       session.recognition.onstart = () => {
         if (this.session !== session || session.retryPending) return;
@@ -166,20 +166,22 @@ class VoiceInput {
         session.hasInterim = results.some(result => !result.isFinal && String(result[0]?.transcript || '').trim());
         if (session.retryPending && this.hasText(session)) { session.retryPending = false; clearTimeout(session.retryDeadline); this.recognitionFinished(session); return; }
         if (session.finalizing && session.finalText && !session.hasInterim) { this.complete(session); return; }
-        if (!session.compact && !session.held && session.finalText && !session.hasInterim) { this.settle(session); return; }
+        if (!session.compact && !session.held) {
+          if (session.recognition.continuous) this.waitForSilence(session);
+          else if (session.finalText && !session.hasInterim) { this.settle(session); return; }
+        }
         if (session.ending && session.stopRequested) this.finishStoppedText(session, true);
       };
       session.recognition.onspeechstart = () => {
         if (this.session !== session || session.ending) return;
-        session.speaking = true; clearTimeout(session.speechEndDeadline); this.watchResponse(session);
+        session.speechEventsSeen = true; session.speaking = true; clearTimeout(session.speechEndDeadline); this.watchResponse(session);
       };
       session.recognition.onspeechend = () => {
         if (this.session !== session || session.ending) return;
         session.speaking = false;
         // Let the browser finalize naturally; a pause is not an immediate stop.
         if (!compact && !held) {
-          clearTimeout(session.speechEndDeadline);
-          session.speechEndDeadline = setTimeout(() => { if (this.session === session) this.finish(); }, 1400);
+          this.waitForSilence(session);
         }
       };
       session.recognition.onerror = event => {
@@ -222,6 +224,13 @@ class VoiceInput {
         if (permission.state === 'granted' && this.session === session && !session.ending) this.startMeter(session);
       }).catch(() => {});
     } catch { this.fail(session, '无法启动语音输入，请检查麦克风权限后重试'); }
+  }
+  waitForSilence(session) {
+    clearTimeout(session.speechEndDeadline);
+    if (this.session !== session || session.ending || session.held || session.compact || session.speaking) return;
+    session.speechEndDeadline = setTimeout(() => {
+      if (this.session === session && !session.speaking) this.finish();
+    }, 1400);
   }
   recognitionFinished(session) {
     if (this.session !== session) return;
@@ -273,6 +282,9 @@ class VoiceInput {
     if (this.session !== session) return;
     const text = VoiceInput.normalizeTranscript(session.partialText || session.finalText || session.lastText || '').trim();
     this.cleanup(session);
+    if (this.isMobile && !session.compact && /^(?:请问|帮我查(?:一下)?|查一下)?(?:本月|这个月|这月|上月|上个月|2026年(?:9|10)月)(?:的|销|销售|是谁)?[，。！？?\s]*$/.test(text)) {
+      this.onRecover?.(text); this.onError('没有听完整，已保留文字，请继续补充'); return;
+    }
     if (/[\p{L}\p{N}]/u.test(text)) {
       if (session.submit) this.onSubmit(session.compact ? [session.draft, text].filter(Boolean).join(' ') : text);
       else this.onRecover?.(text);
@@ -335,13 +347,13 @@ class VoiceInput {
     session.deadline = setTimeout(() => this.fail(session, '语音识别超时，请重试'), 8000);
     try { session.recognition.stop(); }
     catch { if (this.hasText(session)) this.settle(session); else this.fail(session, '未识别到文字，请再说一次'); return; }
-    this.finishStoppedText(session, Boolean(session.finalText && !session.hasInterim));
+    this.finishStoppedText(session);
   }
   hasText(session) { return /[\p{L}\p{N}]/u.test(session.partialText || session.finalText || session.lastText || ''); }
   finishStoppedText(session, freshResult = false) {
     clearTimeout(session.stopTextDeadline);
     if (this.session !== session || session.finalizing || !this.hasText(session)) return;
-    if (freshResult && session.finalText && !session.hasInterim) { this.settle(session); return; }
+    if (freshResult && !session.recognition.continuous && session.finalText && !session.hasInterim) { this.settle(session); return; }
     // The user has finished speaking. Keep accepting corrections, but do not depend on a missing onend.
     session.stopTextDeadline = setTimeout(() => { if (this.session === session) this.complete(session); }, 1000);
   }
