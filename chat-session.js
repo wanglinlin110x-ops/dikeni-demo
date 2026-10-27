@@ -3,7 +3,36 @@ window.ChatConversations = (() => {
   const key = window.DemoAccess?.storageScope === defaultScope ? 'dick-cowboy-conversations-v1' : `dick-cowboy-conversations-v1:${window.DemoAccess?.storageScope || 'guest'}`;
   const id = () => crypto.randomUUID();
   const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  function paragraphMarkup(paragraphs) {
+  // Presentation only: wrap exact ranges without rewriting or trusting HTML in a reply.
+  function emphasisMarkup(value, reply = {}, action = false) {
+    const text = String(value ?? ''), ranges = [];
+    const add = (start, end) => { if (end > start) ranges.push([start, end]); };
+    const terms = [reply.profile?.name, reply.profile?.store, '王小迪', '李明轩', '陈思雨', '王浩',
+      ...((reply.chart && !reply.chart.labels.every(label => /^\d+月$/.test(label))) ? reply.chart.labels : [])].filter(Boolean);
+    for (const term of new Set(terms)) {
+      let at = text.indexOf(term);
+      while (at !== -1) { add(at, at + term.length); at = text.indexOf(term, at + term.length); }
+    }
+    for (const pattern of [/[+-]?\d+(?:,\d{3})*(?:\.\d+)?(?:%|辆|台|万元|元|条)/g,
+      /稳步增长|持续增长|连续增长|创近[^，。；\n]{0,15}新高|领先第二名\d+辆/g]) {
+      for (const match of text.matchAll(pattern)) add(match.index, match.index + match[0].length);
+    }
+    if (action) {
+      const lead = text.match(/^[^，。；\n]{1,28}[，。；]/);
+      if (lead) add(0, lead[0].length - 1);
+    }
+    ranges.sort((a, b) => a[0] - b[0] || b[1] - a[1]);
+    const merged = [];
+    for (const range of ranges) {
+      const previous = merged.at(-1);
+      if (previous && range[0] <= previous[1]) previous[1] = Math.max(previous[1], range[1]);
+      else merged.push([...range]);
+    }
+    let offset = 0, markup = '';
+    for (const [start, end] of merged) { markup += escape(text.slice(offset, start)) + '<strong>' + escape(text.slice(start, end)) + '</strong>'; offset = end; }
+    return markup + escape(text.slice(offset));
+  }
+  function paragraphMarkup(paragraphs, reply) {
     const markup = [];
     let items = [];
     const flush = () => {
@@ -11,14 +40,15 @@ window.ChatConversations = (() => {
     };
     for (const paragraph of paragraphs) {
       const match = String(paragraph).match(/^\s*(?:\d+[.、．)]|[•●-])\s+([\s\S]+)$/);
-      if (!match) { flush(); markup.push(`<p class="chat-paragraph">${escape(paragraph)}</p>`); continue; }
+      if (!match) { flush(); markup.push(`<p class="chat-paragraph">${emphasisMarkup(paragraph, reply)}</p>`); continue; }
       const text = match[1], split = text.search(/[：:，,。！？?]/);
       const boundary = split > 0 && split <= 36 ? split + (/[：:]/.test(text[split]) ? 1 : 0) : 0;
-      const body = boundary ? `<strong>${escape(text.slice(0, boundary))}</strong>${escape(text.slice(boundary))}` : escape(text);
+      const body = boundary ? `<strong>${escape(text.slice(0, boundary))}</strong>${emphasisMarkup(text.slice(boundary), reply, true)}` : emphasisMarkup(text, reply, true);
       items.push(`<li class="chat-paragraph">${body}</li>`);
     }
     flush(); return markup.join('');
   }
+  const metricLabelMarkup = value => String(value).split(/(\d+日)/).map(part => /^\d+日$/.test(part) ? `<span class="metric-label-token">${escape(part)}</span>` : escape(part)).join('');
   const metricMarkup = value => {
     const percent = String(value).match(/^([+-]?)(\d+(?:\.\d+)?)(%)$/);
     if (!percent) return escape(value);
@@ -104,7 +134,7 @@ window.ChatConversations = (() => {
       host.addEventListener('click', event => this.action(event));
       this.bindAnswerContext();
       this.resumeGeneration();
-      window.addEventListener('pagehide', () => { this.suspended = true; clearTimeout(this.timer); if (this.busy) this.persist(); });
+      window.addEventListener('pagehide', () => { this.suspended = true; clearTimeout(this.timer); this.modelRun?.controller.abort(); if (this.busy) this.persist(); });
       window.addEventListener('pageshow', event => {
         if (event.persisted && this.suspended) { this.suspended = false; this.resumeGeneration(); }
       });
@@ -185,7 +215,8 @@ window.ChatConversations = (() => {
       } : DemoChat.reply(voice?.query || text, this.session.context);
       this.session.messages.forEach(message => { if (message.reply?.kind === 'clarify') message.resolved = true; });
       this.session.messages.push({ id: id(), role: 'user', text, ...(voice ? { inputSource: 'voice', voice } : {}), ...(attachments.length ? { attachments } : {}) });
-      const message = { id: id(), role: 'assistant', reply: response, state: 'pending' };
+      const message = { id: id(), role: 'assistant', reply: response, state: 'pending',
+        ...(!attachments.length && !response.homeReply && window.DemoUnderstanding?.enabled ? { modelRequest: { text, context: previous.context } } : {}) };
       this.session.messages.push(message);
       this.session.context = response.context;
       if (this.session.title === '新对话') this.session.title = (text || attachments[0]?.name || '附件消息').slice(0, 26);
@@ -197,7 +228,31 @@ window.ChatConversations = (() => {
     finish(message, delay = 550 + Math.random() * 300) {
       this.onBusy(true);
       clearTimeout(this.timer);
-      this.timer = setTimeout(() => {
+      this.timer = setTimeout(async () => {
+        if (message.modelRequest && window.DemoUnderstanding?.enabled) {
+          const run = { controller: new AbortController(), message };
+          this.modelRun = run;
+          const timeout = setTimeout(() => { run.timedOut = true; run.controller.abort(); }, 20000);
+          try {
+            const request = message.modelRequest;
+            const result = await DemoUnderstanding.resolve(request.text, request.context, run.controller.signal);
+            if (this.modelRun !== run || this.suspended || message.state !== 'pending') return;
+            const interpreted = DemoUnderstanding.reply(result, request.context);
+            if (message.regeneration) message.regeneration.nextReply = interpreted; else message.reply = interpreted;
+            const index = this.session.messages.indexOf(message);
+            const question = this.session.messages.slice(0, index).findLast(item => item.role === 'user');
+            if (question) question.dialogueUnderstanding = result;
+            this.session.context = interpreted.context;
+            delete message.modelRequest;
+          } catch {
+            if (this.modelRun !== run || this.suspended || message.state !== 'pending' || run.controller.signal.aborted && !run.timedOut) return;
+            delete message.modelRequest;
+            this.onError('本地模型暂未响应，已使用原有演示规则处理');
+          } finally {
+            clearTimeout(timeout);
+            if (this.modelRun === run) this.modelRun = null;
+          }
+        }
         if (message.regeneration) message.reply = message.regeneration.nextReply;
         message.state = 'streaming'; message.progress = 0;
         this.persist(); this.render(); this.stream(message);
@@ -306,6 +361,13 @@ window.ChatConversations = (() => {
       const message = this.session.messages.find(m => ['pending', 'streaming'].includes(m.state));
       if (!message) return;
       clearTimeout(this.timer);
+      this.modelRun?.controller.abort(); this.modelRun = null;
+      if (message.modelRequest && !message.regeneration) {
+        delete message.modelRequest;
+        const previousContext = this.session.messages.slice(0, this.session.messages.indexOf(message)).findLast(item => item.role === 'assistant')?.reply.context || {};
+        message.reply = { kind: 'answer', title: '已停止处理', paragraphs: [], context: { ...previousContext, lastIntent: 'interrupted' }, sources: [], followups: [] };
+        this.session.context = previousContext;
+      }
       if (message.regeneration) {
         const original = message.regeneration.original;
         delete message.regeneration; Object.assign(message, original);
@@ -338,25 +400,27 @@ window.ChatConversations = (() => {
     renderChart(message) {
       const { chart } = message.reply;
       const label = escape(chart.labels.map((text, i) => text + ' ' + chart.values[i] + '辆').join('，'));
-      if (chart.type === 'horizontal') return `<section class="chat-chart chat-horizontal"><h3>${escape(chart.title || '车型交付分布')}</h3><div role="img" aria-label="${label}">${chart.values.map((value, i) => `<div class="chat-horizontal-row${i === chart.highlight ? ' is-highlight' : ''}"><span>${escape(chart.labels[i])}</span><div class="chat-horizontal-track"><i style="width:${value / Math.max(...chart.values) * 100}%"></i></div><strong>${escape(value)}辆<small>${(value / chart.total * 100).toFixed(1)}%</small></strong></div>`).join('')}</div></section>`;
-
-      if (!chart.labels.every(text => /^\d+月$/.test(text))) return `<section class="chat-chart chat-bar"><div class="chat-bars" role="img" aria-label="${label}">${chart.values.map((value, i) => `<div class="chat-chart-column"><span>${escape(value)}辆</span><i style="height:${Math.max(6, value / Math.max(...chart.values) * 180)}px"></i><small>${escape(chart.labels[i])}</small></div>`).join('')}</div></section>`;
+      if (chart.type === 'horizontal' || !chart.labels.every(text => /^\d+月$/.test(text))) {
+        const horizontal = chart.type === 'horizontal';
+        const max = Math.max(1, ...chart.values);
+        return `<section class="chat-chart chat-horizontal${horizontal ? '' : ' chat-bar'}">${horizontal ? `<h3>${escape(chart.title || '车型交付分布')}</h3>` : ''}<div class="${horizontal ? 'chat-horizontal-rows' : 'chat-bars'}" role="img" aria-label="${label}">${chart.values.map((value, i) => `<div class="chat-horizontal-row${horizontal ? '' : ' chat-chart-column'}${i === chart.highlight ? ' is-highlight' : ''}"><span>${escape(chart.labels[i])}</span><div class="chat-horizontal-track"><i style="width:${value / max * 70}%"></i></div><strong>${escape(value)}辆${horizontal && chart.total ? `<small>${(value / chart.total * 100).toFixed(1)}%</small>` : ''}</strong></div>`).join('')}</div></section>`;
+      }
       const max = Math.max(1, ...chart.values), rawStep = max / 4;
       const magnitude = 10 ** Math.floor(Math.log10(rawStep));
       const step = [1, 2, 5, 10].find(value => value >= rawStep / magnitude) * magnitude, ceiling = step * 4;
       const plotTop = 33.61, plotBottom = 525.61;
-      const points = chart.values.map((value, i) => [43 + i * 600 / Math.max(1, chart.values.length - 1), plotBottom - value / ceiling * 492]);
+      const points = chart.values.map((value, i) => [43 + i * 595 / Math.max(1, chart.values.length - 1), plotBottom - value / ceiling * 492]);
       const curve = points.map(([x, y], i) => {
         if (!i) return `M ${x} ${y}`;
         const [previousX, previousY] = points[i - 1], middleX = (previousX + x) / 2;
         return `C ${middleX} ${previousY} ${middleX} ${y} ${x} ${y}`;
       }).join(' ');
       const last = points.at(-1);
-      return `<section class="chat-chart chat-trend"><h3>${escape(chart.title || `近${chart.labels.length}个月销量趋势`)}</h3><svg viewBox="0 0 651 580" role="img" aria-label="${label}">
-        <image class="trend-grid" href="assets/trend-grid.svg" x="43" y="32.91" width="595" height="493.4"/>
+      return `<section class="chat-chart chat-trend"><h3>${escape(chart.title || `近${chart.labels.length}个月销量趋势`)}</h3><svg viewBox="0 0 651 600" role="img" aria-label="${label}">
+        <image class="trend-grid" href="assets/reply-trend-grid.svg" x="43" y="32.91" width="595" height="493.4"/>
         ${Array.from({ length: 5 }, (_, i) => `<text class="trend-y-label" x="36" y="${plotTop + i * 123}" text-anchor="end" dominant-baseline="middle">${(ceiling - step * i).toFixed(0)}</text>`).join('')}
-        <path class="trend-curve" d="${curve}" fill="none" stroke="#00b5c7" stroke-width="2.4"/>
-        <circle cx="${last[0]}" cy="${last[1]}" r="8" fill="#00b5c7"/>
+        <path class="trend-curve" d="${curve}" fill="none" stroke="#07b1c7" stroke-width="2.4"/>
+        <circle cx="${last[0]}" cy="${last[1]}" r="8" fill="#07b1c7"/>
         ${chart.labels.map((text, i) => `<text class="trend-x-label" x="${43 + i * 595 / Math.max(1, chart.labels.length - 1)}" y="547.61" text-anchor="${i === 0 ? 'start' : i === chart.labels.length - 1 ? 'end' : 'middle'}" dominant-baseline="middle">${escape(text)}</text>`).join('')}
       </svg></section>`;
     }
@@ -368,21 +432,22 @@ window.ChatConversations = (() => {
         ${message.resolved ? '<p class="clarification-resolved">已补充 / 已继续对话</p>' : ''}</fieldset></form>`;
       return `<article tabindex="0" aria-haspopup="dialog" class="chat-answer${r.unavailable ? ' chat-answer-unavailable' : ''}${r.profile ? ' chat-answer-champion' : ''}${r.chart?.labels.every(text => /^\d+月$/.test(text)) ? ' chat-answer-trend' : ''}" data-name="Article">
         ${r.profile ? `<header class="chat-champion-profile">${r.profile.avatar ? `<img class="chat-champion-avatar" src="${escape(r.profile.avatar)}" alt="${escape(r.profile.name)}头像">` : `<span class="chat-champion-avatar chat-avatar-initial avatar-tone-${Number.isInteger(r.profile.avatarTone) && r.profile.avatarTone >= 0 && r.profile.avatarTone < 6 ? r.profile.avatarTone : 0}" aria-hidden="true">${escape((r.profile.name || '访').slice(0, 1))}</span>`}<div class="chat-profile-info"><div class="chat-profile-heading"><h2>${escape(r.profile.name)}</h2><span class="chat-profile-badge"><img src="assets/conversation-d3bb4.svg" alt="">${escape(r.profile.badge)}</span></div><p class="chat-profile-store">${escape(r.profile.store)}</p>${r.profile.role ? `<p class="chat-person-role">${escape(r.profile.role)}${r.profile.tenure ? ` · 入职约${escape(r.profile.tenure)}` : ''}</p>` : ''}</div></header>` : `<h2>${escape(r.title)}</h2>`}
-        ${paragraphMarkup(r.paragraphs)}
+        ${paragraphMarkup(r.paragraphs, r)}
         ${r.unavailable && message === this.session.messages.at(-1) ? `<div class="followup-options unavailable-options" aria-label="可以尝试的问题">${r.followups.map(text => `<button data-chat-action="followup">${escape(text)}</button>`).join('')}</div>` : ''}
         ${r.contextLabel ? `<p class="chat-answer-note">${escape(r.contextLabel)}</p>` : ''}
         ${r.rationale ? `<p class="chat-answer-note">${escape(r.rationale)}</p>` : ''}
-        ${r.quote ? `<section class="chat-script">${r.quoteLabel ? `<h3>${escape(r.quoteLabel)}</h3>` : ''}<blockquote>${escape(r.quote)}</blockquote><button class="chat-copy-script" data-chat-action="copy-script"><img src="assets/96cd7.svg" alt="">复制话术</button></section>` : ''}
+        ${r.quote ? `<section class="chat-script">${r.quoteLabel ? `<h3>${escape(r.quoteLabel)}</h3>` : ''}<blockquote>${emphasisMarkup(r.quote, r, true)}</blockquote><button class="chat-copy-script" data-chat-action="copy-script"><img src="assets/96cd7.svg" alt="">复制话术</button></section>` : ''}
         ${r.citations?.length ? `<div class="chat-citations">${r.citations.map(citation => `<button class="chat-citation" data-chat-action="citation" data-evidence-id="${escape(citation.id)}" data-document-key="${escape(citation.docKey)}"><img src="assets/cff1a.svg" alt=""><span>[${escape(citation.number)}] ${escape(citation.label)}</span><span aria-hidden="true">›</span></button>`).join('')}</div>` : ''}
-        ${r.afterCitation ? `<p class="chat-paragraph">${escape(r.afterCitation)}</p>` : ''}
+        ${r.afterCitation ? `<p class="chat-paragraph">${emphasisMarkup(r.afterCitation, r)}</p>` : ''}
         ${r.quoteNote ? `<p class="chat-answer-note">${escape(r.quoteNote)}</p>` : ''}
-        ${r.nextStep ? `<section class="chat-next-step"><h3>下一步</h3><p class="chat-paragraph">${escape(r.nextStep)}</p></section>` : ''}
+        ${r.nextStep ? `<section class="chat-next-step"><h3>下一步</h3><p class="chat-paragraph">${emphasisMarkup(r.nextStep, r, true)}</p></section>` : ''}
         ${r.notice ? `<p class="chat-answer-note">${escape(r.notice)}</p>` : ''}
         ${r.profile?.fields?.length ? `<dl class="chat-person-facts">${r.profile.fields.map(field => `<div><dt>${escape(field.label)}</dt><dd>${escape(field.value)}</dd></div>`).join('')}</dl>` : ''}
-        ${r.metrics?.length ? `<div class="chat-metrics">${r.metrics.map(([value, label]) => `<div><strong${/^[+-]?\d+(?:\.\d+)?%$/.test(String(value)) ? ' class="metric-percentage"' : ''}>${metricMarkup(value)}</strong><span>${escape(r.chart?.labels.every(text => /^\d+月$/.test(text)) ? label.replace('6个月累计（辆）', '累计销量').replace('月均销量（辆）', '月均销量') : label)}</span></div>`).join('')}</div>` : ''}
+        ${r.progressCard ? `<section class="chat-target-progress" aria-label="${escape(r.progressCard.label)}"><div><strong>${escape((r.progressCard.value / r.progressCard.target * 100).toFixed(1))}%</strong><span>${escape(r.progressCard.label)}</span></div><progress max="${escape(r.progressCard.target)}" value="${escape(Math.min(r.progressCard.value,r.progressCard.target))}">${escape(r.progressCard.value)} / ${escape(r.progressCard.target)}</progress><p>目标 ${escape(r.progressCard.target)} · 已完成 ${escape(r.progressCard.value)} · ${r.progressCard.value >= r.progressCard.target ? '超出' : '缺口'} ${escape(Math.abs(r.progressCard.target-r.progressCard.value))}</p></section>` : ''}
+        ${r.metrics?.length ? `<div class="chat-metrics">${r.metrics.map(([value, label]) => `<div data-metric-kind="${/环比|增长|差值/.test(label) ? 'change' : 'value'}"><strong${/^[+-]?\d+(?:\.\d+)?%$/.test(String(value)) ? ' class="metric-percentage"' : ''}>${metricMarkup(value)}</strong><span>${metricLabelMarkup(r.chart?.labels.every(text => /^\d+月$/.test(text)) ? label.replace('6个月累计（辆）', '累计销量').replace('月均销量（辆）', '月均销量').replace(/（辆）$/, '') : label)}</span></div>`).join('')}</div>` : ''}
         ${r.chart ? this.renderChart(message) : ''}
-        ${r.chart?.note ? `<p class="chat-paragraph">${escape(r.chart.note)}</p>` : ''}
-        ${r.rows && !r.profile ? `<div class="chat-table-wrap"><table><thead><tr>${r.headers.map(text => `<th>${escape(text)}</th>`).join('')}</tr></thead><tbody>${r.rows.map(row => `<tr>${row.map(text => `<td>${escape(text)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
+        ${r.chart?.note ? `<p class="chat-paragraph">${emphasisMarkup(r.chart.note, r)}</p>` : ''}
+        ${r.rows && !r.profile ? `<div class="chat-table-wrap"><table><thead><tr>${r.headers.map(text => `<th>${escape(text)}</th>`).join('')}</tr></thead><tbody>${r.rows.map(row => `<tr>${row.map(text => `<td>${/^[-+]?\d+(?:[,.]\d+)*%?$/.test(String(text)) ? `<strong>${escape(text)}</strong>` : emphasisMarkup(text, r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
         ${r.sources.length ? `<section class="chat-source-disclosure"><button type="button" class="chat-sources" data-chat-action="sources" aria-controls="sources-${escape(message.id)}" aria-expanded="${this.expandedSources.has(message.id)}"><span><img src="assets/cff1a.svg" alt="">数据来源·${r.sources.length}项</span><span><span class="source-toggle-label">${this.expandedSources.has(message.id) ? '收起' : '展开'}</span><img src="assets/289e6.svg" alt=""></span></button><ol class="chat-source-content" id="sources-${escape(message.id)}" ${this.expandedSources.has(message.id) ? '' : 'hidden'}>${r.sources.map((source, i) => `<li><h3>${String(i + 1).padStart(2, '0')} · ${escape(source.title)}</h3>${source.description.split('。').filter(Boolean).map(line => `<p>${escape(line)}</p>`).join('')}<p>数据更新时间：${escape(source.updated)}</p>${source.url ? `<a href="${escape(source.url)}" target="_blank" rel="noopener noreferrer">查看公开来源 ↗</a>` : ''}</li>`).join('')}</ol></section>` : ''}
         <div class="chat-answer-actions" data-name="AnswerActions" data-current="${message === this.session.messages.at(-1)}" ${message === this.session.messages.at(-1) ? '' : 'hidden'}>
           <button data-chat-action="copy" aria-label="复制回答"><img src="assets/conversation-1dd93.svg" alt=""></button>
@@ -616,7 +681,8 @@ window.ChatConversations = (() => {
         const question = preceding.findLast(item => item.role === 'user');
         if (!question) return;
         const context = preceding.findLast(item => item.role === 'assistant')?.reply.context || {};
-        message.regeneration = { original: { reply: message.reply, state: message.state, ...(message.progress !== undefined ? { progress: message.progress } : {}) }, nextReply: question.attachments?.length ? { ...message.reply, context: { ...context, pending: null, journey: null, lastIntent: 'attachment' } } : DemoChat.reply(question.inputSource === 'voice' ? question.voice?.query || question.text : question.text, context) };
+        message.regeneration = { original: { reply: message.reply, state: message.state, ...(message.progress !== undefined ? { progress: message.progress } : {}) }, nextReply: question.attachments?.length ? { ...message.reply, context: { ...context, pending: null, journey: null, lastIntent: 'attachment' } } : question.dialogueUnderstanding && window.DemoUnderstanding ? DemoUnderstanding.reply(question.dialogueUnderstanding, context) : DemoChat.reply(question.inputSource === 'voice' ? question.voice?.query || question.text : question.text, context) };
+        if (!question.attachments?.length && !message.regeneration.nextReply.homeReply && !question.dialogueUnderstanding && window.DemoUnderstanding?.enabled) message.modelRequest = { text: question.text, context };
         message.state = 'pending'; delete message.progress;
         this.session.updated = Date.now();
         this.persist(); this.render(); this.finish(message);

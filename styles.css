@@ -1214,3 +1214,100 @@ body[data-page="conversation"] .chat-source-disclosure:has(>.chat-sources[aria-e
 body[data-page="conversation"] .chat-source-content{margin:24px 0 0;padding:24px 24px 0;border-top:1px solid transparent;background:url("assets/source-divider.svg") top center/100% 1px no-repeat}
 body[data-page="conversation"] .chat-source-content h3{color:#101210;line-height:36px}
 .font-large body[data-page="conversation"] .chat-thread .chat-source-content h3{line-height:50px}
+
+/* Reply visual system, Figma 64:735. The 750px canvas remains the scaling basis. */
+body[data-page="conversation"] .chat-thread :is(.chat-answer,.clarification-card){background:#f8f8f8;border-radius:24px;padding:40px 24px 24px;color:#101210}
+body[data-page="conversation"] .chat-thread .chat-answer{gap:40px}
+body[data-page="conversation"] .chat-thread .chat-answer>.chat-paragraph+.chat-paragraph{margin-top:-16px}
+body[data-page="conversation"] .chat-thread .chat-answer-champion>.chat-paragraph:first-of-type{margin-top:-8px}
+body[data-page="conversation"] .chat-thread .chat-paragraph strong,
+body[data-page="conversation"] .chat-thread .chat-script strong{font-weight:600;font-size:inherit;line-height:inherit;color:inherit}
+body[data-page="conversation"] .chat-thread .chat-answer>h2{font-size:30px;line-height:44.4px;font-weight:600}
+body[data-page="conversation"] .chat-thread .chat-answer .chat-person-facts{gap:24px 12px;border:0;padding-top:0}
+body[data-page="conversation"] .chat-thread .chat-answer .chat-person-facts>div{position:relative;padding-left:24px}
+body[data-page="conversation"] .chat-thread .chat-answer .chat-person-facts>div::before{content:"";position:absolute;inset:0 auto 0 0;width:8px;background:url("assets/reply-fact-accent.svg") center/8px 100% no-repeat}
+body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);grid-template-columns:none;gap:12px;align-items:stretch;margin:0;padding:0;border-radius:0;background:transparent;width:100%}
+body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics>div{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:0;min-width:0;padding:20px 24px;border:0;border-radius:24px;background:#fff;text-align:left}
+body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics>div>span{order:-1;padding:0;font-size:26px;line-height:40px;text-align:left;overflow-wrap:anywhere;color:#999}
+body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics strong,
+body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics .metric-digits{font-size:40px;line-height:56px;font-weight:500;color:#101210}
+body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics .metric-percentage{display:flex;align-items:flex-end;justify-content:flex-start;gap:2px;line-height:56px}
+body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics .metric-percentage>span{padding:0;margin:0;color:inherit}
+body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics .metric-symbol{font-size:32px;line-height:52px}
+body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics>[data-metric-kind="change"] strong{color:#ff1818}
+body[data-page="conversation"] .chat-thread .chat-answer :is(.chat-metrics,.chat-chart)+.chat-source-disclosure{margin-top:-20px}
+body[data-page="conversation"] .chat-thread .chat-chart{margin:0;width:100%;min-width:0}
+body[data-page="conversation"] .chat-thread .chat-chart h3{margin:0;font-size:30px;line-height:44.4px;font-weight:600;color:#101210}
+body[data-page="conversation"] .chat-thread .chat-trend svg{margin:24px 0 0;overflow:visible}
+body[data-page="conversation"] .chat-thread .chat-horizontal>div{display:flex;flex-direction:column;gap:56px;margin-top:24px;padding:20px 0;align-items:stretch;height:auto}
+body[data-page="conversation"] .chat-thread .chat-horizontal:not(:has(>h3))>div{margin-top:0}
+body[data-page="conversation"] .chat-thread .chat-horizontal-row{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto 8px;align-items:start;gap:8px 16px;min-width:0;font-size:26px;line-height:42px}
+body[data-page="conversation"] .chat-thread .chat-horizontal-row>span{grid-column:1;grid-row:1;min-width:0;line-height:42px;overflow-wrap:anywhere;color:#101210}
+body[data-page="conversation"] .chat-thread .chat-horizontal-row>strong{grid-column:2;grid-row:1;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:flex-end;gap:0 12px;max-width:240px;font-size:26px;line-height:42px;font-weight:400;color:#101210}
+body[data-page="conversation"] .chat-thread .chat-horizontal-row small{display:inline;font-size:22px;line-height:32px;font-weight:400;color:#999}
+body[data-page="conversation"] .chat-thread .chat-horizontal-track{grid-column:1/-1;grid-row:2;width:100%;height:8px;border-radius:6px;background:#e9e9eb}
+body[data-page="conversation"] .chat-thread .chat-horizontal-track i{height:8px;border-radius:6px;background:#07b1c7}
+body[data-page="conversation"] .chat-thread .chat-horizontal-row.is-highlight>:is(span,strong){color:#07b1c7;font-weight:500}
+body[data-page="conversation"] .chat-thread .chat-table-wrap{width:100%;min-width:0;margin:0;padding:0 24px;background:#fff;border-radius:24px;overscroll-behavior-x:contain}
+body[data-page="conversation"] .chat-thread .chat-table-wrap th{font-size:26px;line-height:40px;color:#999}
+body[data-page="conversation"] .chat-thread .chat-table-wrap td{font-size:28px;line-height:44px;color:#101210}
+body[data-page="conversation"] .chat-thread .chat-table-wrap strong{font-weight:600}
+body[data-page="conversation"] .chat-thread .chat-table-wrap tr:last-child td{border-bottom:0}
+body[data-page="conversation"] .chat-thread :is(.chat-script,.chat-next-step){min-width:0;width:100%;padding:24px;border-radius:24px;background:#fff;border:0}
+body[data-page="conversation"] .chat-thread :is(.chat-script,.chat-next-step) h3{font-size:26px;line-height:40px;font-weight:600;color:#101210;margin:0 0 16px}
+body[data-page="conversation"] .chat-thread .chat-script blockquote{margin:0;font-size:30px;line-height:46px;color:#101210;overflow-wrap:anywhere}
+body[data-page="conversation"] .chat-thread .clarification-card legend{font-size:30px;line-height:44.4px;font-weight:600;color:#101210}
+body[data-page="conversation"] .chat-thread .clarification-options{gap:12px;margin-top:24px}
+body[data-page="conversation"] .chat-thread .clarification-options button{border-radius:26px;font-size:28px;line-height:40px;padding:12px 18px}
+body[data-page="conversation"] .chat-thread .clarification-hint{font-size:26px;line-height:40px;color:#777}
+/* Reading mode changes text while preserving chrome, chart bars and icon geometry. */
+.font-large body[data-page="conversation"] .chat-thread .chat-answer>h2{font-size:40px;line-height:58px}
+.font-large body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics :is(strong,.metric-digits){font-size:52px;line-height:72px}
+.font-large body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics .metric-percentage{line-height:72px}
+.font-large body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics .metric-symbol{font-size:36px;line-height:64px}
+.font-large body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics>div>span{font-size:30px;line-height:44px}
+.font-large body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics:has(>div:nth-child(3))>div{padding-inline:16px}
+.font-large body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics:has(>div:nth-child(3)) :is(strong,.metric-digits){font-size:46px;line-height:66px}
+.font-large body[data-page="conversation"] .chat-thread .chat-chart h3{font-size:34px;line-height:50px}
+.font-large body[data-page="conversation"] .chat-thread .chat-horizontal-row{grid-template-columns:minmax(0,1fr) auto;font-size:30px;line-height:44px}
+.font-large body[data-page="conversation"] .chat-thread .chat-horizontal-row>span{line-height:44px}
+.font-large body[data-page="conversation"] .chat-thread .chat-horizontal-row>strong{font-size:32px;line-height:46px}
+.font-large body[data-page="conversation"] .chat-thread .chat-horizontal-row small{font-size:28px;line-height:42px}
+.font-large body[data-page="conversation"] .chat-thread .chat-table-wrap :is(td,th){font-size:30px;line-height:46px}
+.font-large body[data-page="conversation"] .chat-thread :is(.chat-script,.chat-next-step) h3{font-size:34px;line-height:50px}
+.font-large body[data-page="conversation"] .chat-thread .chat-script blockquote{font-size:36px;line-height:56px}
+.font-large body[data-page="conversation"] .chat-thread .clarification-card legend{font-size:36px;line-height:54px}
+.font-large body[data-page="conversation"] .chat-thread .clarification-options button{font-size:34px;line-height:50px}
+.font-large body[data-page="conversation"] .chat-thread .clarification-hint{font-size:30px;line-height:46px}
+/* History account header, Figma 10:4364; independent of conversation reading size. */
+.history-account{gap:12px}
+.history-account h2{font-size:38px;line-height:53px;font-weight:600}
+.font-size-option{width:80px;padding:4px 12px}
+.font-size-option[aria-pressed="true"]{background:#07b1c7}
+body[data-page="conversation"] .chat-thread .chat-trend .trend-curve{vector-effect:none}
+/* Align metric values even when a narrow column makes one label wrap. */
+@supports(grid-template-rows:subgrid){
+ body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics{grid-template-rows:auto auto;gap:0 12px}
+ body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics>div{display:grid;grid-row:span 2;grid-template-rows:subgrid;align-items:start;justify-content:stretch}
+ body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics>div>span{grid-row:1}
+ body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics>div>strong{grid-row:2}
+}
+body[data-page="conversation"] .chat-thread .chat-answer>.chat-source-disclosure{margin-top:-20px}
+body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics>div>span .metric-label-token{display:inline;white-space:nowrap;font:inherit;line-height:inherit;color:inherit;padding:0}
+
+/* Figma 41:10484 — recommendation cards only; other screens retain their styles. */
+body:is([data-page="index"],[data-page="input"]) .s27{gap:16px}
+body:is([data-page="index"],[data-page="input"]) .s28{background:#f9f9f9;border-radius:20px;gap:12px;padding:20px 24px;height:78px;min-height:78px;max-width:100%}
+body:is([data-page="index"],[data-page="input"]) .s30{font-family:"PingFang SC","Microsoft YaHei",sans-serif;font-weight:500;font-size:28px;line-height:38px;color:#101210;white-space:nowrap}
+body:is([data-page="index"],[data-page="input"]) .home-figma-icon{width:36px;height:36px}
+body:is([data-page="index"],[data-page="input"]) .home-figma-icon img{position:static;transform:none;width:auto;height:auto;max-width:none}
+.font-large body:is([data-page="index"],[data-page="input"]) .s28{height:84px;min-height:84px}
+.font-large body:is([data-page="index"],[data-page="input"]) .s30{font-size:32px;line-height:44px}
+.chat-target-progress{margin:24px 0;padding:24px;border-radius:20px;background:#f9f9f9}
+.chat-target-progress>div{display:flex;align-items:baseline;gap:20px;flex-wrap:wrap}
+.chat-target-progress strong{font-size:48px;line-height:1.3;color:#101210}
+.chat-target-progress span,.chat-target-progress p{font-size:26px;line-height:40px;color:#777}
+.chat-target-progress progress{display:block;appearance:none;width:100%;height:12px;margin:20px 0;border:0;border-radius:6px;overflow:hidden;background:#e8e8e8;accent-color:#101210}
+.chat-target-progress progress::-webkit-progress-bar{background:#e8e8e8}
+.chat-target-progress progress::-webkit-progress-value{background:#101210;border-radius:6px}
+.chat-target-progress progress::-moz-progress-bar{background:#101210;border-radius:6px}

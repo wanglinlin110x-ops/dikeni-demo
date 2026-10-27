@@ -216,7 +216,9 @@
   function updateSuggestionIcon(button) {
     const icon = $('.s29', button);
     if (!icon) return;
-    const text = button.textContent.trim();
+    const text = button.dataset.question || button.textContent.trim();
+    const curatedIcon = window.HomeReplies?.pages.flat().includes(text) ? HomeReplies.iconFor(text) : null;
+    if (curatedIcon) { icon.className = 's29 suggestion-icon home-figma-icon'; icon.setAttribute('aria-hidden', 'true'); const image = document.createElement('img'); image.alt = ''; image.src = `assets/${curatedIcon}`; icon.replaceChildren(image); return; }
     // Icon names refer to the supplied Figma 41:13116 minimal outlined library.
     // Specific intents precede generic sales/customer terms.
     const iconFiles = {"User": "simple-a1133.svg", "LineChart": "simple-2983b.svg", "Car": "simple-b9004.svg", "Comment": "simple-a9335.svg", "Gift": "simple-e214c.svg", "BarChart": "simple-4fbb9.svg", "CheckList": "simple-3c9e5.svg", "Shop": "simple-b91a8.svg", "FileText": "simple-0a943.svg", "Layers": "simple-68f3a.svg", "Bulb": "simple-6f2be.svg", "Search": "simple-cd5bc.svg", "PieChart": "simple-b72aa.svg", "Sliders": "simple-faed8.svg"};
@@ -245,61 +247,32 @@
     icon.replaceChildren(image);
   }
   $$('[data-name="Section - 推荐问题"] .s28').forEach(updateSuggestionIcon);
-  const championSuggestion = '本月销售冠军是谁？';
-  const suggestionPool = [
-    championSuggestion, '上月王朝网华南销冠是谁？', '本月 Z9 和 N9 销量对比', '客户说有点贵，怎么接？', '置换权益和金融优惠能叠加吗？',
-    '本月销量复盘', '本月订单目标完成率是多少？', '本月订单量（分车型）', '上月销量怎么样？',
-    '近6个月销量趋势', '各动力形式销量占比', '推荐几款同价位车型', '看看竞品新前脸',
-    '门店区域归属查询', '置换补贴需要哪些材料？', '车型核心配置差异', '库存深度是什么意思？',
-  ];
-  const shuffle = items => {
-    const result = [...items];
-    for (let i = result.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [result[i], result[j]] = [result[j], result[i]]; }
-    return result;
-  };
+  const suggestionPages = window.HomeReplies.pages;
   const homeQuestions = $$('[data-name="Section - 推荐问题"] .s28');
-  const setQuestion = (button, text) => {
-    const label = $('[data-name="Text"] p', button) || $('[data-name="Text"]', button) || [...button.children].find(child => child.textContent.trim());
-    if (label && text) { button.dataset.question = text; label.textContent = window.DemoText?.format(text) || text; updateSuggestionIcon(button); }
-  };
   const suggestionsKey = 'demo-home-recommendations-state';
-  let restoredSuggestions;
-  if (homeQuestions.length) {
-    let firstEntry = true;
-    try {
-      firstEntry = sessionStorage.getItem('demo-home-recommendations-seen') !== '1';
-      const saved = JSON.parse(sessionStorage.getItem(suggestionsKey) || 'null');
-      if (!firstEntry && saved?.version === 1 && Array.isArray(saved.questions) && saved.questions.length === homeQuestions.length && new Set(saved.questions).size === homeQuestions.length && saved.questions.every(text => suggestionPool.includes(text))) restoredSuggestions = saved;
-      sessionStorage.setItem('demo-home-recommendations-seen', '1');
-    } catch { /* A restricted browser still supports random refreshes. */ }
-    const initial = restoredSuggestions?.questions || (firstEntry ? [championSuggestion, ...shuffle(suggestionPool.filter(text => text !== championSuggestion)).slice(0, homeQuestions.length - 1)] : shuffle(suggestionPool).slice(0, homeQuestions.length));
-    homeQuestions.forEach((button, index) => setQuestion(button, initial[index]));
+  let suggestionPage = 0;
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(suggestionsKey) || 'null');
+    if (saved?.version === 2 && (saved.page === 0 || saved.page === 1)) suggestionPage = saved.page;
+  } catch { /* Both pages still work without session storage. */ }
+  function renderSuggestions() {
+    homeQuestions.forEach((button, index) => {
+      const text = suggestionPages[suggestionPage][index];
+      const label = $('[data-name="Text"] p', button) || $('[data-name="Text"]', button);
+      if (!label) return;
+      button.dataset.question = text;
+      label.textContent = window.DemoText?.format(text) || text;
+      updateSuggestionIcon(button);
+    });
+    try { sessionStorage.setItem(suggestionsKey, JSON.stringify({ version: 2, page: suggestionPage })); } catch { /* Storage is optional. */ }
   }
-  const initialSuggestions = homeQuestions.map(item => item.dataset.question || item.textContent.trim());
-  let unseenSuggestions = Array.isArray(restoredSuggestions?.unseen)
-    ? [...new Set(restoredSuggestions.unseen.filter(text => suggestionPool.includes(text) && !initialSuggestions.includes(text)))]
-    : shuffle(suggestionPool.filter(text => !initialSuggestions.includes(text)));
-  function saveSuggestions() {
-    if (!homeQuestions.length) return;
-    try { sessionStorage.setItem(suggestionsKey, JSON.stringify({ version: 1, questions: homeQuestions.map(item => item.dataset.question), unseen: unseenSuggestions })); }
-    catch { /* Suggestions remain usable when session storage is unavailable. */ }
-  }
-  saveSuggestions();
+  if (homeQuestions.length) renderSuggestions();
   const routes = text => /增长|原因|成交|经验/.test(text) ? 'analysis.html' : /趋势|6个月|6 个月/.test(text) ? 'trend.html' : 'conversation.html';
   $$('[data-name="Button"]').forEach(button => {
     const text = button.textContent.trim();
     if (text === '换一换') interactive(button, () => {
-      const container = $('[data-name="Section - 推荐问题"] [data-name="Container"]');
-      if (!container) return;
-      const buttons = $$('[data-name="Button"]', container);
-      const visible = buttons.map(item => item.dataset.question || item.textContent.trim());
-      const count = buttons.length;
-      if (unseenSuggestions.length < count) {
-        unseenSuggestions.push(...shuffle(suggestionPool.filter(text => !visible.includes(text) && !unseenSuggestions.includes(text))));
-      }
-      const next = unseenSuggestions.splice(0, count);
-      buttons.forEach((item, index) => setQuestion(item, next[index]));
-      saveSuggestions();
+      suggestionPage = (suggestionPage + 1) % suggestionPages.length;
+      renderSuggestions();
     });
     else if (text === '确定' || text === '跳过') interactive(button, () => toast(text === '确定' ? '已选择对比范围' : '已跳过范围选择'));
     else if (text === '重新生成') interactive(button, () => toast('当前为预置回答，暂不支持重新生成'));

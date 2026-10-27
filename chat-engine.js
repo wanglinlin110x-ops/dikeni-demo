@@ -352,6 +352,8 @@ window.DemoChat = (() => {
     return order.filter(key => !seen.has(key) && (key !== 'hometown' || window.DemoAccess?.canReadEmployee('hometown', person)) && (key !== 'tenure' || window.DemoAccess?.canReadEmployee('joinedAt', person))).slice(0, 2).map(key => questions[key]);
   }
   function reply(text, previous = {}) {
+    const homeResponse = window.HomeReplies?.reply(text, previous);
+    if (homeResponse) return homeResponse;
     if (unrelatedTopic(text)) return unavailable(previous);
     const salesResponse = window.SalesDialogue?.reply(text, previous);
     if (salesResponse) return salesResponse;
@@ -370,6 +372,7 @@ window.DemoChat = (() => {
     return response;
   }
   function normalizeReply(response) {
+    if (response.homeReply) return window.HomeReplies?.normalizeReply(response) || response;
     // Refresh older simulated champion answers without changing employee permissions.
     const updatedPrompts = { rank: '销冠是谁？', runnerup: '第二名呢？', trend: '他近6个月的销量趋势', growth: '销量增长原因', distribution: '主要卖什么车？', sales: '他的销量是多少？', gap: '他比第二名多卖多少辆？' };
     if (response.kind === 'answer' && (isDynasty(response.context?.network) || response.context?.lastIntent === 'rank') && (response.championDataVersion !== 8 || response.context.lastIntent === 'rank' && !response.profile?.fields) && updatedPrompts[response.context.lastIntent]) response = reply(updatedPrompts[response.context.lastIntent], response.context);
