@@ -17,7 +17,7 @@ window.DemoFontSize = (() => {
   function apply(large) {
     const canvas = document.querySelector('.design-screen');
     const zoom = canvas ? canvas.getBoundingClientRect().width / 750 : 1;
-    const positions = [...document.querySelectorAll('.s10,.s49,.history-content,.source-scroll,.feedback-sheet,.wb-content')]
+    const positions = [...document.querySelectorAll('body[data-page="conversation"] .s49')]
       .filter(node => node.getClientRects().length && node.scrollHeight > node.clientHeight)
       .map(node => {
         const top = Math.max(node.getBoundingClientRect().top, node.querySelector('[data-name="Header"]')?.getBoundingClientRect().bottom || 0);

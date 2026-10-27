@@ -50,7 +50,7 @@ window.ComposerAttachments = class {
       if(kind!=='files')input.accept='image/*'; if(kind==='camera')input.setAttribute('capture','environment'); else input.multiple=true;
       input.addEventListener('change',()=>{this.select([...input.files]);input.value=''});this.footer.append(input);this.inputs[kind]=input;
     }
-    this.composer.querySelector('.s37 img').src='assets/composer-voice.svg'; this.composer.querySelector('.s43 img').src='assets/composer-send.svg';
+    this.composer.querySelector('.s37 img').src='assets/composer-voice.svg'; this.composer.querySelector('.s43 img').src='assets/composer-send-disabled.svg';
     this.add.addEventListener('pointerdown',e=>e.preventDefault());
     this.add.addEventListener('click',event=>{
       if(!this.panel.hidden){this.close(event.detail===0);return}

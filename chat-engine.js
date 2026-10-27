@@ -11,6 +11,8 @@ window.DemoChat = (() => {
     { id: 'dynasty-wang', name: '王浩', avatar: 'assets/wang-hao-avatar.png?v=20261027-small', store: '广州天河王朝店', region: '华南战区', monthly: [19, 22, 24, 28, 35, 41], leads: 112 },
     { id: 'dynasty-chen', name: '陈思雨', avatar: 'assets/chen-siyu-avatar.png?v=20261027-small', store: '上海虹桥王朝店', region: '华东战区', monthly: [17, 18, 21, 23, 26, 27], leads: 108 },
   ];
+  // National Wangchao examples keep a separate identity from the regional archive.
+  const nationalPeople = people.map((person, index) => ({ ...person, id: `national-${person.id}`, store: ['深圳坪山王朝4S店', '广州天河王朝4S店', '上海虹桥王朝4S店'][index] }));
   const employeeRecords = {
     wang: { hometown: '广东惠州', joinedAt: '2021年6月8日', tenure: '5年4个月' },
     li: { hometown: '广东广州', joinedAt: '2022年5月16日', tenure: '4年5个月' },
@@ -19,9 +21,11 @@ window.DemoChat = (() => {
     'dynasty-wang': { hometown: '广东佛山', joinedAt: '2021年8月9日', tenure: '5年2个月' },
     'dynasty-chen': { hometown: '浙江杭州', joinedAt: '2023年2月6日', tenure: '3年8个月' },
   };
+  nationalPeople.forEach((person, index) => { employeeRecords[person.id] = employeeRecords[people[index].id]; });
+  const isDynasty = network => network === 'wangchao' || network === 'wangchao-national';
   const models = ['Z9', 'N9', 'N8L', '汉 DM-i', '宋 PLUS DM-i', '秦 PLUS DM-i'];
-  const roster = network => network === 'wangchao' ? dynastyPeople : people;
-  const networkName = network => network === 'wangchao' ? '王朝网' : '腾势';
+  const roster = network => network === 'wangchao' ? dynastyPeople : network === 'wangchao-national' ? nationalPeople : people;
+  const networkName = network => isDynasty(network) ? '王朝网' : '腾势';
   const periodLabel = period => period === '2026年9月' ? '2026年9月' : '2026年10月截至24日';
   const source = (title, period = '2026年10月') => ({ title, description: `统计月份：${period}。`, updated: '2026-10-24' });
   const brandBackground = {
@@ -78,7 +82,7 @@ window.DemoChat = (() => {
     })) };
   }
   const pct = n => `${n.toFixed(1)}%`;
-  const personById = id => [...people, ...dynastyPeople].find(p => p.id === id);
+  const personById = id => [...people, ...dynastyPeople, ...nationalPeople].find(p => p.id === id);
   function requestedFields(text) {
     const fields = [];
     if (/哪里人|籍贯|老家|个人背景|人员资料/.test(text)) fields.push('hometown');
@@ -86,10 +90,10 @@ window.DemoChat = (() => {
     return fields;
   }
   function modelMix(person, state) {
-    const names = state.network === 'wangchao' ? ['元 PLUS', '元 UP', '宋 Pro DM-i', '秦 PLUS DM-i', '汉 DM-i', '唐 DM-i'] : ['腾势D9', '腾势N9', '腾势N8L', '腾势Z9GT'];
+    const names = isDynasty(state.network) ? ['元 PLUS', '元 UP', '宋 Pro DM-i', '秦 PLUS DM-i', '汉 DM-i', '唐 DM-i'] : ['腾势D9', '腾势N9', '腾势N8L', '腾势Z9GT'];
     const amount = person.monthly[state.period === '2026年9月' ? 4 : 5];
     if (person.id === 'dynasty-li' && state.period === '2026年9月') return { names, amount, counts: [12, 9, 8, 5, 3, 1] };
-    if (state.network === 'wangchao') return { names, amount, counts: [Math.round(amount * .32), Math.round(amount * .24), Math.round(amount * .21), Math.round(amount * .13), Math.round(amount * .08), amount - Math.round(amount * .32) - Math.round(amount * .24) - Math.round(amount * .21) - Math.round(amount * .13) - Math.round(amount * .08)] };
+    if (isDynasty(state.network)) return { names, amount, counts: [Math.round(amount * .32), Math.round(amount * .24), Math.round(amount * .21), Math.round(amount * .13), Math.round(amount * .08), amount - Math.round(amount * .32) - Math.round(amount * .24) - Math.round(amount * .21) - Math.round(amount * .13) - Math.round(amount * .08)] };
     const first = Math.round(amount * .5), second = Math.round(amount * 11 / 38), third = Math.round(amount * 6 / 38);
     return { names, amount, counts: [first, second, third, amount - first - second - third] };
   }
@@ -97,12 +101,12 @@ window.DemoChat = (() => {
     return { personId: person.id, name: person.name, store: person.store,
       badge: person.id === 'dynasty-li' && state.period === '2026年9月' ? '华南战区月度销冠' : badge,
       role: '销售顾问', avatar: person.avatar || null,
-      avatarTone: [...people, ...dynastyPeople].findIndex(item => item.id === person.id),
+      avatarTone: [...people, ...dynastyPeople, ...nationalPeople].findIndex(item => item.id === person.id),
       fields: [{ label: '统计月份', value: state.period || '2026年10月' }, { label: '月度目标', value: `${monthlyTarget(person, state)}辆` }],
     };
   }
   function monthlyTarget(person, state) {
-    return state.period === '2026年9月' && person.target ? person.target : ['wang', 'dynasty-li', 'dynasty-wang'].includes(person.id) ? 40 : 32;
+    return state.period === '2026年9月' && person.target ? person.target : ['wang', 'national-wang', 'dynasty-li', 'dynasty-wang'].includes(person.id) ? 40 : 32;
   }
 
   function personalReply(response, text, person) {
@@ -152,7 +156,7 @@ window.DemoChat = (() => {
     const store = roster(network).find(p => text.includes(p.store));
     const scope = /全国/.test(text) ? scopes[0] : store ? store.store : /粤桂琼/.test(text) ? scopes[1] : /坪山/.test(text) ? scopes[2] : /华南/.test(text) ? '华南战区' : /华东/.test(text) ? '华东战区' : undefined;
     const period = /上个?月|9月/.test(text) ? '2026年9月' : /本月|这个月|10月/.test(text) ? '2026年10月' : undefined;
-    const selectedModels = models.filter(model => new RegExp(`(^|[^A-Z0-9])${model}([^A-Z0-9]|$)`, 'i').test(text));
+    const selectedModels = models.filter(model => new RegExp(`(^|[^A-Z0-9])${model.replace(/ /g, '\\s*')}([^A-Z0-9]|$)`, 'i').test(text));
     return { ...(p ? { personId: p.id } : {}), ...(scope ? { scope } : {}), ...(period ? { period } : {}), ...(selectedModels.length ? { models: selectedModels } : {}) };
   }
   function clarify(field, intent, values, state, extra = '') {
@@ -188,7 +192,7 @@ window.DemoChat = (() => {
   const unrelatedTopic = text => /利润|毛利|库存|市值|订单目标|订单完成率|起售价|天气|气温|下雨|天气预报|世界杯|奥运|足球|篮球|股票|股价|基金|炒股|写诗|诗歌|写代码|编程|Python|JavaScript|治病|看病|感冒|头疼|头痛|减肥|菜谱|做饭|旅游攻略/i.test(text);
   function buildReply(text, previous = {}) {
     const state = { ...previous };
-    const network = /王朝|汉\s*DM|宋\s*PLUS|秦\s*PLUS/i.test(text) ? 'wangchao' : /腾势|Z9|N9|N8L/i.test(text) ? 'tengshi' : state.network || 'tengshi';
+    const network = /王朝|汉\s*DM|宋\s*PLUS|秦\s*PLUS/i.test(text) ? (state.network === 'wangchao-national' && !/华南|上个?月|9月/.test(text) ? 'wangchao-national' : 'wangchao') : /腾势|Z9|N9|N8L/i.test(text) ? 'tengshi' : state.network || (detect(text) === 'rank' || /王小迪/.test(text) ? 'wangchao-national' : 'tengshi');
     if (state.network && state.network !== network) { delete state.personId; delete state.scope; delete state.pending; }
     state.network = network;
     const explicit = slots(text, network);
@@ -279,14 +283,15 @@ window.DemoChat = (() => {
       if (!winner) return answer('当前范围记录不足', ['当前范围暂无足够的销售记录，可切换全国门店查看。'], state, { followups: ['全国门店本月销售冠军是谁？'] });
       if (intent === 'runnerup') return personalReply(answer('销量第二名', [`${periodLabel(period)}，${networkName(network)}${values.scope}第二名是${winner.name}，来自${winner.store}，交付${winner.monthly[index]}辆。`], { ...state, personId: winner.id }, { followups: ['他近6个月的销量趋势', '主要卖什么车？'] }), text, winner);
       if (winner.id === 'dynasty-li' && period === '2026年9月') return personalReply(answer('2026年9月华南战区月度销冠', [
-        '按王朝网华南战区2026年9月个人交付排名，销冠是深圳南山王朝旗舰店的李明轩，共交付38辆，完成目标的118.8%，领先第二名3辆。',
+        '按王朝网华南战区2026年9月个人交付排名，销冠是深圳南山王朝旗舰店的李明轩，共交付38辆，完成目标的118.8%，领先第二名3辆。主销车型为元 PLUS和元 UP。',
         '当月目标32辆；8月交付33辆，环比增长15.2%。门店9月交付238辆，个人贡献约16.0%。',
       ], { ...state, personId: winner.id }, { profile: personCard(winner, state, '华南战区月度销冠'), metrics: [['38', '9月个人交付（辆）'], ['118.8%', '月度目标完成率']], sources: championSources(), followups: ['他最近几个月表现怎么样？', '他主要卖哪些车型？'] }), text, winner);
       const delivered = winner.monthly[index], target = monthlyTarget(winner, state);
       const previous = index > 0 ? winner.monthly[index - 1] : null;
+      const mix = modelMix(winner, { ...state, period });
       return personalReply(answer(`${periodLabel(period)} · ${networkName(network)}${values.scope}${period === '2026年9月' ? '月度销冠' : '当前第一'}`, [
-        `${periodLabel(period)}，${networkName(network)}${values.scope}${period === '2026年9月' ? '销售冠军是' : '个人交付暂列第一的是'}${winner.name}，来自${winner.store}，累计交付${delivered}辆，完成月度目标的${pct(delivered / target * 100)}${ranked[1] ? `，领先第二名${delivered - ranked[1].monthly[index]}辆` : ''}。`,
-        ...(winner.id === 'wang' ? [] : [`月度目标${target}辆${previous ? `；上月交付${previous}辆，较上月完整月${delivered >= previous ? '增加' : '减少'}${Math.abs(delivered - previous)}辆` : ''}。${period === '2026年10月' ? '本月为截至24日的累计交付，不代表完整月结果。' : ''}按已交付车辆数统计，排除取消及未交付订单。`]),
+        `${periodLabel(period)}，${networkName(network)}${values.scope}${period === '2026年9月' ? '销售冠军是' : '个人交付暂列第一的是'}${winner.name}，来自${winner.store}，累计交付${delivered}辆，完成月度目标的${pct(delivered / target * 100)}${ranked[1] ? `，领先第二名${delivered - ranked[1].monthly[index]}辆` : ''}。主销车型为${mix.names[0]}和${mix.names[1]}。`,
+        ...(['wang', 'national-wang'].includes(winner.id) ? [] : [`月度目标${target}辆${previous ? `；上月交付${previous}辆，较上月完整月${delivered >= previous ? '增加' : '减少'}${Math.abs(delivered - previous)}辆` : ''}。${period === '2026年10月' ? '本月为截至24日的累计交付，不代表完整月结果。' : ''}按已交付车辆数统计，排除取消及未交付订单。`]),
       ], { ...state, personId: winner.id }, {
         profile: personCard(winner, state, period === '2026年10月' ? '本月暂列第一' : values.scope === scopes[0] ? '全国销冠' : '区域销冠'),
         metrics: [[String(delivered), `${period === '2026年9月' ? '9月' : '本月'}个人交付（辆）`], [pct(delivered / target * 100), '月度目标完成率']],
@@ -341,8 +346,8 @@ window.DemoChat = (() => {
       trend: '他一直都这么好吗？', tenure: '了解他的任职情况', hometown: '他是哪里人？',
       distribution: '主要卖什么车？', learning: '他的做法能让其他店学一学吗？',
     };
-    if (state.network === 'wangchao') { questions.trend = '他最近几个月表现怎么样？'; questions.distribution = '他主要卖哪些车型？'; }
-    const order = (state.network === 'wangchao' ? { rank: ['trend', 'distribution'], trend: ['distribution', 'learning'], growth: ['distribution', 'learning'] }[stage] : null) || { rank: ['trend', 'tenure', 'distribution'], runnerup: ['trend', 'distribution'], trend: ['tenure', 'distribution', 'learning'], growth: ['distribution', 'learning'], tenure: ['hometown', 'distribution', 'trend', 'learning'], hometown: ['distribution', 'trend', 'learning'], profile: ['trend', 'distribution'], distribution: ['learning', 'trend', 'tenure'], sales: ['trend', 'distribution'], gap: ['trend', 'distribution'] }[stage];
+    if (isDynasty(state.network)) { questions.trend = '他最近几个月表现怎么样？'; questions.distribution = state.network === 'wangchao-national' ? '主要卖什么车？' : '他主要卖哪些车型？'; }
+    const order = (isDynasty(state.network) ? { rank: ['trend', 'distribution'], trend: ['distribution', 'learning'], growth: ['distribution', 'learning'] }[stage] : null) || { rank: ['trend', 'tenure', 'distribution'], runnerup: ['trend', 'distribution'], trend: ['tenure', 'distribution', 'learning'], growth: ['distribution', 'learning'], tenure: ['hometown', 'distribution', 'trend', 'learning'], hometown: ['distribution', 'trend', 'learning'], profile: ['trend', 'distribution'], distribution: ['learning', 'trend', 'tenure'], sales: ['trend', 'distribution'], gap: ['trend', 'distribution'] }[stage];
     if (!order) return null;
     return order.filter(key => !seen.has(key) && (key !== 'hometown' || window.DemoAccess?.canReadEmployee('hometown', person)) && (key !== 'tenure' || window.DemoAccess?.canReadEmployee('joinedAt', person))).slice(0, 2).map(key => questions[key]);
   }
@@ -358,7 +363,7 @@ window.DemoChat = (() => {
     const seen = previous.journey?.key === key ? [...previous.journey.seen] : [];
     const fields = requestedFields(text);
     for (const item of [stage, ...(fields.includes('hometown') ? ['hometown'] : []), ...(fields.includes('joinedAt') ? ['tenure'] : [])]) if (item && !seen.includes(item)) seen.push(item);
-    if (response.context.network === 'wangchao' || response.context.lastIntent === 'rank') response.championDataVersion = 7;
+    if (isDynasty(response.context.network) || response.context.lastIntent === 'rank') response.championDataVersion = 8;
     response.context = { ...response.context, journey: { key, seen, stage } };
     const followups = nextQuestions(response.context, stage);
     if (followups) response.followups = followups;
@@ -367,7 +372,7 @@ window.DemoChat = (() => {
   function normalizeReply(response) {
     // Refresh older simulated champion answers without changing employee permissions.
     const updatedPrompts = { rank: '销冠是谁？', runnerup: '第二名呢？', trend: '他近6个月的销量趋势', growth: '销量增长原因', distribution: '主要卖什么车？', sales: '他的销量是多少？', gap: '他比第二名多卖多少辆？' };
-    if (response.kind === 'answer' && (response.context?.network === 'wangchao' || response.context?.lastIntent === 'rank') && (response.championDataVersion !== 7 || response.context.lastIntent === 'rank' && !response.profile?.fields) && updatedPrompts[response.context.lastIntent]) response = reply(updatedPrompts[response.context.lastIntent], response.context);
+    if (response.kind === 'answer' && (isDynasty(response.context?.network) || response.context?.lastIntent === 'rank') && (response.championDataVersion !== 8 || response.context.lastIntent === 'rank' && !response.profile?.fields) && updatedPrompts[response.context.lastIntent]) response = reply(updatedPrompts[response.context.lastIntent], response.context);
     response = window.SalesDialogue?.normalizeReply(response) || response;
     if (response.personalParts?.length) {
       const person = personById(response.context?.personId);
@@ -388,7 +393,7 @@ window.DemoChat = (() => {
       const profile = response.profile;
       const candidate = personById(profile.personId || response.context?.personId);
       const person = candidate && candidate.name === profile.name ? candidate : roster(response.context?.network).find(item => item.name === profile.name);
-      const identity = person ? personCard(person, { ...response.context, network: person.id.startsWith('dynasty-') ? 'wangchao' : 'tengshi' }, profile.badge) : null;
+      const identity = person ? personCard(person, { ...response.context, network: person.id.startsWith('dynasty-') ? 'wangchao' : person.id.startsWith('national-') ? 'wangchao-national' : 'tengshi' }, profile.badge) : null;
       // Refresh cached demo identities as well as newly generated cards.
       const fallbackTone = Array.from(profile.name || '').reduce((sum, char) => sum + char.codePointAt(0), 0) % 6;
       response = { ...response, profile: { ...profile,

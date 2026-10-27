@@ -797,90 +797,7 @@ body[data-page="conversation"] .chat-chart+.chat-source-disclosure{margin-top:-1
 .font-size-option[data-font-size-toggle="large"]{font-size:28px}
 .font-size-option[aria-pressed="true"]{background:#00b3c6;color:#fff;font-weight:500}
 .font-size-option:focus-visible{outline:3px solid #00b5c7;outline-offset:2px}
-.font-large .font-size-switch{padding:5px}
-.font-large .font-size-option{width:90px;height:60px;padding:5px 10px;font-size:30px;line-height:48px}
-.font-large .font-size-option[data-font-size-toggle="large"]{font-size:34px}
-.font-large .history-avatar{width:96px;height:96px;border-radius:50%}
-.font-large .history-main img{width:60px;height:60px;border-radius:50%}
-.font-large .history-new img{width:54px;height:54px}
-.font-large .history-account h2{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:40px;line-height:60px}
-.font-large .history-list h3{font-size:30px;line-height:46px;color:#666}
-.font-large .history-recent{min-height:var(--tap-target,88px);font-size:36px!important;line-height:54px!important;text-overflow:clip;white-space:normal}
-.font-large .history-session-title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow:hidden}
-.font-large .history-main,.font-large .history-new{font-size:36px;line-height:54px;min-height:var(--tap-target,88px)}
-.font-large .history-context-preview span,.font-large .history-context-actions button,.font-large .history-rename label,.font-large .history-rename input{font-size:36px;line-height:54px;white-space:normal}
-.font-large .history-context-preview span{overflow-wrap:anywhere}
-.font-large .history-context-actions{max-width:100%}
-.font-large .history-rename button{font-size:34px;line-height:50px}
-.font-large body:is([data-page="index"],[data-page="input"]) .s23{font-size:60px;white-space:normal;text-align:center}
-.font-large body:is([data-page="index"],[data-page="input"]) .s25{font-size:30px;line-height:44px;color:#666;white-space:normal;text-align:center}
-.font-large body:is([data-page="index"],[data-page="input"]) .s28{min-height:var(--tap-target,88px)}
-.font-large body:is([data-page="index"],[data-page="input"]) .s28>.s13{min-width:0;flex:1}
-.font-large body:is([data-page="index"],[data-page="input"]) .s30{font-size:34px;line-height:48px;white-space:normal;overflow-wrap:anywhere;flex-shrink:1}
-.font-large body:is([data-page="index"],[data-page="input"]) .s29{width:40px;height:40px}
-.font-large .refresh-suggestions{min-height:var(--tap-target,88px)!important;height:auto!important}
-.font-large .refresh-suggestions>p{font-size:30px!important;line-height:44px}
-.font-large .refresh-suggestions .s34{width:36px;height:36px}
-.font-large [data-name="Header"]{height:144px}
-.font-large .s14,.font-large .s52{font-size:40px;line-height:60px}
-.font-large .s15,.font-large .s53,.font-large .assistant-close{width:96px;height:96px;min-width:var(--tap-target,88px);min-height:var(--tap-target,88px);top:24px;border-radius:52px;grid-template-columns:1fr;grid-template-rows:1fr}
-.font-large .s16{width:56px;height:56px}
-.font-large .assistant-close img{width:48px;height:48px}
-.font-large .s36{height:120px;min-height:120px}
-.font-large .s39{height:auto;min-height:56px;width:auto;flex:1;min-width:0}
-.font-large .message-input{font-size:36px;line-height:54px}
-.font-large .s37{min-width:var(--tap-target,88px);min-height:var(--tap-target,88px);display:flex;align-items:center;justify-content:center;margin-left:-24px;margin-right:-12px}
-.font-large .s41,.font-large .s47{width:80px;height:80px;min-width:var(--tap-target,88px);min-height:var(--tap-target,88px);grid-template-columns:1fr;grid-template-rows:1fr;border-radius:50%}
-.font-large .s38,.font-large .s42,.font-large .s43{width:48px;height:48px}
-.font-large body:is([data-page="index"],[data-page="input"]) .s35,.font-large body[data-page="conversation"] .s149{height:230px}
-.font-large body:is([data-page="index"],[data-page="input"]) .s11,.font-large body[data-page="conversation"] .s50{padding-bottom:230px}
-.font-large body[data-page="conversation"] .chat-user p{font-size:36px;line-height:54px}
-.font-large body[data-page="conversation"] .chat-paragraph{font-size:36px;line-height:56px}
-.font-large .chat-answer h2,.font-large body[data-page="conversation"] .chat-champion-profile h2{font-size:38px;line-height:56px}
-.font-large body[data-page="conversation"] .chat-champion-tags>span{font-size:30px;line-height:44px;white-space:normal}
-.font-large body[data-page="conversation"] .chat-champion-avatar{width:112px;height:112px}
-.font-large .chat-avatar-initial{font-size:44px}
-.font-large .thinking-status{font-size:34px;line-height:52px}
-.font-large body[data-page="conversation"] .chat-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.font-large body[data-page="conversation"] .chat-metrics>div{padding:0 4px;justify-content:flex-start}
-.font-large body[data-page="conversation"] .chat-metrics strong,.font-large body[data-page="conversation"] .chat-metrics .metric-digits{font-size:52px;line-height:72px}
-.font-large body[data-page="conversation"] .chat-metrics .metric-percentage{line-height:72px}
-.font-large body[data-page="conversation"] .chat-metrics .metric-symbol{font-size:36px;line-height:72px}
-.font-large body[data-page="conversation"] .chat-metrics>div>span{width:100%;font-size:28px;line-height:42px;color:#666;white-space:normal;overflow-wrap:anywhere;text-wrap:balance}
-.font-large .chat-table-wrap table{font-size:30px;line-height:46px;min-width:550px}
-.font-large body[data-page="conversation"] .chat-sources{font-size:30px;line-height:44px;min-height:var(--tap-target,88px)}
-.font-large .chat-sources>span:first-child{min-width:0;flex-wrap:wrap}
-.font-large body[data-page="conversation"] .chat-sources>span:last-child{font-size:28px;line-height:42px;flex-shrink:0}
-.font-large .chat-source-content h3{font-size:32px;line-height:48px}
-.font-large .chat-source-content p{font-size:30px;line-height:46px;color:#666}
-.font-large body[data-page="conversation"] .chat-answer-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;padding-left:0;padding-right:0}
-.font-large .chat-answer-actions button{width:var(--tap-target,88px);height:var(--tap-target,88px);margin:0}
-.font-large .chat-answer-actions button::before{display:none}
-.font-large .chat-answer-actions button:last-child{justify-self:end}
-.font-large .chat-answer-actions img{width:48px;height:48px}
-.font-large body[data-page="conversation"] .followup-section h2{font-size:36px;line-height:52px;color:#555}
-.font-large .followup-options button{font-size:34px;line-height:50px;min-height:var(--tap-target,88px)}
-.font-large .clarification-card legend{font-size:34px;line-height:52px}
-.font-large .clarification-hint,.font-large .clarification-resolved{font-size:30px;line-height:46px;color:#666}
-.font-large .clarification-options button{font-size:34px;line-height:50px;min-height:var(--tap-target,88px)}
-.font-large .chat-chart-column>span,.font-large .chat-chart-column>small{font-size:28px;line-height:42px;white-space:normal;text-align:center;overflow-wrap:anywhere}
-.font-large .chat-trend h3{font-size:36px;line-height:54px}
-.font-large body[data-page="conversation"] .chat-trend svg>text{font-size:28px;fill:#666}
-.font-large body[data-page="conversation"] .chat-trend .trend-x-label{transform:translateY(12px)}
-.font-large .voice-instruction{font-size:30px;line-height:44px}
-.font-large .feedback-header h2,.font-large .source-header h2{font-size:40px;line-height:60px}
-.font-large .feedback-close,.font-large .source-close{min-width:var(--tap-target,88px);min-height:var(--tap-target,88px)}
-.font-large .feedback-close img,.font-large .source-close img{width:48px;height:48px}
-.font-large .feedback-prompt{font-size:34px;line-height:52px}
-.font-large .feedback-reasons button{font-size:34px;line-height:48px;min-height:var(--tap-target,88px)}
-.font-large .feedback-comment{font-size:34px;line-height:52px;min-height:220px}
-.font-large .feedback-submit{font-size:36px;line-height:54px;min-height:max(104px,var(--tap-target,88px));height:auto;padding:24px}
-.font-large .source-list h3{font-size:36px;line-height:54px}
-.font-large .source-list p{font-size:34px;line-height:52px;max-height:none}
-.font-large .source-list small,.font-large .source-disclaimer,.font-large .chat-empty{font-size:30px;line-height:46px;color:#666}
-.font-large .toast{font-size:17px;line-height:1.5}
 @media(max-width:900px){
-:where(.mobile-layout).font-large .design-screen{--composer-height:calc(150px + max(12px,var(--safe-bottom,0px)))}:where(.mobile-layout).font-large body:is([data-page="index"],[data-page="input"]) .s35,:where(.mobile-layout).font-large body[data-page="conversation"] .s149{height:var(--composer-height)}:where(.mobile-layout).font-large body:is([data-page="index"],[data-page="input"]) .s11,:where(.mobile-layout).font-large body[data-page="conversation"] .s50{padding-bottom:var(--composer-height)}
 
 }
 
@@ -890,9 +807,6 @@ body[data-page="conversation"] .chat-person-facts{display:grid;grid-template-col
 body[data-page="conversation"] .chat-person-facts>div{min-width:0}
 body[data-page="conversation"] .chat-person-facts dt{margin:0 0 8px;color:#999;font-size:26px;line-height:40px}
 body[data-page="conversation"] .chat-person-facts dd{margin:0;color:#111;font-size:32px;font-weight:400;line-height:48px;overflow-wrap:anywhere}
-.font-large body[data-page="conversation"] .chat-person-role{font-size:28px;line-height:42px}
-.font-large body[data-page="conversation"] .chat-person-facts dt{font-size:28px;line-height:42px}
-.font-large body[data-page="conversation"] .chat-person-facts dd{font-size:36px;line-height:54px}
 
 /* The welcome page fits its canvas; only conversations need a scrolling body. */
 body:is([data-page="index"],[data-page="input"]) .s10{overflow:hidden}
@@ -917,11 +831,6 @@ body:is([data-page="index"],[data-page="input"]) .s24{width:100%}
 
 /* Preserve single-column suggestions; compact only the welcome artwork on very short screens. */
 @container home-content (max-height:950px){
-  .font-large body:is([data-page="index"],[data-page="input"]) .s19,
-  .font-large body:is([data-page="index"],[data-page="input"]) .s20{width:88px;height:88px}
-  .font-large body:is([data-page="index"],[data-page="input"]) .s22{padding-top:8px}
-  .font-large body:is([data-page="index"],[data-page="input"]) .s24{padding-top:0;padding-bottom:0}
-  .font-large body:is([data-page="index"],[data-page="input"]) .s31{padding-top:20px}
 }
 
 /* Answer lists use hanging bullets and emphasize the original lead phrase. */
@@ -929,7 +838,6 @@ body[data-page="conversation"] .chat-answer-list{display:flex;flex-direction:col
 body[data-page="conversation"] .chat-answer-list>.chat-paragraph{display:list-item;margin:0;padding:0}
 .chat-answer-list>li::marker{color:#111;font-size:.75em}
 .chat-answer-list strong{font-weight:600}
-.font-large body[data-page="conversation"] .chat-answer-list{font-size:36px;line-height:56px}
 
 /* Optional dictation presentation; default voice UI and canvas stay unchanged. */
 .voice-compact{user-select:none;position:absolute;inset:auto 0 0;height:max(100%,calc(var(--voice-tap-target,88px) + 12px));z-index:2;display:flex;align-items:center;gap:12px;padding:6px 12px;background:#f3f3f3;border-radius:60px;isolation:isolate}
@@ -952,15 +860,6 @@ body[data-page="conversation"] .chat-answer-list>.chat-paragraph{display:list-it
 .voice-alt.voice-review .s36:not(.voice-recording) .message-input{height:72px}
 .voice-alt.voice-review .s36:not(.voice-recording) .s37{grid-row:2;grid-column:1;display:flex;align-items:center;justify-content:center;width:88px;height:88px;margin:0}
 .voice-alt.voice-review .s36:not(.voice-recording) :is(.s41,.s47){grid-row:2;grid-column:3;justify-self:end}
-.font-large .voice-compact{border-radius:64px;padding:10px 12px}
-.font-large .voice-compact button{width:100px;height:100px;flex-basis:100px}
-.font-large .voice-compact-hint{font-size:30px;line-height:44px}
-.font-large .voice-compact [data-voice-action="cancel"]{font-size:68px}
-.font-large .voice-compact [data-voice-action="review"] span{width:32px;height:32px}
-.font-large .voice-compact [data-voice-action="send"] img{width:52px;height:52px}
-.font-large .voice-alt .message-input{line-height:54px}
-.font-large .voice-alt.voice-review .s36:not(.voice-recording){height:228px;min-height:228px;top:-78px;grid-template-rows:92px 88px}
-.font-large .voice-alt.voice-review .s36:not(.voice-recording) :is(.s39,.message-input){height:92px}
 
 /* Only the real phone keyboard changes the welcome composition. */
 body:is([data-page="index"],[data-page="input"]) .home-keyboard .s12,
@@ -1001,12 +900,6 @@ body[data-page="conversation"] .chat-answer-note{margin:0;color:#888;font-size:2
 .knowledge-part-selected blockquote{border-left-color:#00b0c7}
 .knowledge-full{width:100%;padding:16px 20px;border:1px solid #00b0c7;border-radius:18px;background:#fff;color:#008fa4;font-size:28px;line-height:42px;margin:8px 0 24px}
 .knowledge-document>.chat-answer-note{font-size:24px;line-height:36px;color:#888;margin:0}
-.font-large .chat-script blockquote{font-size:36px;line-height:54px}
-.font-large .chat-script h3,.font-large .chat-next-step h3{font-size:32px;line-height:48px}
-.font-large .chat-copy-script{font-size:24px;line-height:36px}
-.font-large .chat-citation{font-size:30px;line-height:44px}
-.font-large .knowledge-document{font-size:32px;line-height:48px}
-.font-large .knowledge-metadata>div{grid-template-columns:144px minmax(0,1fr)}
 
 /* Figma 9:1149: left-aligned welcome and recommendations, responsive vertical spacing. */
 body:is([data-page="index"],[data-page="input"]) .s12{padding-left:24px;padding-right:24px}
@@ -1019,13 +912,9 @@ body:is([data-page="index"],[data-page="input"]) :is(.s18,.s22,.s24){align-items
 body:is([data-page="index"],[data-page="input"]) :is(.s23,.s25){text-align:left}
 body:is([data-page="index"],[data-page="input"]) .s28{border-radius:20px}
 
-.font-large body:is([data-page="index"],[data-page="input"]) .s17{padding-top:24px;padding-bottom:16px;gap:16px}
-
 /* Figma 9:1149 + 38:7544: consistent 32px outlined recommendation icons. */
 body:is([data-page="index"],[data-page="input"]) .suggestion-icon{width:32px;height:32px;position:relative;flex-shrink:0}
 .suggestion-icon img{position:absolute;top:0;left:0;width:auto;height:auto;max-width:none;transform:scale(.888888889);transform-origin:top left}
-.font-large body:is([data-page="index"],[data-page="input"]) .suggestion-icon{width:36px;height:36px}
-.font-large .suggestion-icon img{transform:none}
 body:is([data-page="index"],[data-page="input"]) .s15{left:20px}
 body:is([data-page="index"],[data-page="input"]) .s16{width:40px;height:40px}
 body:is([data-page="index"],[data-page="input"]) .s16 img{transform:rotate(90deg)}
@@ -1034,7 +923,6 @@ body:is([data-page="index"],[data-page="input"]) .assistant-close img{width:40px
 body:is([data-page="index"],[data-page="input"]) :is(.s15,.assistant-close)::after{content:"";position:absolute;inset:-20px}
 body:is([data-page="index"],[data-page="input"]) .s34{order:-1}
 body:is([data-page="index"],[data-page="input"]) .s17{padding-bottom:64px}
-.font-large body:is([data-page="index"],[data-page="input"]) .s17{padding-bottom:16px}
 
 /* Conversation details from Figma 9:1377; data and existing answer actions stay dynamic. */
 body[data-page="conversation"] .s53{left:24px;top:28px;width:64px;height:64px;grid-template-columns:1fr;grid-template-rows:1fr;box-shadow:none;background:transparent}
@@ -1075,15 +963,6 @@ body[data-page="conversation"] .chat-answer-actions [aria-pressed="true"]{backgr
 .answer-context-panel [aria-pressed="true"]{background:#f5f6f7}
 .answer-context-panel button:disabled{opacity:.4;cursor:default}
 .answer-context-panel button:focus-visible{outline:3px solid #00b3c6;outline-offset:-4px}
-.font-large body[data-page="conversation"] .chat-profile-heading h2{font-size:40px;line-height:58px}
-.font-large .chat-profile-badge{font-size:28px;line-height:42px}
-.font-large .chat-profile-store{font-size:30px;line-height:44px}
-.font-large body[data-page="conversation"] .chat-answer-actions{height:auto;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
-.font-large body[data-page="conversation"] .chat-answer-actions button{width:var(--tap-target,88px);height:var(--tap-target,88px);padding:12px}
-.font-large body[data-page="conversation"] .chat-answer-actions img{width:48px;height:48px}
-.font-large .answer-context-primary button{font-size:28px;line-height:42px}
-.font-large .answer-context-feedback button{font-size:34px;line-height:50px}
-.font-large .answer-context-panel img{width:48px;height:48px}
 
 body[data-page="conversation"] .chat-source-disclosure{padding:20px 0}
 
@@ -1092,7 +971,6 @@ body[data-page="conversation"] .chat-source-disclosure{padding:20px 0}
 /* Figma 41:13116, 9:1149 and 9:1377: minimal icons and composer shadow. */
 body:is([data-page="index"],[data-page="input"]) .suggestion-icon{width:36px;height:36px}
 .suggestion-icon img{transform:scale(1.5)}
-.font-large .suggestion-icon img{transform:scale(1.5)}
 body:is([data-page="index"],[data-page="input"]) .s15{left:24px;filter:none}
 body:is([data-page="index"],[data-page="input"]) .s16{width:48px;height:48px}
 body:is([data-page="index"],[data-page="input"]) .s16 img{width:auto;height:auto;max-width:none;transform:none}
@@ -1118,8 +996,6 @@ body[data-page="conversation"] .chat-answer-actions :is([data-chat-action="like"
 @media(max-height:740px){
   .mobile-layout body:is([data-page="index"],[data-page="input"]) .s19,
   .mobile-layout body:is([data-page="index"],[data-page="input"]) .s20{width:140px;height:140px;left:0}
-  .mobile-layout.font-large body:is([data-page="index"],[data-page="input"]) .s19,
-  .mobile-layout.font-large body:is([data-page="index"],[data-page="input"]) .s20{width:88px;height:88px}
 }
 @media(max-height:600px){
   .mobile-layout body:is([data-page="index"],[data-page="input"]) .s19,
@@ -1143,9 +1019,6 @@ body[data-page="conversation"] .chat-answer-actions :is([data-chat-action="like"
 .chat-horizontal-row.is-highlight>span,.chat-horizontal-row.is-highlight strong{color:#009caf}
 .chat-horizontal-row strong{font-size:26px;font-weight:500;text-align:right}
 .chat-horizontal-row small{display:block;font-size:22px;font-weight:400;color:#888;line-height:32px}
-.font-large .chat-horizontal-row{grid-template-columns:220px minmax(0,1fr) 110px;font-size:28px;line-height:42px}
-.font-large .chat-horizontal-row strong{font-size:30px}
-.font-large .chat-horizontal-row small{font-size:26px;line-height:38px}
 
 /* Figma 9:1285: add, flexible text field, voice and send. */
 body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .composer-attachments .s36{gap:20px;padding:16px 24px 16px 32px}
@@ -1191,8 +1064,6 @@ body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .des
 .chat-user-attachments span{max-width:260px;font-size:24px;line-height:36px;overflow-wrap:anywhere}
 .voice-hold-pending{user-select:none!important;-webkit-user-select:none!important;-webkit-touch-callout:none!important}
 .composer-add,.attachment-choices,.s37{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.font-large .attachment-choices button{font-size:34px;line-height:48px}
-.font-large .attachment-chip>span,.font-large .chat-user-attachments span{font-size:28px;line-height:42px}
 .attachment-panel[hidden],.attachment-drafts[hidden]{display:none!important}
 
 .composer-attachments [data-name="Button - 发送消息"].is-stop::after{left:17px;top:17px;width:22px;height:22px;transform:none}
@@ -1213,8 +1084,6 @@ body[data-page="conversation"] .chat-answer-unavailable{background:#f8f8f8}
 body[data-page="conversation"] .chat-answer-unavailable>h2{color:#009eb2}
 body[data-page="conversation"] .unavailable-options{margin-top:0}
 body[data-page="conversation"] .unavailable-options button{background:#fff;border:1px solid #e4e4e4}
-
-.font-large .composer-attachments.attachments-open{--attachment-base-height:158px}
 
 /* The open attachment area is one surface; let the composer shadow float over it. */
 body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .design-screen.attachments-open :is(.s35,.s149){background:#fff}
@@ -1248,3 +1117,46 @@ img,svg,video{-webkit-user-drag:none}
   html.mobile-layout.standalone-layout body:is([data-page="index"],[data-page="input"],[data-page="conversation"],[data-page="workbench"]){position:relative;inset:auto;height:100%;min-height:0;overflow:clip}
   html.mobile-layout.standalone-layout body:is([data-page="index"],[data-page="input"],[data-page="conversation"],[data-page="workbench"]) .screen-shell{height:100%}
 }
+
+
+/* Large reading mode changes conversation text only; app chrome stays standard. */
+.font-large body[data-page="conversation"] .chat-thread :is(.chat-user p,.chat-paragraph,.chat-answer-list,.chat-script blockquote){font-size:36px;line-height:56px}
+.font-large body[data-page="conversation"] .chat-thread :is(.chat-answer h2,.chat-profile-heading h2){font-size:40px;line-height:58px;overflow-wrap:anywhere}
+.font-large body[data-page="conversation"] .chat-thread :is(.chat-profile-store,.chat-person-role,.chat-profile-badge,.chat-champion-tags>span){font-size:30px;line-height:44px}
+.font-large body[data-page="conversation"] .chat-thread :is(.chat-profile-badge,.chat-champion-tags>span){min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.font-large body[data-page="conversation"] .chat-thread .chat-person-facts dt{font-size:30px;line-height:44px}
+.font-large body[data-page="conversation"] .chat-thread .chat-person-facts dd{font-size:36px;line-height:54px}
+.font-large body[data-page="conversation"] .chat-thread .chat-metrics>div{min-width:0}
+.font-large body[data-page="conversation"] .chat-thread .chat-metrics :is(strong,.metric-digits){font-size:52px;line-height:72px}
+.font-large body[data-page="conversation"] .chat-thread .chat-metrics .metric-symbol{font-size:36px;line-height:64px}
+.font-large body[data-page="conversation"] .chat-thread .chat-metrics .metric-percentage{line-height:72px}
+.font-large body[data-page="conversation"] .chat-thread .chat-metrics>div>span{font-size:30px;line-height:44px;white-space:normal;overflow-wrap:anywhere;text-align:center}
+.font-large body[data-page="conversation"] .chat-thread .chat-table-wrap table{font-size:30px;line-height:46px}
+.font-large body[data-page="conversation"] .chat-thread :is(.chat-source-content h3,.chat-trend h3,.chat-script h3,.chat-next-step h3){font-size:34px;line-height:50px}
+.font-large body[data-page="conversation"] .chat-thread :is(.chat-source-content p,.chat-source-content a,.chat-answer-note,.chat-chart-column>small,.chat-chart-column>span){font-size:30px;line-height:46px;overflow-wrap:anywhere}
+.font-large body[data-page="conversation"] .chat-thread :is(.followup-section h2,.clarification-card legend){font-size:36px;line-height:54px}
+.font-large body[data-page="conversation"] .chat-thread :is(.followup-options button,.clarification-options button){font-size:34px;line-height:50px;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.font-large body[data-page="conversation"] .chat-thread :is(.clarification-hint,.clarification-resolved){font-size:30px;line-height:46px}
+.font-large body[data-page="conversation"] .chat-thread .chat-horizontal-row{grid-template-columns:minmax(0,1.4fr) minmax(60px,1fr) minmax(90px,.6fr);font-size:30px;line-height:44px}
+.font-large body[data-page="conversation"] .chat-thread .chat-horizontal-row strong{font-size:32px;line-height:46px;overflow-wrap:anywhere}
+.font-large body[data-page="conversation"] .chat-thread .chat-horizontal-row small{font-size:28px;line-height:42px}
+.font-large body[data-page="conversation"] .chat-thread .chat-trend svg>text{font-size:26px}
+
+
+/* Stable recommendation rows: replace copy without moving or fading the container. */
+body:is([data-page="index"],[data-page="input"]) .s28{height:80px;min-height:80px}
+body:is([data-page="index"],[data-page="input"]) .s30{line-height:40px;min-width:0;flex-shrink:1;overflow:hidden;text-overflow:ellipsis}
+body[data-page="conversation"] .s51 .font-size-switch{position:absolute;right:24px;top:32px;margin:0}
+/* Reserve the enabled button's slot so only its disc and icon change size. */
+.composer-attachments :is(.s41,.s47){width:68px;height:68px;grid-template-columns:68px;grid-template-rows:68px;border-radius:34px}
+.composer-attachments .s42{position:relative;width:56px;height:56px;background:var(--send-color,#ddd);border-radius:50%}
+.composer-attachments .s43{width:32.941px;height:32.941px;left:calc(50% - 16.4705px - .82px);top:calc(50% - 16.4705px + .82px)}
+.composer-attachments .is-send-ready .s42{width:68px;height:68px}
+.composer-attachments .is-send-ready .s43{width:40px;height:40px;left:calc(50% - 21px);top:calc(50% - 19px)}
+.composer-attachments [data-name="Button - 发送消息"].is-stop::after{left:23px;top:23px}
+
+
+/* Keep the Figma welcome subtitle visible outside the keyboard composition state. */
+body:is([data-page="index"],[data-page="input"]) .design-screen:not(.home-keyboard) .s24{display:flex}
+body:is([data-page="index"],[data-page="input"]) .s23{font-size:48px}
+body:is([data-page="index"],[data-page="input"]) .s25{font-size:26px;line-height:38px;color:#939693;white-space:normal;overflow-wrap:anywhere}

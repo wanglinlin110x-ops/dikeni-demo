@@ -21,7 +21,12 @@
     },
     onBeforeStart: () => { attachments?.close(false); if (chat?.busy) chat.stop(); },
   }) : null;
-  if (isChatFlow) setupOverlays();
+  if (isChatFlow) {
+    setupOverlays();
+    const sizeSwitch = $('.font-size-switch');
+    if (page === 'conversation') $('[data-name="Header"]').append(sizeSwitch);
+    else sizeSwitch?.remove();
+  }
   const activeLink = $(`a[href="${page}.html"]`, nav);
   activeLink?.setAttribute('aria-current', 'page');
   let toastTimer;
@@ -153,7 +158,12 @@
     if (button) {
       button.classList.toggle('is-stop', thinking);
       button.setAttribute('aria-label', thinking ? '停止生成' : '发送消息');
-      button.style.backgroundColor = thinking ? '#07B1C7' : enabled ? '#00b0c7' : '#ddd';
+      button.classList.toggle('is-send-ready', enabled);
+      button.style.backgroundColor = thinking ? '#07B1C7' : button.closest('.composer-attachments') ? 'transparent' : enabled ? '#07B1C7' : '#ddd';
+      button.style.setProperty('--send-color', enabled ? '#07B1C7' : '#ddd');
+      const icon = $('.s43 img', button);
+      const asset = enabled ? 'assets/composer-send-enabled.svg' : 'assets/composer-send-disabled.svg';
+      if (icon && icon.getAttribute('src') !== asset) icon.src = asset;
       button.setAttribute('aria-disabled', String(!enabled && !thinking));
     }
   }
@@ -227,29 +237,36 @@
     for (let i = result.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [result[i], result[j]] = [result[j], result[i]]; }
     return result;
   };
-  const initialSuggestions = $$('[data-name="Section - 推荐问题"] .s28').map(item => item.textContent.trim());
-  let unseenSuggestions = shuffle(suggestionPool.filter(text => text !== championSuggestion && !initialSuggestions.includes(text)));
-  let suggestionRefreshCount = 0;
+  const homeQuestions = $$('[data-name="Section - 推荐问题"] .s28');
+  const setQuestion = (button, text) => {
+    const label = $('[data-name="Text"] p', button) || $('[data-name="Text"]', button) || [...button.children].find(child => child.textContent.trim());
+    if (label && text) { button.dataset.question = text; label.textContent = window.DemoText?.format(text) || text; updateSuggestionIcon(button); }
+  };
+  if (homeQuestions.length) {
+    let firstEntry = true;
+    try {
+      firstEntry = sessionStorage.getItem('demo-home-recommendations-seen') !== '1';
+      sessionStorage.setItem('demo-home-recommendations-seen', '1');
+    } catch { /* A restricted browser still supports random refreshes. */ }
+    const initial = firstEntry ? [championSuggestion, ...shuffle(suggestionPool.filter(text => text !== championSuggestion)).slice(0, homeQuestions.length - 1)] : shuffle(suggestionPool).slice(0, homeQuestions.length);
+    homeQuestions.forEach((button, index) => setQuestion(button, initial[index]));
+  }
+  const initialSuggestions = homeQuestions.map(item => item.dataset.question || item.textContent.trim());
+  let unseenSuggestions = shuffle(suggestionPool.filter(text => !initialSuggestions.includes(text)));
   const routes = text => /增长|原因|成交|经验/.test(text) ? 'analysis.html' : /趋势|6个月|6 个月/.test(text) ? 'trend.html' : 'conversation.html';
   $$('[data-name="Button"]').forEach(button => {
     const text = button.textContent.trim();
     if (text === '换一换') interactive(button, () => {
       const container = $('[data-name="Section - 推荐问题"] [data-name="Container"]');
       if (!container) return;
-      DemoMotion.animate(container, [{ opacity: .45, transform: 'translateY(8px)' }, { opacity: 1, transform: 'translateY(0)' }], 180);
       const buttons = $$('[data-name="Button"]', container);
-      const visible = buttons.map(item => item.textContent.trim());
-      // Promote the champion question in three of every four refreshes, while rotating the rest.
-      const promoteChampion = ++suggestionRefreshCount % 4 !== 0;
-      const count = buttons.length - (promoteChampion ? 1 : 0);
+      const visible = buttons.map(item => item.dataset.question || item.textContent.trim());
+      const count = buttons.length;
       if (unseenSuggestions.length < count) {
-        unseenSuggestions.push(...shuffle(suggestionPool.filter(text => text !== championSuggestion && !visible.includes(text) && !unseenSuggestions.includes(text))));
+        unseenSuggestions.push(...shuffle(suggestionPool.filter(text => !visible.includes(text) && !unseenSuggestions.includes(text))));
       }
-      const next = [...(promoteChampion ? [championSuggestion] : []), ...unseenSuggestions.splice(0, count)];
-      buttons.forEach((item, index) => {
-        const label = $('[data-name="Text"] p', item) || $('[data-name="Text"]', item) || [...item.children].find(child => child.textContent.trim());
-        if (label && next[index]) { label.textContent = next[index]; updateSuggestionIcon(item); }
-      });
+      const next = unseenSuggestions.splice(0, count);
+      buttons.forEach((item, index) => setQuestion(item, next[index]));
     });
     else if (text === '确定' || text === '跳过') interactive(button, () => toast(text === '确定' ? '已选择对比范围' : '已跳过范围选择'));
     else if (text === '重新生成') interactive(button, () => toast('当前为预置回答，暂不支持重新生成'));

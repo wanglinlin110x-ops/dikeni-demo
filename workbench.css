@@ -68,36 +68,9 @@ body[data-page="workbench"] .design-screen{height:var(--canvas-height,1624px);mi
 :where(html.mobile-layout) .wb-footer{padding-bottom:max(0px,calc(var(--safe-bottom,0px) - 8px))}:where(html.mobile-layout) body[data-page="workbench"]{background:#f5f5f7}
 
 }
-.font-large .wb-app h1,.font-large .wb-app h2{font-size:40px;line-height:60px}
-.font-large .wb-search{min-height:var(--tap-target,88px);height:auto}
-.font-large .wb-search input{font-size:30px;line-height:44px;height:44px}
-.font-large .wb-shortcuts span,.font-large .wb-bottom-nav span{font-size:28px;line-height:42px}
-.font-large .wb-shortcuts>div,.font-large .wb-bottom-nav>div{min-height:var(--tap-target,88px)}
-.font-large .wb-task{height:208px;padding:24px 18px}
-.font-large .wb-task-value{font-size:48px;line-height:66px;margin-top:32px}
-.font-large .wb-task-label{font-size:28px;line-height:42px;white-space:normal}
-.font-large .wb-task-image{width:56px;height:56px;left:auto;right:16px;top:16px}
-.font-large .wb-section-heading h3{font-size:34px;line-height:50px}
-.font-large .wb-period{width:auto;font-size:30px;line-height:44px}
-.font-large .wb-metrics strong{font-size:52px;line-height:72px}
-.font-large .wb-metrics span{font-size:28px;line-height:42px;white-space:normal}
-.font-large .wb-metrics>div{height:auto;min-height:154px}
-.font-large .wb-stat-tabs{height:auto;flex-wrap:wrap;gap:8px}
-.font-large .wb-stat-tabs span{font-size:30px;line-height:44px;padding:10px 20px}
-.font-large .wb-bottom-nav{grid-template-rows:minmax(96px,auto)}
-.font-large .wb-search>img{width:40px;height:40px}
-.font-large .wb-ai-entry,.font-large .wb-ai-entry img{width:70px;height:70px;border-radius:50%}
-.font-large .wb-notifications,.font-large .wb-notifications>img{width:48px;height:48px}
-.font-large .wb-notifications>i{left:32px}
-.font-large .wb-shortcuts img{width:52px;height:52px}
-.font-large .wb-bottom-nav img{width:56px;height:56px}
-.font-large .wb-period img{width:32px;height:32px}
-.font-large .wb-badge{font-size:24px;line-height:30px}
 
 /* Carry the entrance header color behind the phone's native top safe area. */
 @media(max-width:900px){
   html.mobile-layout:has(body[data-page="workbench"]),
   html.mobile-layout body[data-page="workbench"]{background-color:#fff;background-image:var(--wb-header-background);background-repeat:no-repeat;background-size:100% calc(env(safe-area-inset-top,0px) + var(--wb-native-header-content))}
 }
-
-html.mobile-layout.font-large:has(body[data-page="workbench"]){--wb-native-header-content:18.133333vw}
