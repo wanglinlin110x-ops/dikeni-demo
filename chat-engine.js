@@ -26,8 +26,8 @@ window.DemoChat = (() => {
   const models = ['Z9', 'N9', 'N8L', '汉 DM-i', '宋 PLUS DM-i', '秦 PLUS DM-i'];
   const roster = network => network === 'wangchao' ? dynastyPeople : network === 'wangchao-national' ? nationalPeople : people;
   const networkName = network => isDynasty(network) ? '王朝网' : '腾势';
-  const periodLabel = period => period === '2026年9月' ? '2026年9月' : '2026年10月截至24日';
-  const source = (title, period = '2026年10月') => ({ title, description: `统计月份：${period}。`, updated: '2026-10-24' });
+  const periodLabel = period => period === '2026年9月' ? '2026年9月' : '2026年10月截至29日';
+  const source = (title, period = '2026年10月') => ({ title, description: `统计月份：${period}。`, updated: /9月$/.test(period) ? '2026-10-24' : '2026-10-29' });
   const brandBackground = {
     title: '公开品牌销量背景 · 2026年9月',
     headers: ['品牌', '销量（辆）'],
@@ -78,7 +78,7 @@ window.DemoChat = (() => {
     if (!entries) return response;
     return { ...response, sources: entries.map(([name, system, detail], i) => ({
       title: name, description: `系统：${system}。统计周期：${period}；范围：${scope}。${detail}`,
-      updated: `2026-10-24 ${i === 0 ? '09:00' : '08:30'}`,
+      updated: `${/9月$/.test(period) ? '2026-10-24' : '2026-10-29'} ${i === 0 ? '09:00' : '08:30'}`,
     })) };
   }
   const pct = n => `${n.toFixed(1)}%`;
@@ -117,7 +117,7 @@ window.DemoChat = (() => {
       // Authorization is checked before accessing the simulated employee record.
       if (!window.DemoAccess?.canReadEmployee(field, person)) return { field, text: `当前账号无权查看${person.name}的${field === 'hometown' ? '籍贯' : '入职时间及任职时长'}。` };
       const record = employeeRecords[person.id];
-      return { field, text: field === 'hometown' ? `${person.name}是${record.hometown}人。` : `${person.name}于${record.joinedAt}入职，截至2026年10月24日约${record.tenure}。` };
+      return { field, text: field === 'hometown' ? `${person.name}是${record.hometown}人。` : `${person.name}于${record.joinedAt}入职，截至2026年10月29日约${record.tenure}。` };
     });
     if (response.profile) {
       const facts = fields.flatMap(field => {
@@ -295,7 +295,7 @@ window.DemoChat = (() => {
       const mix = modelMix(winner, { ...state, period });
       return personalReply(answer(`${periodLabel(period)} · ${networkName(network)}${values.scope}${period === '2026年9月' ? '月度销冠' : '当前第一'}`, [
         `${periodLabel(period)}，${networkName(network)}${values.scope}${period === '2026年9月' ? '销售冠军是' : '个人交付暂列第一的是'}${winner.name}，来自${winner.store}，累计交付${delivered}辆，完成月度目标的${pct(delivered / target * 100)}${ranked[1] ? `，领先第二名${delivered - ranked[1].monthly[index]}辆` : ''}。主销车型为${mix.names[0]}和${mix.names[1]}。`,
-        ...(['wang', 'national-wang'].includes(winner.id) ? [] : [`月度目标${target}辆${previous ? `；上月交付${previous}辆，较上月完整月${delivered >= previous ? '增加' : '减少'}${Math.abs(delivered - previous)}辆` : ''}。${period === '2026年10月' ? '本月为截至24日的累计交付，不代表完整月结果。' : ''}按已交付车辆数统计，排除取消及未交付订单。`]),
+        ...(['wang', 'national-wang'].includes(winner.id) ? [] : [`月度目标${target}辆${previous ? `；上月交付${previous}辆，较上月完整月${delivered >= previous ? '增加' : '减少'}${Math.abs(delivered - previous)}辆` : ''}。${period === '2026年10月' ? '本月为截至29日的累计交付，不代表完整月结果。' : ''}按已交付车辆数统计，排除取消及未交付订单。`]),
       ], { ...state, personId: winner.id }, {
         profile: personCard(winner, state, period === '2026年10月' ? '本月暂列第一' : values.scope === scopes[0] ? '全国销冠' : '区域销冠'),
         metrics: [[String(delivered), `${period === '2026年9月' ? '9月' : '本月'}个人交付（辆）`], [pct(delivered / target * 100), '月度目标完成率']],
@@ -309,9 +309,9 @@ window.DemoChat = (() => {
       const total = p.monthly.reduce((sum, n) => sum + n, 0), first = p.monthly[0], last = p.monthly[5];
       const rate = (last / first - 1) * 100;
       return answer(intent === 'trend' ? `${p.name}近6个月销量趋势` : `${p.name}的销量增长分析`, [
-        `${p.name}5月至9月销量持续增长，从${first}辆提升到${p.monthly[4]}辆；10月截至24日已交付${last}辆，累计${total}辆。`,
+        `${p.name}5月至9月销量持续增长，从${first}辆提升到${p.monthly[4]}辆；10月截至29日已交付${last}辆，累计${total}辆。`,
         intent === 'growth' ? '当前数据只能确认销量变化；客户来源、转化效率与销售方法仍需进一步核实。' : `10月尚未结束，当前累计较9月全月${last >= p.monthly[4] ? '多' : '少'}${Math.abs(last - p.monthly[4])}辆（${pct((last / p.monthly[4] - 1) * 100)}），此处不作为完整月份环比。`,
-      ], state, { metrics: [[String(total), '累计销量（辆）'], [String(p.monthly[4]), '9月全月（辆）'], [String(last), '10月截至24日（辆）']], chart: { labels: ['5月', '6月', '7月', '8月', '9月', '10月'], values: p.monthly, note: '10月为截至24日的累计值，其余为完整月份。' }, sources: [source('销售顾问月度业绩报表', '2026年5月至10月24日')], followups: ['主要卖什么车？', '与门店平均销量对比'] });
+      ], state, { metrics: [[String(total), '累计销量（辆）'], [String(p.monthly[4]), '9月全月（辆）'], [String(last), '10月截至29日（辆）']], chart: { labels: ['5月', '6月', '7月', '8月', '9月', '10月'], values: p.monthly, note: '10月为截至29日的累计值，其余为完整月份。' }, sources: [source('销售顾问月度业绩报表', '2026年5月至10月29日')], followups: ['主要卖什么车？', '与门店平均销量对比'] });
     }
     if (intent === 'models') {
       const count = values.scope === scopes[0] ? [420, 310, 270] : values.scope === scopes[1] ? [160, 110, 90] : [86, 64, 50];
@@ -369,7 +369,7 @@ window.DemoChat = (() => {
     const seen = previous.journey?.key === key ? [...previous.journey.seen] : [];
     const fields = requestedFields(text);
     for (const item of [stage, ...(fields.includes('hometown') ? ['hometown'] : []), ...(fields.includes('joinedAt') ? ['tenure'] : [])]) if (item && !seen.includes(item)) seen.push(item);
-    if (isDynasty(response.context.network) || response.context.lastIntent === 'rank') response.championDataVersion = 9;
+    if (isDynasty(response.context.network) || response.context.lastIntent === 'rank') response.championDataVersion = 10;
     response.context = { ...response.context, journey: { key, seen, stage } };
     const followups = nextQuestions(response.context, stage);
     if (followups) response.followups = followups;
@@ -379,7 +379,7 @@ window.DemoChat = (() => {
     if (response.homeReply) return window.HomeReplies?.normalizeReply(response) || response;
     // Refresh older simulated champion answers without changing employee permissions.
     const updatedPrompts = { rank: '销冠是谁？', runnerup: '第二名呢？', trend: '他近6个月的销量趋势', growth: '销量增长原因', distribution: '主要卖什么车？', sales: '他的销量是多少？', gap: '他比第二名多卖多少辆？' };
-    if (response.kind === 'answer' && (isDynasty(response.context?.network) || response.context?.lastIntent === 'rank') && (response.championDataVersion !== 9 || response.context.lastIntent === 'rank' && !response.profile?.fields) && updatedPrompts[response.context.lastIntent]) response = reply(updatedPrompts[response.context.lastIntent], response.context);
+    if (response.kind === 'answer' && (isDynasty(response.context?.network) || response.context?.lastIntent === 'rank') && (response.championDataVersion !== 10 || response.context.lastIntent === 'rank' && !response.profile?.fields) && updatedPrompts[response.context.lastIntent]) response = reply(updatedPrompts[response.context.lastIntent], response.context);
     response = window.SalesDialogue?.normalizeReply(response) || response;
     if (response.personalParts?.length) {
       const person = personById(response.context?.personId);

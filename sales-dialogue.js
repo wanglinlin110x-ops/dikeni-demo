@@ -76,7 +76,7 @@ window.SalesDialogue = (() => {
     const sales = { ...(old.mode === 'knowledge' ? old : {}), mode: 'knowledge', customer: old.customer || '陈先生', policy: { ...old.policy } };
     const p = sales.policy;
     const example = /置换权益和金融优惠能叠加吗|查看置换与金融叠加示例|核对置换与金融优惠/.test(clean(text));
-    if (example) Object.assign(p, { region: '深圳', model: '汉 DM-i', date: '2026-10-26', offers: ['厂家置换权益', '指定金融方案'] });
+    if (example) Object.assign(p, { region: '深圳', model: '汉 DM-i', date: '2026-10-29', offers: ['厂家置换权益', '指定金融方案'] });
     const region = text.match(/深圳|广州|上海|北京/)?.[0];
     const model = text.match(/汉\s*DM-i|海狮05|宋\s*PLUS\s*DM-i|Z9|N9/i)?.[0];
     if (region) p.region = region;

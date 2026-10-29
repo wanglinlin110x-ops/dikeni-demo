@@ -8,10 +8,11 @@
   video.loop = false;
   // Keep a real image below the video: iOS may discard the video surface when
   // autoplay is blocked or decoding fails. Successful playback keeps its last frame.
-  const poster = new Image();
+  const poster = video.parentElement.querySelector('.ip-intro-fallback') || new Image();
   poster.className = 'ip-intro-fallback'; poster.alt = '';
-  poster.setAttribute('aria-hidden', 'true'); poster.src = video.poster;
-  video.before(poster); video.parentElement.classList.add('ip-has-fallback');
+  poster.setAttribute('aria-hidden', 'true');
+  if (!poster.getAttribute('src')) poster.src = video.poster;
+  if (!poster.isConnected) video.before(poster); video.parentElement.classList.add('ip-has-fallback');
   const showPoster = () => { delete video.dataset.frameReady; };
   video.addEventListener('playing', () => {
     const ready = () => { if (!video.paused && !video.ended) video.dataset.frameReady = 'true'; };
