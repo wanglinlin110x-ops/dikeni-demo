@@ -66,11 +66,10 @@ window.HomeReplies = (() => {
     if (/后天|周末|这周|下周|一周|未来|\d+月|\d+[日号]|昨天|前天/.test(q)) return result('暂未提供该时段天气', '暂未提供这个时段的天气示例，可以问我深圳今天或明天的天气。');
     const tomorrow = /明天|明日/.test(q) || !/今天|今日/.test(q) && prior?.day === 'tomorrow';
     const day = tomorrow ? 'tomorrow' : 'today', label = tomorrow ? '明天' : '今天';
-    const prefix = !prior && !/深圳/.test(q) ? '以深圳为例，' : '';
-    if (trial) return result('试驾安排建议', `${prefix}可以先安排试驾；如遇降雨，注意路面湿滑，并提前与客户确认时间。`, day);
-    if (/热不热|冷不冷|穿什么/.test(q)) return result('穿衣建议', `${prefix}深圳${label}体感偏暖，穿轻薄衣物即可，长时间在空调房可备一件薄外套。`, day);
-    if (/下雨|降雨|阵雨|带伞/.test(q)) return result(`${label}是否需要带伞`, `${prefix}深圳${label}可能有短时阵雨，建议带伞，出发前再确认天气。`, day);
-    return result(`深圳${label}天气`, `${prefix}深圳${label}${tomorrow ? '多云，局部可能有阵雨，23–28℃，外出建议备伞。' : '多云，24–29℃，体感偏暖，外出可随身带伞。'}`, day);
+    if (trial) return result('试驾安排建议', `可以先安排试驾；如遇降雨，注意路面湿滑，并提前与客户确认时间。`, day);
+    if (/热不热|冷不冷|穿什么/.test(q)) return result('穿衣建议', `深圳${label}体感偏暖，穿轻薄衣物即可，长时间在空调房可备一件薄外套。`, day);
+    if (/下雨|降雨|阵雨|带伞/.test(q)) return result(`${label}是否需要带伞`, `深圳${label}可能有短时阵雨，建议带伞，出发前再确认天气。`, day);
+    return result(`深圳${label}天气`, `深圳${label}${tomorrow ? '多云，局部可能有阵雨，23–28℃，外出建议备伞。' : '多云，24–29℃，体感偏暖，外出可随身带伞。'}`, day);
   }
   function reply(text, previous = {}) {
     const weather = weatherReply(text, previous);
@@ -127,7 +126,7 @@ window.HomeReplies = (() => {
   }
   function normalizeReply(response) {
     const old=response.context?.homeScenario;
-    if (old?.key === 'weather') return { ...response, contextLabel: '' };
+    if (old?.key === 'weather') return { ...response, contextLabel: '', paragraphs: response.paragraphs.map(text => text.replace(/^以深圳为例[，,]?/, '')) };
     if (['policy','materials'].includes(old?.key) && !window.DemoAccess?.canReadKnowledge('sales')) return policy();
     if (old?.section==='personal') return reply(old.field==='hometown'?'籍贯':'入职时间',response.context);
     if (response.homeReplyVersion !== 2) {

@@ -1,10 +1,12 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');const env={window:{}};
 for(const name of ['voice-input.js','demo-access.js','sales-dialogue.js','home-replies.js','chat-engine.js','voice-understanding.js'])vm.runInNewContext(fs.readFileSync(name,'utf8'),env);
 const {DemoChat:chat,VoiceUnderstanding:voice}=env.window;
-const cases=[['深圳今天天气怎么样？','24–29℃'],['今天天气如何？','以深圳为例'],['今天热不热？','穿轻薄衣物'],['穿什么合适？','薄外套'],['出门要带伞吗？','建议带伞'],['明天天气怎么样？','23–28℃'],['今天适合试驾吗？','路面湿滑'],['今天能安排客户试驾吗？','提前与客户确认'],['广州天气怎么样？','暂未提供广州'],['北京市明天天气如何？','暂未提供北京'],['上海会下雨吗？','暂未提供上海'],['周末天气如何？','暂未提供这个时段'],['未来一周天气','暂未提供这个时段'],['昨天天气如何','暂未提供这个时段'],['11月2日天气','暂未提供这个时段'],['这是实时天气吗？','没有接入实时天气']];
+const cases=[['深圳今天天气怎么样？','24–29℃'],['今天天气如何？','深圳今天多云'],['今天热不热？','穿轻薄衣物'],['穿什么合适？','薄外套'],['出门要带伞吗？','建议带伞'],['明天天气怎么样？','23–28℃'],['今天适合试驾吗？','路面湿滑'],['今天能安排客户试驾吗？','提前与客户确认'],['广州天气怎么样？','暂未提供广州'],['北京市明天天气如何？','暂未提供北京'],['上海会下雨吗？','暂未提供上海'],['周末天气如何？','暂未提供这个时段'],['未来一周天气','暂未提供这个时段'],['昨天天气如何','暂未提供这个时段'],['11月2日天气','暂未提供这个时段'],['这是实时天气吗？','没有接入实时天气']];
 for(const [input,expected] of cases)for(const source of ['text','voice']){const q=source==='voice'?voice.understand(input,{}).query:input;const r=chat.reply(q);assert.equal(r.context.homeScenario?.key,'weather',input);assert(r.paragraphs.join('').includes(expected),input+JSON.stringify(r));assert(!r.contextLabel);assert.equal(r.sources.length,0);assert(!r.chart);}
 const first=chat.reply('今天天气怎么样？');assert.equal(chat.normalizeReply({...first,contextLabel:'天气示例，非实时预报'}).contextLabel,'');const next=chat.reply('那明天呢？',first.context);assert.match(next.paragraphs[0],/23–28℃/);assert(!next.paragraphs[0].includes('以深圳为例'));assert.match(chat.reply('要带伞吗？',next.context).paragraphs[0],/明天/);assert.match(chat.reply('准确吗？',next.context).paragraphs[0],/预设/);
 const guangzhou=chat.reply('广州今天天气');assert.match(chat.reply('明天呢？',guangzhou.context).paragraphs[0],/暂未提供广州/);assert.match(chat.reply('深圳明天天气',guangzhou.context).paragraphs[0],/23–28℃/);
 assert.notEqual(chat.reply('明天呢？').context.homeScenario?.key,'weather');assert.equal(chat.reply('本月销售冠军是谁？',first.context).profile.name,'周雨桐');assert.equal(chat.reply('上月销冠',first.context).profile.name,'李明轩');assert.equal(chat.reply('客户说有点贵，怎么接？',first.context).quote,chat.reply('客户说有点贵，怎么接？').quote);
 for(const input of ['今天销量怎么样','电池温度是多少','空调温度怎么设置','销量会受天气影响吗'])assert.notEqual(env.window.HomeReplies.reply(input,first.context)?.context.homeScenario?.key,'weather',input);
 console.log('PASS: text/voice preset intents, contextual city/day, unsupported time/city, non-live label, no fabricated sources and business routing.');
+
+assert(!chat.normalizeReply({...first,paragraphs:['以深圳为例，深圳今天多云。']}).paragraphs[0].includes('以深圳为例'));
