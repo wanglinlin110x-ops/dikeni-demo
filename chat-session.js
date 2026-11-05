@@ -98,6 +98,7 @@ window.ChatConversations = (() => {
     data.activeId ||= session.id; return write(data);
   }
   class Conversation {
+    static save(session) { return save(session); }
     static get storageKey() { return key; }
     static list() { return read().sessions.filter(s => s.messages.length).sort((a, b) => b.updated - a.updated); }
     static create(context, options = {}) { return create(context, options.requireSave); }
@@ -434,6 +435,7 @@ window.ChatConversations = (() => {
       return `<article tabindex="0" aria-haspopup="dialog" class="chat-answer${r.unavailable ? ' chat-answer-unavailable' : ''}${r.profile ? ' chat-answer-champion' : ''}${r.chart?.labels.every(text => /^\d+月$/.test(text)) ? ' chat-answer-trend' : ''}" data-name="Article">
         ${r.profile ? `<header class="chat-champion-profile">${r.profile.avatar ? `<img class="chat-champion-avatar" src="${escape(r.profile.avatar)}" alt="${escape(r.profile.name)}头像">` : `<span class="chat-champion-avatar chat-avatar-initial avatar-tone-${Number.isInteger(r.profile.avatarTone) && r.profile.avatarTone >= 0 && r.profile.avatarTone < 6 ? r.profile.avatarTone : 0}" aria-hidden="true">${escape((r.profile.name || '访').slice(0, 1))}</span>`}<div class="chat-profile-info"><div class="chat-profile-heading"><h2>${escape(r.profile.name)}</h2><span class="chat-profile-badge"><img src="assets/conversation-d3bb4.svg" alt="">${escape(r.profile.badge)}</span></div><p class="chat-profile-store">${escape(r.profile.store)}</p>${r.profile.role && r.profile.role !== '销售顾问' ? `<p class="chat-person-role">${escape(r.profile.role)}${r.profile.tenure ? ` · 入职约${escape(r.profile.tenure)}` : ''}</p>` : ''}</div></header>` : `<h2>${escape(r.title)}</h2>`}
         ${paragraphMarkup(r.paragraphs, r)}
+        ${r.libraryImage && /^assets\/(?:album-samples\/IMG_\d+\.PNG|library-samples\/(?:champion-current|champion-previous|model-deliveries|test-drive|followup-checklist)\.webp)$/.test(r.libraryImage.src) ? `<figure class="chat-library-image"><img width="720" height="720" src="${escape(r.libraryImage.src)}" alt="${escape(r.libraryImage.name)}" loading="eager" decoding="async"></figure>` : ''}
         ${r.unavailable && message === this.session.messages.at(-1) ? `<div class="followup-options unavailable-options" aria-label="可以尝试的问题">${r.followups.map(text => `<button data-chat-action="followup">${escape(text)}</button>`).join('')}</div>` : ''}
         ${r.contextLabel ? `<p class="chat-answer-note">${escape(r.contextLabel)}</p>` : ''}
         ${r.rationale ? `<p class="chat-answer-note">${escape(r.rationale)}</p>` : ''}

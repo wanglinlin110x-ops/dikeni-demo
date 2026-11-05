@@ -1309,3 +1309,45 @@ body:is([data-page="index"],[data-page="input"]) .home-figma-icon img{position:s
 .chat-target-progress progress::-webkit-progress-bar{background:#e8e8e8}
 .chat-target-progress progress::-webkit-progress-value{background:#101210;border-radius:6px}
 .chat-target-progress progress::-moz-progress-bar{background:#101210;border-radius:6px}
+
+/* Library entry shares the primary history row geometry (750px design canvas). */
+.history-main,.history-library{height:88px;padding:16px;gap:14px}
+.history-library{display:flex;align-items:center;width:100%;background:white;text-align:left;font-size:32px;font-weight:500;line-height:48px;color:#101210}
+.history-library-icon{display:flex;align-items:center;justify-content:center;width:50px;height:50px;flex-shrink:0}
+.history-library-icon img{zoom:1.6666667}
+
+/* Figma 10:4362: primary navigation, divider and recent conversations. */
+.history-account{padding:0;gap:12px}
+.history-list{padding-top:56px}
+.history-primary{display:flex;flex-direction:column;gap:40px;padding:8px 0}
+.history-main,.history-library{position:relative;height:auto;min-height:42px;padding:0 16px;gap:14px;font-size:30px;line-height:42px;font-weight:500}
+.history-main img{width:40px;height:40px;border-radius:0;object-fit:contain;flex-shrink:0}
+.history-library-icon{width:40px;height:40px}
+.history-library-icon img{zoom:1}
+.history-divider{display:block;width:100%;height:1px;margin:40px 0}
+.history-list .history-recent-title{margin-top:0;margin-bottom:14px}
+.history-new{background:#07b1c7}
+
+.history-project{display:flex;align-items:center;position:relative;gap:14px;width:100%;min-height:42px;padding:0 16px;background:white;color:#101210;text-align:left;font-size:30px;font-weight:500;line-height:42px}
+.history-project img{width:40px;height:40px;flex-shrink:0;object-fit:contain;pointer-events:none}
+.chat-library-image{margin:24px 0 0;overflow:hidden;border-radius:24px;background:#fff}.chat-library-image img{width:100%;max-height:700px;object-fit:contain}
+
+/* Updated Figma 10:4362: masked IP, chart/library and plain project folder. */
+.history-content{display:flex;flex-direction:column;gap:40px}
+.history-account,.history-list{flex-shrink:0}
+.history-list{padding-top:0;width:100%}
+.history-primary{gap:0;padding:0}
+.history-main,.history-library,.history-project{padding:24px 16px;min-height:90px}
+.history-mascot{position:relative;display:block;width:40px;height:40px;flex-shrink:0}
+.history-mascot-background,.history-mascot-crop{position:absolute;-webkit-mask-image:url('assets/history-mascot-mask.svg');mask-image:url('assets/history-mascot-mask.svg');-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-size:40px 40px;mask-size:40px 40px}
+.history-mascot-background{width:50px;height:50px;left:-5px;top:-4px;background:#e3f7f9;-webkit-mask-position:5px 4px;mask-position:5px 4px}
+.history-mascot-crop{width:52.147px;height:52.147px;left:-7.016px;top:-.047px;-webkit-mask-position:7.016px .047px;mask-position:7.016px .047px}
+.history-main .history-mascot-image{width:52.147px;height:52.147px;border-radius:16px;object-fit:cover;pointer-events:none}
+
+/* Figma 139:2091: selection fills the inner row without moving adjacent items. */
+.history-main,.history-library,.history-project{isolation:isolate;min-height:94px;line-height:46px}
+.history-primary button[aria-current="page"]{font-size:32px}
+.history-primary button[aria-current="page"]::before{content:"";position:absolute;z-index:-1;inset:8px 0;background:#f8f8f8;border-radius:16px;pointer-events:none}
+
+/* Shared reply annotations: reduce the preceding 40px gap by 16px on the design canvas. */
+body[data-page="conversation"] .chat-thread .chat-answer>.chat-answer-note{margin-top:-16px}

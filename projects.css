@@ -1,0 +1,16 @@
+body[data-page="projects"]{font-family:Arial,"PingFang SC",sans-serif;font-size:16px;-webkit-text-size-adjust:100%;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.project-add{display:flex;align-items:center;justify-content:center;width:24px;height:40px;padding:0;background:transparent}.project-add img{width:20px;height:20px;pointer-events:none}
+#project-list{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:12px 16px 20px;display:flex;flex-direction:column;gap:12px}
+.project-row{display:flex;align-items:center;gap:8px;width:100%;background:white;color:#101210;text-align:left;padding:0;flex-shrink:0;min-height:50px}
+.project-icon{width:50px;height:50px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#f8f8f8;flex-shrink:0}.project-icon img{width:24px;height:24px;pointer-events:none}
+.project-info{min-width:0;display:flex;flex-direction:column;justify-content:center;gap:0}.project-name{font-size:15px;line-height:22px;overflow-wrap:anywhere}.project-time{font-size:13px;line-height:20px;color:#999}
+body[data-page="projects"] .toast[hidden]{display:none}
+@media(max-width:600px) and (pointer:coarse){body[data-page="projects"]{background:#fff}}
+
+.project-status-icons{display:flex;align-items:center;gap:4px}.project-status-icons img:nth-child(1){width:17px;height:11px}.project-status-icons img:nth-child(2){width:15px;height:11px}.project-status-icons img:nth-child(3){width:24.33px;height:11.33px}
+
+/* Latest Figma 141:2318, at half the 750px source scale. */
+#project-list{padding-top:16px;gap:16px}
+.project-row{min-height:56px}
+.project-icon{width:56px;height:56px}
+.project-name{font-size:16px;line-height:23px;font-weight:500}

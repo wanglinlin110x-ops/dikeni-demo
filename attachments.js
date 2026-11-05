@@ -19,6 +19,7 @@ window.AttachmentStorage = (() => {
   return {
     put: (file, id = crypto.randomUUID()) => { const metadata = { id, name: file.name, type: file.type, size: file.size, added: Date.now() }; return run('readwrite', store => store.put({ ...metadata, blob: file })).then(() => metadata); },
     get: id => run('readonly', store => store.get(id)),
+    list: () => run('readonly', store => store.getAll()).then(rows => rows.sort((a,b) => b.added-a.added)),
     recent: () => run('readonly', store => store.getAll()).then(rows => rows.filter(row => row.type.startsWith('image/')).sort((a,b) => b.added-a.added).slice(0,20)),
     async hydrate(root) {
       for (const image of root.querySelectorAll('img[data-attachment-id]')) {

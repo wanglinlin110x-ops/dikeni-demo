@@ -1462,6 +1462,7 @@ window.AttachmentStorage = (() => {
   return {
     put: (file, id = crypto.randomUUID()) => { const metadata = { id, name: file.name, type: file.type, size: file.size, added: Date.now() }; return run('readwrite', store => store.put({ ...metadata, blob: file })).then(() => metadata); },
     get: id => run('readonly', store => store.get(id)),
+    list: () => run('readonly', store => store.getAll()).then(rows => rows.sort((a,b) => b.added-a.added)),
     recent: () => run('readonly', store => store.getAll()).then(rows => rows.filter(row => row.type.startsWith('image/')).sort((a,b) => b.added-a.added).slice(0,20)),
     async hydrate(root) {
       for (const image of root.querySelectorAll('img[data-attachment-id]')) {
@@ -1698,6 +1699,7 @@ window.ChatConversations = (() => {
     data.activeId ||= session.id; return write(data);
   }
   class Conversation {
+    static save(session) { return save(session); }
     static get storageKey() { return key; }
     static list() { return read().sessions.filter(s => s.messages.length).sort((a, b) => b.updated - a.updated); }
     static create(context, options = {}) { return create(context, options.requireSave); }
@@ -2034,6 +2036,7 @@ window.ChatConversations = (() => {
       return `<article tabindex="0" aria-haspopup="dialog" class="chat-answer${r.unavailable ? ' chat-answer-unavailable' : ''}${r.profile ? ' chat-answer-champion' : ''}${r.chart?.labels.every(text => /^\d+月$/.test(text)) ? ' chat-answer-trend' : ''}" data-name="Article">
         ${r.profile ? `<header class="chat-champion-profile">${r.profile.avatar ? `<img class="chat-champion-avatar" src="${escape(r.profile.avatar)}" alt="${escape(r.profile.name)}头像">` : `<span class="chat-champion-avatar chat-avatar-initial avatar-tone-${Number.isInteger(r.profile.avatarTone) && r.profile.avatarTone >= 0 && r.profile.avatarTone < 6 ? r.profile.avatarTone : 0}" aria-hidden="true">${escape((r.profile.name || '访').slice(0, 1))}</span>`}<div class="chat-profile-info"><div class="chat-profile-heading"><h2>${escape(r.profile.name)}</h2><span class="chat-profile-badge"><img src="assets/conversation-d3bb4.svg" alt="">${escape(r.profile.badge)}</span></div><p class="chat-profile-store">${escape(r.profile.store)}</p>${r.profile.role && r.profile.role !== '销售顾问' ? `<p class="chat-person-role">${escape(r.profile.role)}${r.profile.tenure ? ` · 入职约${escape(r.profile.tenure)}` : ''}</p>` : ''}</div></header>` : `<h2>${escape(r.title)}</h2>`}
         ${paragraphMarkup(r.paragraphs, r)}
+        ${r.libraryImage && /^assets\/(?:album-samples\/IMG_\d+\.PNG|library-samples\/(?:champion-current|champion-previous|model-deliveries|test-drive|followup-checklist)\.webp)$/.test(r.libraryImage.src) ? `<figure class="chat-library-image"><img width="720" height="720" src="${escape(r.libraryImage.src)}" alt="${escape(r.libraryImage.name)}" loading="eager" decoding="async"></figure>` : ''}
         ${r.unavailable && message === this.session.messages.at(-1) ? `<div class="followup-options unavailable-options" aria-label="可以尝试的问题">${r.followups.map(text => `<button data-chat-action="followup">${escape(text)}</button>`).join('')}</div>` : ''}
         ${r.contextLabel ? `<p class="chat-answer-note">${escape(r.contextLabel)}</p>` : ''}
         ${r.rationale ? `<p class="chat-answer-note">${escape(r.rationale)}</p>` : ''}
@@ -2679,7 +2682,8 @@ window.VoiceUnderstanding = (() => {
         <div class="history-content">
           <header class="history-account"><img class="history-avatar" src="assets/account-chen-zhiyuan.png?v=20261027-small" alt="陈志远头像"><h2 id="history-title">陈志远</h2><div class="font-size-switch" role="group" aria-label="阅读字号"><button class="font-size-option" type="button" data-font-size-toggle="standard" aria-pressed="true">标准</button><button class="font-size-option" type="button" data-font-size-toggle="large" aria-pressed="false">大字</button></div></header>
           <nav class="history-list" aria-label="对话列表">
-            <h3>置顶</h3><button class="history-main"><img src="assets/f56ba.png" alt="">主对话</button>
+            <div class="history-primary"><button class="history-main"><span class="history-mascot" aria-hidden="true"><span class="history-mascot-background"></span><span class="history-mascot-crop"><img class="history-mascot-image" src="assets/history-mascot.png" alt=""></span></span>主对话</button>
+            <button class="history-library"><span class="history-library-icon"><img src="assets/history-library-chart.svg" alt=""></span>资料库</button><button class="history-project"><img src="assets/history-project-folder.svg" alt="">项目</button></div><img class="history-divider" src="assets/history-divider.svg" alt="">
             <div class="history-pinned-list"></div><h3 class="history-recent-title">最近</h3>
 
           </nav>
@@ -2780,7 +2784,18 @@ window.VoiceUnderstanding = (() => {
       delete feedbackMessage.feedbackDraft; feedbackMessage = undefined;
       chat.persist(); closeOverlay(); toast('反馈已保存在当前浏览器');
     });
+    $('.history-project', history).addEventListener('click', () => {
+      rememberSidebar('project');
+      sessionStorage.setItem('demo-project-return', location.pathname.split('/').pop() || 'index.html');
+      DemoMotion.navigate('projects.html');
+    });
+    $('.history-library', history).addEventListener('click', () => {
+      rememberSidebar('library');
+      sessionStorage.setItem('demo-library-return', location.pathname.split('/').pop() || 'index.html');
+      DemoMotion.navigate('library.html');
+    });
     $('.history-main', history).addEventListener('click', () => {
+      selectSidebar('main');
       if (ChatConversations.list().length) DemoMotion.navigate('conversation.html'); else closeOverlay();
     });
     DemoFontSize.updateButtons();
@@ -2788,6 +2803,7 @@ window.VoiceUnderstanding = (() => {
       if ((button.dataset.fontSizeToggle === 'large') !== DemoFontSize.isLarge()) DemoFontSize.toggle();
     }));
     $('.history-new', history).addEventListener('click', () => {
+      selectSidebar('main');
       ChatConversations.create();
       sessionStorage.removeItem('demo-current-message');
       sessionStorage.removeItem('demo-pending-message');
@@ -2798,6 +2814,7 @@ window.VoiceUnderstanding = (() => {
     $('.history-list', history).append(recentList);
     $('.history-list', history).addEventListener('click', event => {
       const button = event.target.closest('[data-session-id]');
+      if (button) selectSidebar('main');
       if (!button) return;
       if (button.dataset.longPressed === 'true') { delete button.dataset.longPressed; return; }
       ChatConversations.activate(button.dataset.sessionId);
@@ -2815,9 +2832,31 @@ window.VoiceUnderstanding = (() => {
       }
     });
   }
-  async function openOverlay(name, trigger) {
+  function selectSidebar(section) {
+    sessionStorage.setItem('demo-sidebar-selected', section);
+    for (const name of ['main','library','project']) {
+      const button = $(`.history-${name}`);
+      if (name === section) button?.setAttribute('aria-current','page');
+      else button?.removeAttribute('aria-current');
+    }
+  }
+  function rememberSidebar(section) {
+    selectSidebar(section);
+    sessionStorage.setItem('demo-sidebar-return', JSON.stringify({page:location.pathname.split('/').pop(),section,scroll:$('.history-content').scrollTop}));
+  }
+  function restoreSidebar(event) {
+    if (!isChatFlow) return;
+    const hash = location.hash.match(/^#sidebar-(library|project)$/);
+    let saved;try { saved=JSON.parse(sessionStorage.getItem('demo-sidebar-return')); } catch {}
+    const back = event?.persisted || performance.getEntriesByType('navigation')[0]?.type === 'back_forward';
+    if (!hash && !(back && saved?.page === location.pathname.split('/').pop())) return;
+    selectSidebar(hash?.[1] || saved.section);
+    if (activeOverlay?.dataset.overlay !== 'history') openOverlay('history', $('[aria-label="打开菜单"]'), true);
+    if (saved?.page === location.pathname.split('/').pop()) $('.history-content').scrollTop=saved.scroll || 0;
+  }
+  async function openOverlay(name, trigger, immediate = false) {
     voiceInput?.cancel(false);
-    if (name === 'history') refreshHistory();
+    if (name === 'history') { refreshHistory(); selectSidebar(sessionStorage.getItem('demo-sidebar-selected') || 'main'); }
     if (activeOverlay) await closeOverlay();
     overlayTrigger = trigger;
     activeOverlay = $(`[data-overlay="${name}"]`);
@@ -2827,7 +2866,7 @@ window.VoiceUnderstanding = (() => {
     nav.inert = true;
     $('.nav-toggle').inert = true;
     activeOverlay.hidden = false;
-    DemoMotion.overlay(activeOverlay, true);
+    if (!immediate) DemoMotion.overlay(activeOverlay, true);
     trigger?.setAttribute('aria-expanded', 'true');
     $('[role="dialog"]', activeOverlay).focus({ preventScroll: true });
   }
@@ -2849,6 +2888,7 @@ window.VoiceUnderstanding = (() => {
       feedbackMessage = undefined;
     }
     closeHistoryContext();
+    if (activeOverlay.dataset.overlay === 'history' && /^#sidebar-/.test(location.hash)) history.replaceState(null,'',location.pathname+location.search);
     const overlay = activeOverlay;
     // Keep the page inert until the exiting panel is fully off screen.
     overlay.style.pointerEvents = 'none';
@@ -3031,8 +3071,13 @@ window.VoiceUnderstanding = (() => {
   }
   syncVoiceComposer();
   fitSmallScreen();
+  if(page==='conversation'){
+    const match=location.hash.match(/^#library-image-(champion-current|champion-previous|model-deliveries|test-drive|followup-checklist)$/);
+    if(match)requestAnimationFrame(()=>requestAnimationFrame(()=>{const image=$(`.chat-library-image img[src="assets/library-samples/${match[1]}.webp"]`);image?.closest('.chat-response')?.scrollIntoView({block:'center',behavior:'instant'});}));
+  }
+  restoreSidebar();
   window.DemoStartup?.ready();
-  window.addEventListener('pageshow', () => { navigatingToChat = false; voiceInput?.cancel(false); updateSend(); fitSmallScreen(); });
+  window.addEventListener('pageshow', event => { navigatingToChat = false; voiceInput?.cancel(false); updateSend(); fitSmallScreen(); restoreSidebar(event); });
   window.addEventListener('resize', fitSmallScreen);
   document.addEventListener('focusin', () => requestAnimationFrame(fitSmallScreen));
   document.addEventListener('focusout', () => requestAnimationFrame(fitSmallScreen));
