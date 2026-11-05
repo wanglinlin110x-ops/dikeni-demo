@@ -1356,3 +1356,9 @@ body[data-page="conversation"] .chat-thread .chat-answer>.chat-answer-note{margi
 body[data-page="conversation"] .s51>.conversation-materials{top:20px;left:auto;right:16px;width:80px;height:80px}
 
 .chat-library-image>button{display:block;width:100%;padding:0;background:transparent;border:0;text-align:left}.chat-library-image figcaption{padding:16px 20px;font-size:24px;line-height:1.5;color:#777}.chat-reply-files{display:flex;flex-direction:column;gap:16px;margin-top:24px}.chat-reply-files>button{display:flex;align-items:center;gap:20px;width:100%;padding:24px;background:white;border-radius:24px;text-align:left;color:#101210}.chat-reply-files>button>img{width:40px;height:40px;flex-shrink:0}.chat-reply-files>button>img:last-child{width:24px;height:24px;transform:rotate(180deg)}.chat-reply-files span{display:flex;flex:1;min-width:0;flex-direction:column;gap:8px}.chat-reply-files strong{font-size:28px;line-height:1.5;overflow-wrap:anywhere}.chat-reply-files small{font-size:24px;line-height:1.4;color:#888}.font-large body[data-page="conversation"] .chat-reply-files strong{font-size:32px}
+
+/* Compact internal spacing for the Han champion conversation (750px canvas). */
+body[data-page="conversation"] .chat-thread .chat-answer.chat-answer-han{gap:24px}
+body[data-page="conversation"] .chat-thread .chat-answer-han>.chat-paragraph+.chat-paragraph{margin-top:-4px}
+body[data-page="conversation"] .chat-thread .chat-answer-han>:is(.chat-library-image,.chat-reply-files){margin-top:0}
+body[data-page="conversation"] .chat-thread .chat-answer-han .chat-library-image figcaption{padding-top:12px;padding-bottom:12px}

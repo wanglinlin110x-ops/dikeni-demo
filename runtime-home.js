@@ -1657,7 +1657,16 @@ window.ConversationMaterials=(()=>{
     }
     return{data:next,changed};
   }
-  return{catalog,get,decorate,followup,hanReply,repairGeneratedSessions};
+  function initialSessions(){
+    const entries=[
+      {key:'champion',title:'本月销售冠军是谁？',turns:[['本月销售冠军是谁？',{...DemoChat.reply('本月销售冠军是谁？'),libraryImage:{src:'assets/library-materials/material-11.webp',name:'销冠主题宣传图',width:1086,height:1448,key:'material-11'}}]]},
+      {key:'han',title:'本月汉的销冠是谁？',turns:[['本月汉的销冠是谁？',hanReply()],['他主要卖汉的哪些版本？',hanReply('distribution')],['他最近几个月表现怎么样？',hanReply('trend')],['有哪些销售方法值得学习？',hanReply('learning')],['帮我整理一份跟进清单',hanReply('checklist')]]},
+      {key:'trend',title:'近6个月销量趋势',turns:[['近6个月销量趋势',{...DemoChat.reply('近6个月销量趋势'),libraryImage:{src:'assets/library-materials/material-16.webp',name:'销量趋势图表示意',width:1600,height:1067,key:'material-16'}}]]},
+      {key:'price',title:'客户说有点贵，怎么接？',turns:[['客户说有点贵，怎么接？',DemoChat.reply('客户说有点贵，怎么接？')]]}
+    ];
+    return entries.map((entry,index)=>({id:'initial-history-'+entry.key+'-v1',title:entry.title,initialHistoryEntry:true,updated:Date.now()-(index+1)*60000,context:entry.turns.at(-1)[1].context,messages:entry.turns.flatMap(([text,reply])=>[{id:crypto.randomUUID(),role:'user',text},{id:crypto.randomUUID(),role:'assistant',state:'complete',reply}])}));
+  }
+  return{catalog,get,decorate,followup,hanReply,repairGeneratedSessions,initialSessions};
 })();
 {
   const reply=DemoChat.reply;
@@ -1730,6 +1739,13 @@ window.ChatConversations = (() => {
     if (!percent) return escape(value);
     return `${percent[1] ? `<span class="metric-symbol">${escape(percent[1])}</span>` : ''}<span class="metric-digits">${escape(percent[2])}</span><span class="metric-symbol">%</span>`;
   };
+  function initializeHistory(data){
+    if(data.initialHistoryVersion===1||!window.ConversationMaterials?.initialSessions)return data;
+    const comparable=text=>String(text||'').replace(/[\s？?，,。！!]/g,'');
+    const entries=ConversationMaterials.initialSessions().filter(entry=>!(data.deletedIds||[]).includes(entry.id)&&!data.sessions.some(session=>session.id===entry.id||comparable(session.messages.find(message=>message.role==='user')?.text)===comparable(entry.title)));
+    const next={...data,sessions:[...data.sessions,...entries],initialHistoryVersion:1};
+    try{localStorage.setItem(key,JSON.stringify(next));return next}catch{return data}
+  }
   function read() {
     try {
       let data = JSON.parse(localStorage.getItem(key));
@@ -1743,6 +1759,7 @@ window.ChatConversations = (() => {
             repair.data.materialsFlowRepairVersion=1;localStorage.setItem(key,JSON.stringify(repair.data));data=repair.data;
           }catch{/* Keep all history if a backup cannot be saved. */}}
         }
+        data=initializeHistory(data);
         data.sessions.forEach(session => {
           session.messages.forEach(message => {
             if (message.reply) message.reply = DemoChat.normalizeReply(message.reply);
@@ -1756,7 +1773,7 @@ window.ChatConversations = (() => {
         return data;
       }
     } catch { /* A missing or damaged cache starts a fresh session. */ }
-    return { version: 1, activeId: null, sessions: [] };
+    return initializeHistory({ version: 1, activeId: null, sessions: [] });
   }
   function write(data) {
     try { localStorage.setItem(key, JSON.stringify(data)); return true; }
@@ -2116,7 +2133,7 @@ window.ChatConversations = (() => {
         <fieldset ${message.resolved ? 'disabled' : ''}><legend>${escape(r.question)}</legend><p class="clarification-hint">${escape(r.multiple ? '请选择两款车型，选满后自动发送；也可以直接输入需要对比的车型。' : r.hint)}</p>
         <div class="clarification-options">${r.options.map(text => `<button type="button" data-chat-action="select" aria-pressed="false">${escape(text)}</button>`).join('')}</div>
         ${message.resolved ? '<p class="clarification-resolved">已补充 / 已继续对话</p>' : ''}</fieldset></form>`;
-      return `<article tabindex="0" aria-haspopup="dialog" class="chat-answer${r.unavailable ? ' chat-answer-unavailable' : ''}${r.profile ? ' chat-answer-champion' : ''}${r.chart?.labels.every(text => /^\d+月$/.test(text)) ? ' chat-answer-trend' : ''}" data-name="Article">
+      return `<article tabindex="0" aria-haspopup="dialog" class="chat-answer${r.context?.homeScenario?.key==='hanChampion'?' chat-answer-han':''}${r.unavailable ? ' chat-answer-unavailable' : ''}${r.profile ? ' chat-answer-champion' : ''}${r.chart?.labels.every(text => /^\d+月$/.test(text)) ? ' chat-answer-trend' : ''}" data-name="Article">
         ${r.profile ? `<header class="chat-champion-profile">${r.profile.avatar ? `<img class="chat-champion-avatar" src="${escape(r.profile.avatar)}" alt="${escape(r.profile.name)}头像">` : `<span class="chat-champion-avatar chat-avatar-initial avatar-tone-${Number.isInteger(r.profile.avatarTone) && r.profile.avatarTone >= 0 && r.profile.avatarTone < 6 ? r.profile.avatarTone : 0}" aria-hidden="true">${escape((r.profile.name || '访').slice(0, 1))}</span>`}<div class="chat-profile-info"><div class="chat-profile-heading"><h2>${escape(r.profile.name)}</h2><span class="chat-profile-badge"><img src="assets/conversation-d3bb4.svg" alt="">${escape(r.profile.badge)}</span></div><p class="chat-profile-store">${escape(r.profile.store)}</p>${r.profile.role && r.profile.role !== '销售顾问' ? `<p class="chat-person-role">${escape(r.profile.role)}${r.profile.tenure ? ` · 入职约${escape(r.profile.tenure)}` : ''}</p>` : ''}</div></header>` : `<h2>${escape(r.title)}</h2>`}
         ${paragraphMarkup(r.paragraphs, r)}
 
@@ -2379,6 +2396,7 @@ window.ChatConversations = (() => {
       }
     }
   }
+  read();
   return Conversation;
 })();
 

@@ -56,7 +56,16 @@ window.ConversationMaterials=(()=>{
     }
     return{data:next,changed};
   }
-  return{catalog,get,decorate,followup,hanReply,repairGeneratedSessions};
+  function initialSessions(){
+    const entries=[
+      {key:'champion',title:'本月销售冠军是谁？',turns:[['本月销售冠军是谁？',{...DemoChat.reply('本月销售冠军是谁？'),libraryImage:{src:'assets/library-materials/material-11.webp',name:'销冠主题宣传图',width:1086,height:1448,key:'material-11'}}]]},
+      {key:'han',title:'本月汉的销冠是谁？',turns:[['本月汉的销冠是谁？',hanReply()],['他主要卖汉的哪些版本？',hanReply('distribution')],['他最近几个月表现怎么样？',hanReply('trend')],['有哪些销售方法值得学习？',hanReply('learning')],['帮我整理一份跟进清单',hanReply('checklist')]]},
+      {key:'trend',title:'近6个月销量趋势',turns:[['近6个月销量趋势',{...DemoChat.reply('近6个月销量趋势'),libraryImage:{src:'assets/library-materials/material-16.webp',name:'销量趋势图表示意',width:1600,height:1067,key:'material-16'}}]]},
+      {key:'price',title:'客户说有点贵，怎么接？',turns:[['客户说有点贵，怎么接？',DemoChat.reply('客户说有点贵，怎么接？')]]}
+    ];
+    return entries.map((entry,index)=>({id:'initial-history-'+entry.key+'-v1',title:entry.title,initialHistoryEntry:true,updated:Date.now()-(index+1)*60000,context:entry.turns.at(-1)[1].context,messages:entry.turns.flatMap(([text,reply])=>[{id:crypto.randomUUID(),role:'user',text},{id:crypto.randomUUID(),role:'assistant',state:'complete',reply}])}));
+  }
+  return{catalog,get,decorate,followup,hanReply,repairGeneratedSessions,initialSessions};
 })();
 {
   const reply=DemoChat.reply;
