@@ -1598,6 +1598,81 @@ window.DemoUnderstanding = (() => {
 
 ;
 
+/* Source: conversation-materials.js */
+/* Shared presentation assets and one opt-in, repeatable multi-turn demonstration. */
+window.ConversationMaterials=(()=>{
+  const catalog=[
+  {
+    "key": "zhou-deliveries",
+    "title": "销冠顾问个人交付明细",
+    "name": "销冠顾问个人交付明细.csv",
+    "url": "assets/conversation-materials/zhou-deliveries.csv",
+    "type": "text/csv",
+    "size": 425
+  },
+  {
+    "key": "customer-followup",
+    "title": "客户试驾跟进清单",
+    "name": "客户试驾跟进清单.pdf",
+    "url": "assets/conversation-materials/customer-followup.pdf",
+    "type": "application/pdf",
+    "size": 74754
+  }
+];
+  const get=key=>catalog.find(item=>item.key===key);
+  function hanReply(section='rank'){
+    const base={kind:'answer',homeReply:true,homeReplyVersion:2,sources:[],context:{lastIntent:'home-han-champion',homeScenario:{key:'hanChampion',person:'han-chenyu',section}},followups:['他最近几个月表现怎么样？','有哪些销售方法值得学习？']};
+    const picture=(key,name,width=1600,height=1067)=>({src:`assets/library-materials/${key}.webp`,name,width,height,key});
+    if(section==='distribution')return{...base,title:'陈宇的汉车型交付构成',paragraphs:['本月截至29日，陈宇交付汉DM-i10辆、汉EV8辆，分别占个人汉车型交付的55.6%和44.4%。','客户以家庭通勤和商务出行为主。沟通时先确认补能条件，再介绍对应动力版本及配置。'],metrics:[['10','汉DM-i交付（辆）'],['8','汉EV交付（辆）']],libraryImage:picture('material-18','车型动力结构图表示意'),followups:['他最近几个月表现怎么样？','有哪些销售方法值得学习？']};
+    if(section==='trend')return{...base,title:'陈宇的汉车型交付趋势',paragraphs:['5月至9月，陈宇的汉车型月交付由8辆提升至14辆；10月截至29日已交付18辆。','近期重点是提高试驾后的跟进完成率，及时确认客户仍有疑虑的配置和费用事项。10月尚未结束，不与完整月份直接计算环比。'],metrics:[['18','10月截至29日（辆）'],['14','9月完整月（辆）']],libraryImage:picture('material-15','交付趋势图表示意'),followups:['有哪些销售方法值得学习？','帮我整理一份跟进清单']};
+    if(section==='learning')return{...base,title:'陈宇的汉车型销售方法',paragraphs:['先确认客户的通勤路线、家庭用车需求与预算，再围绕空间、乘坐感受和驾驶体验安排试驾。','试驾当天整理客户反馈，发送对应配置及费用方案，并约定下一次跟进时间。','每次跟进记录一个明确的下一步：补充资料、再次到店或确认方案，避免只问“考虑得怎么样”。'],libraryImage:picture('material-07','汉车型客户试驾跟进清单',1086,1448),followups:['帮我整理一份跟进清单','他最近几个月表现怎么样？']};
+    if(section==='checklist')return{...base,title:'陈宇的客户跟进资料',paragraphs:['按需求确认、试驾反馈、方案沟通和约定跟进四步执行，并记录每一步的负责人及完成时间。','已整理为PDF清单，可直接预览或下载。'],headers:['环节','跟进重点'],rows:[['需求确认','预算、通勤路线、补能条件'],['试驾反馈','客户满意点与待确认问题'],['方案沟通','对应配置、费用与权益说明'],['约定跟进','下次联系时间及具体待办']],libraryFiles:[get('customer-followup')],followups:['汉DM-i和汉EV分别卖了多少辆？']};
+    return{...base,title:'本月汉车型销冠：陈宇',paragraphs:['截至10月29日，深圳南山王朝旗舰店汉车型销售冠军是陈宇，累计交付18辆，领先第二名4辆。月度目标15辆，完成率120%。','他的销售重点是先确认客户的通勤、家庭用车需求，再通过试驾展示车辆体验，及时跟进客户的配置与购车方案。'],metrics:[['18','汉车型交付（辆）'],['120%','目标完成率']],libraryImage:{src:'assets/library-materials/material-12.webp',name:'汉车型销冠荣誉海报',width:1086,height:1448,key:'material-12'}};
+  }
+  function decorate(reply){
+    const scenario=reply?.context?.homeScenario;
+    if(scenario?.person!=='zhou'||!reply.context.materialsDemo)return reply;
+    const section=scenario.section||'rank';
+    reply={...reply,title:reply.title.replace(/周雨桐/g,'销冠顾问'),paragraphs:reply.paragraphs.map(text=>text.replace(/周雨桐/g,'这位顾问')),sources:reply.sources.map(source=>({...source,description:source.description.replace(/周雨桐/g,'销冠顾问')}))};
+    if(section==='rank')return{...reply,profile:null,title:'本月销冠业绩概览',metrics:[['26','本月交付（辆）'],['104.0%','目标完成率']],libraryImage:{src:'assets/library-materials/material-11.webp',name:'销冠荣誉宣传海报',width:1086,height:1448,key:'material-11'}};
+    if(section==='trend')return{...reply,libraryFiles:[get('zhou-deliveries')]};
+    if(section==='learning')return{...reply,libraryImage:{src:'assets/library-materials/material-09.webp',name:'客户试驾跟进清单',width:1086,height:1448,key:'material-09'}};
+    if(section==='checklist')return{...reply,libraryFiles:[get('customer-followup')]};
+    return reply;
+  }
+  function followup(context){return {kind:'answer',homeReply:true,homeReplyVersion:2,title:'客户试驾跟进资料',paragraphs:['可以按“确认需求、试驾反馈、方案沟通、约定跟进”四步执行。把每次沟通的待办事项记录下来，再约定下一次联系时间。','已整理为一份PDF清单，方便预览、下载或发给同事使用。'],headers:['环节','需要记录的内容'],rows:[['需求确认','预算、用车场景与两项重点需求'],['试驾反馈','满意点、顾虑与待确认事项'],['方案沟通','对应配置、费用与权益说明'],['后续跟进','约定时间、负责人和下一步动作']],sources:[],followups:['主要卖哪些车型？'],libraryFiles:[get('customer-followup')],context:{...context,homeScenario:{key:'currentChampion',person:'zhou',section:'checklist'}}};}
+  function repairGeneratedSessions(data){
+    const next=structuredClone(data);let changed=false;
+    const han=['本月汉的销冠是谁？','他主要卖汉的哪些版本？','他最近几个月表现怎么样？','有哪些销售方法值得学习？','帮我整理一份跟进清单'];
+    const general=['本月销售冠军是谁？','她主要卖什么车？','她最近几个月表现怎么样？','她有哪些做法值得学习？','帮我整理成一份跟进资料'];
+    for(const session of next.sessions){
+      const generated=session.hanDemoVersion===1?han:session.materialsDemoVersion?general:null;
+      if(!generated)continue;
+      // Only remove the exact auto-inserted prefix; subsequent real questions stay intact.
+      const exact=session.messages.length>=10&&generated.every((text,i)=>session.messages[i*2]?.role==='user'&&session.messages[i*2].text===text&&session.messages[i*2+1]?.role==='assistant');
+      if(exact)session.messages.splice(2,8);
+      if(!session.customTitle&&['陈宇的汉车型销冠复盘','本月销冠与客户跟进资料'].includes(session.title))session.title=session.messages.find(message=>message.role==='user')?.text.slice(0,26)||session.title;
+      session.context=session.messages.filter(message=>message.role==='assistant').at(-1)?.reply?.context||session.context;
+      delete session.hanDemoVersion;delete session.materialsDemoVersion;changed=true;
+    }
+    return{data:next,changed};
+  }
+  return{catalog,get,decorate,followup,hanReply,repairGeneratedSessions};
+})();
+{
+  const reply=DemoChat.reply;
+  DemoChat.reply=(text,context={})=>{
+    const q=String(text).replace(/[\s？?，,。！!]/g,'');
+    if(/^(?:请问)?(?:本月|这个月|这月)(?:的)?汉(?:车型)?(?:的)?(?:销冠|销售冠军|销量冠军)(?:是谁|是哪个|是哪位|谁)?$/.test(q))return ConversationMaterials.hanReply();
+    if(context.homeScenario?.key==='hanChampion'){if(/清单|跟进资料|整理.*资料/.test(q))return ConversationMaterials.hanReply('checklist');if(/版本|车型构成|动力|分别卖|主要卖|汉DM-?i|汉EV/i.test(q))return ConversationMaterials.hanReply('distribution');if(/最近|趋势|半年|几个月|表现/.test(q))return ConversationMaterials.hanReply('trend');if(/方法|学习|做法|经验/.test(q))return ConversationMaterials.hanReply('learning')}
+    let result=context.homeScenario?.person==='zhou'&&/跟进(?:资料|清单)|整理成.*资料/.test(String(text))?ConversationMaterials.followup(context):reply(text,context);
+    if(context.materialsDemo)result={...result,context:{...result.context,materialsDemo:true}};
+    return ConversationMaterials.decorate(result);
+  };
+}
+
+;
+
 /* Source: chat-session.js */
 window.ChatConversations = (() => {
   const defaultScope = encodeURIComponent(JSON.stringify(['general_manager', ['hometown', 'joinedAt'], ['*']]));
@@ -1657,9 +1732,17 @@ window.ChatConversations = (() => {
   };
   function read() {
     try {
-      const data = JSON.parse(localStorage.getItem(key));
+      let data = JSON.parse(localStorage.getItem(key));
       if (data?.version === 1 && Array.isArray(data.sessions)) {
         data.sessions = data.sessions.filter(s => typeof s.id === 'string' && Array.isArray(s.messages) && s.context && typeof s.context === 'object');
+        if(!data.materialsFlowRepairVersion&&window.ConversationMaterials){
+          const repair=ConversationMaterials.repairGeneratedSessions(data);
+          if(repair.changed){try{
+            const backupKey=key+'-before-materials-flow-repair-v1';
+            if(!localStorage.getItem(backupKey))localStorage.setItem(backupKey,JSON.stringify(data));
+            repair.data.materialsFlowRepairVersion=1;localStorage.setItem(key,JSON.stringify(repair.data));data=repair.data;
+          }catch{/* Keep all history if a backup cannot be saved. */}}
+        }
         data.sessions.forEach(session => {
           session.messages.forEach(message => {
             if (message.reply) message.reply = DemoChat.normalizeReply(message.reply);
@@ -2036,7 +2119,7 @@ window.ChatConversations = (() => {
       return `<article tabindex="0" aria-haspopup="dialog" class="chat-answer${r.unavailable ? ' chat-answer-unavailable' : ''}${r.profile ? ' chat-answer-champion' : ''}${r.chart?.labels.every(text => /^\d+月$/.test(text)) ? ' chat-answer-trend' : ''}" data-name="Article">
         ${r.profile ? `<header class="chat-champion-profile">${r.profile.avatar ? `<img class="chat-champion-avatar" src="${escape(r.profile.avatar)}" alt="${escape(r.profile.name)}头像">` : `<span class="chat-champion-avatar chat-avatar-initial avatar-tone-${Number.isInteger(r.profile.avatarTone) && r.profile.avatarTone >= 0 && r.profile.avatarTone < 6 ? r.profile.avatarTone : 0}" aria-hidden="true">${escape((r.profile.name || '访').slice(0, 1))}</span>`}<div class="chat-profile-info"><div class="chat-profile-heading"><h2>${escape(r.profile.name)}</h2><span class="chat-profile-badge"><img src="assets/conversation-d3bb4.svg" alt="">${escape(r.profile.badge)}</span></div><p class="chat-profile-store">${escape(r.profile.store)}</p>${r.profile.role && r.profile.role !== '销售顾问' ? `<p class="chat-person-role">${escape(r.profile.role)}${r.profile.tenure ? ` · 入职约${escape(r.profile.tenure)}` : ''}</p>` : ''}</div></header>` : `<h2>${escape(r.title)}</h2>`}
         ${paragraphMarkup(r.paragraphs, r)}
-        ${r.libraryImage && /^assets\/(?:album-samples\/IMG_\d+\.PNG|library-samples\/(?:champion-current|champion-previous|model-deliveries|test-drive|followup-checklist)\.webp)$/.test(r.libraryImage.src) ? `<figure class="chat-library-image"><img width="720" height="720" src="${escape(r.libraryImage.src)}" alt="${escape(r.libraryImage.name)}" loading="eager" decoding="async"></figure>` : ''}
+
         ${r.unavailable && message === this.session.messages.at(-1) ? `<div class="followup-options unavailable-options" aria-label="可以尝试的问题">${r.followups.map(text => `<button data-chat-action="followup">${escape(text)}</button>`).join('')}</div>` : ''}
         ${r.contextLabel ? `<p class="chat-answer-note">${escape(r.contextLabel)}</p>` : ''}
         ${r.rationale ? `<p class="chat-answer-note">${escape(r.rationale)}</p>` : ''}
@@ -2051,6 +2134,8 @@ window.ChatConversations = (() => {
         ${r.metrics?.length ? `<div class="chat-metrics">${r.metrics.map(([value, label]) => `<div data-metric-kind="${/环比|增长|差值/.test(label) ? 'change' : 'value'}"><strong${/^[+-]?\d+(?:\.\d+)?%$/.test(String(value)) ? ' class="metric-percentage"' : ''}>${metricMarkup(value)}</strong><span>${metricLabelMarkup(r.chart?.labels.every(text => /^\d+月$/.test(text)) ? label.replace('6个月累计（辆）', '累计销量').replace('月均销量（辆）', '月均销量').replace(/（辆）$/, '') : label)}</span></div>`).join('')}</div>` : ''}
         ${r.chart ? this.renderChart(message) : ''}
         ${r.chart?.note ? `<p class="chat-paragraph">${emphasisMarkup(r.chart.note, r)}</p>` : ''}
+        ${r.libraryImage && /^assets\/(?:conversation-materials\/zhou-champion\.svg|library-materials\/material-\d{2}\.webp|album-samples\/IMG_\d+\.PNG|library-samples\/(?:champion-current|champion-previous|model-deliveries|test-drive|followup-checklist)\.webp)$/.test(r.libraryImage.src) ? `<figure class="chat-library-image"><button type="button" data-chat-action="material-preview" data-material-key="${escape(r.libraryImage.key||r.libraryImage.src.split('/').pop().replace(/\.\w+$/,''))}" aria-label="查看图片：${escape(r.libraryImage.name)}"><img width="${Number.isFinite(r.libraryImage.width)&&r.libraryImage.width>0?r.libraryImage.width:720}" height="${Number.isFinite(r.libraryImage.height)&&r.libraryImage.height>0?r.libraryImage.height:720}" src="${escape(r.libraryImage.src)}" alt="${escape(r.libraryImage.name)}" loading="eager" decoding="async"></button><figcaption>${escape(r.libraryImage.name)}</figcaption></figure>` : ''}
+        ${r.libraryFiles?.length ? `<div class="chat-reply-files">${r.libraryFiles.filter(file=>/^assets\/conversation-materials\/[a-z-]+\.(pdf|csv)$/.test(file.url)).map(file=>`<button type="button" data-chat-action="material-preview" data-material-key="${escape(file.key)}" aria-label="查看文件：${escape(file.name)}"><img src="assets/library-document.svg" alt=""><span><strong>${escape(file.name)}</strong><small>${escape(file.name.split('.').pop().toUpperCase())} · ${Math.max(1,Math.round(file.size/1024))}KB</small></span><img src="assets/library-chevron.svg" alt=""></button>`).join('')}</div>` : ''}
         ${r.rows && !r.profile ? `<div class="chat-table-wrap"><table><thead><tr>${r.headers.map(text => `<th>${escape(text)}</th>`).join('')}</tr></thead><tbody>${r.rows.map(row => `<tr>${row.map(text => `<td>${/^[-+]?\d+(?:[,.]\d+)*%?$/.test(String(text)) ? `<strong>${escape(text)}</strong>` : emphasisMarkup(text, r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
         ${r.sources.length ? `<section class="chat-source-disclosure"><button type="button" class="chat-sources" data-chat-action="sources" aria-controls="sources-${escape(message.id)}" aria-expanded="${this.expandedSources.has(message.id)}"><span><img src="assets/cff1a.svg" alt="">数据来源·${r.sources.length}项</span><span><span class="source-toggle-label">${this.expandedSources.has(message.id) ? '收起' : '展开'}</span><img src="assets/289e6.svg" alt=""></span></button><ol class="chat-source-content" id="sources-${escape(message.id)}" ${this.expandedSources.has(message.id) ? '' : 'hidden'}>${r.sources.map((source, i) => `<li><h3>${String(i + 1).padStart(2, '0')} · ${escape(source.title)}</h3>${source.description.split('。').filter(Boolean).map(line => `<p>${escape(line)}</p>`).join('')}<p>数据更新时间：${escape(source.updated)}</p>${source.url ? `<a href="${escape(source.url)}" target="_blank" rel="noopener noreferrer">查看公开来源 ↗</a>` : ''}</li>`).join('')}</ol></section>` : ''}
         <div class="chat-answer-actions" data-name="AnswerActions" data-current="${message === this.session.messages.at(-1)}" ${message === this.session.messages.at(-1) ? '' : 'hidden'}>
@@ -2200,6 +2285,7 @@ window.ChatConversations = (() => {
       if (!button || button.matches(':disabled')) return;
       const message = this.session.messages.find(m => m.id === button.closest('[data-message-id]')?.dataset.messageId);
       const action = button.dataset.chatAction;
+      if(action==='material-preview'){location.assign('library.html?conversation='+encodeURIComponent(this.session.id)+'&preview='+encodeURIComponent(button.dataset.materialKey)+(button.closest('.chat-reply-files')?'#files':'#images'));return}
       if (action === 'attachment') {
         try { await AttachmentStorage.download(button.dataset.attachmentId); } catch { this.onError('附件暂时无法打开，请重新添加'); }
       } else if (action === 'followup') this.submit(button.textContent);
@@ -3074,6 +3160,11 @@ window.VoiceUnderstanding = (() => {
   if(page==='conversation'){
     const match=location.hash.match(/^#library-image-(champion-current|champion-previous|model-deliveries|test-drive|followup-checklist)$/);
     if(match)requestAnimationFrame(()=>requestAnimationFrame(()=>{const image=$(`.chat-library-image img[src="assets/library-samples/${match[1]}.webp"]`);image?.closest('.chat-response')?.scrollIntoView({block:'center',behavior:'instant'});}));
+  }
+  $('.conversation-materials')?.addEventListener('click',()=>{const id=ChatConversations.activeId();sessionStorage.setItem('demo-chat-reading-position',JSON.stringify({id,scroll:chat?.scroller?.scrollTop||0}));DemoMotion.navigate('library.html?conversation='+encodeURIComponent(id))});
+  if(page==='conversation'){
+    const message=location.hash.match(/^#message-([a-zA-Z0-9-]+)$/),resume=location.hash.match(/^#resume-chat-([a-zA-Z0-9-]+)$/);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{if(message){const target=$(`[data-message-id="${message[1]}"]`);target?.scrollIntoView({block:'center',behavior:'instant'});const highlight=target?.querySelector('article.chat-answer,form.clarification-card')||target;highlight?.classList.add('material-located');setTimeout(()=>highlight?.classList.remove('material-located'),1600)}else if(resume){try{const saved=JSON.parse(sessionStorage.getItem('demo-chat-reading-position'));if(saved?.id===resume[1]&&chat?.scroller)chat.scroller.scrollTop=saved.scroll}catch{}}}));
   }
   restoreSidebar();
   window.DemoStartup?.ready();

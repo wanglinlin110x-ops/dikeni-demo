@@ -711,6 +711,11 @@
     const match=location.hash.match(/^#library-image-(champion-current|champion-previous|model-deliveries|test-drive|followup-checklist)$/);
     if(match)requestAnimationFrame(()=>requestAnimationFrame(()=>{const image=$(`.chat-library-image img[src="assets/library-samples/${match[1]}.webp"]`);image?.closest('.chat-response')?.scrollIntoView({block:'center',behavior:'instant'});}));
   }
+  $('.conversation-materials')?.addEventListener('click',()=>{const id=ChatConversations.activeId();sessionStorage.setItem('demo-chat-reading-position',JSON.stringify({id,scroll:chat?.scroller?.scrollTop||0}));DemoMotion.navigate('library.html?conversation='+encodeURIComponent(id))});
+  if(page==='conversation'){
+    const message=location.hash.match(/^#message-([a-zA-Z0-9-]+)$/),resume=location.hash.match(/^#resume-chat-([a-zA-Z0-9-]+)$/);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{if(message){const target=$(`[data-message-id="${message[1]}"]`);target?.scrollIntoView({block:'center',behavior:'instant'});const highlight=target?.querySelector('article.chat-answer,form.clarification-card')||target;highlight?.classList.add('material-located');setTimeout(()=>highlight?.classList.remove('material-located'),1600)}else if(resume){try{const saved=JSON.parse(sessionStorage.getItem('demo-chat-reading-position'));if(saved?.id===resume[1]&&chat?.scroller)chat.scroller.scrollTop=saved.scroll}catch{}}}));
+  }
   restoreSidebar();
   window.DemoStartup?.ready();
   window.addEventListener('pageshow', event => { navigatingToChat = false; voiceInput?.cancel(false); updateSend(); fitSmallScreen(); restoreSidebar(event); });

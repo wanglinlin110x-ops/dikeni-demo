@@ -56,9 +56,17 @@ window.ChatConversations = (() => {
   };
   function read() {
     try {
-      const data = JSON.parse(localStorage.getItem(key));
+      let data = JSON.parse(localStorage.getItem(key));
       if (data?.version === 1 && Array.isArray(data.sessions)) {
         data.sessions = data.sessions.filter(s => typeof s.id === 'string' && Array.isArray(s.messages) && s.context && typeof s.context === 'object');
+        if(!data.materialsFlowRepairVersion&&window.ConversationMaterials){
+          const repair=ConversationMaterials.repairGeneratedSessions(data);
+          if(repair.changed){try{
+            const backupKey=key+'-before-materials-flow-repair-v1';
+            if(!localStorage.getItem(backupKey))localStorage.setItem(backupKey,JSON.stringify(data));
+            repair.data.materialsFlowRepairVersion=1;localStorage.setItem(key,JSON.stringify(repair.data));data=repair.data;
+          }catch{/* Keep all history if a backup cannot be saved. */}}
+        }
         data.sessions.forEach(session => {
           session.messages.forEach(message => {
             if (message.reply) message.reply = DemoChat.normalizeReply(message.reply);
@@ -435,7 +443,7 @@ window.ChatConversations = (() => {
       return `<article tabindex="0" aria-haspopup="dialog" class="chat-answer${r.unavailable ? ' chat-answer-unavailable' : ''}${r.profile ? ' chat-answer-champion' : ''}${r.chart?.labels.every(text => /^\d+月$/.test(text)) ? ' chat-answer-trend' : ''}" data-name="Article">
         ${r.profile ? `<header class="chat-champion-profile">${r.profile.avatar ? `<img class="chat-champion-avatar" src="${escape(r.profile.avatar)}" alt="${escape(r.profile.name)}头像">` : `<span class="chat-champion-avatar chat-avatar-initial avatar-tone-${Number.isInteger(r.profile.avatarTone) && r.profile.avatarTone >= 0 && r.profile.avatarTone < 6 ? r.profile.avatarTone : 0}" aria-hidden="true">${escape((r.profile.name || '访').slice(0, 1))}</span>`}<div class="chat-profile-info"><div class="chat-profile-heading"><h2>${escape(r.profile.name)}</h2><span class="chat-profile-badge"><img src="assets/conversation-d3bb4.svg" alt="">${escape(r.profile.badge)}</span></div><p class="chat-profile-store">${escape(r.profile.store)}</p>${r.profile.role && r.profile.role !== '销售顾问' ? `<p class="chat-person-role">${escape(r.profile.role)}${r.profile.tenure ? ` · 入职约${escape(r.profile.tenure)}` : ''}</p>` : ''}</div></header>` : `<h2>${escape(r.title)}</h2>`}
         ${paragraphMarkup(r.paragraphs, r)}
-        ${r.libraryImage && /^assets\/(?:album-samples\/IMG_\d+\.PNG|library-samples\/(?:champion-current|champion-previous|model-deliveries|test-drive|followup-checklist)\.webp)$/.test(r.libraryImage.src) ? `<figure class="chat-library-image"><img width="720" height="720" src="${escape(r.libraryImage.src)}" alt="${escape(r.libraryImage.name)}" loading="eager" decoding="async"></figure>` : ''}
+
         ${r.unavailable && message === this.session.messages.at(-1) ? `<div class="followup-options unavailable-options" aria-label="可以尝试的问题">${r.followups.map(text => `<button data-chat-action="followup">${escape(text)}</button>`).join('')}</div>` : ''}
         ${r.contextLabel ? `<p class="chat-answer-note">${escape(r.contextLabel)}</p>` : ''}
         ${r.rationale ? `<p class="chat-answer-note">${escape(r.rationale)}</p>` : ''}
@@ -450,6 +458,8 @@ window.ChatConversations = (() => {
         ${r.metrics?.length ? `<div class="chat-metrics">${r.metrics.map(([value, label]) => `<div data-metric-kind="${/环比|增长|差值/.test(label) ? 'change' : 'value'}"><strong${/^[+-]?\d+(?:\.\d+)?%$/.test(String(value)) ? ' class="metric-percentage"' : ''}>${metricMarkup(value)}</strong><span>${metricLabelMarkup(r.chart?.labels.every(text => /^\d+月$/.test(text)) ? label.replace('6个月累计（辆）', '累计销量').replace('月均销量（辆）', '月均销量').replace(/（辆）$/, '') : label)}</span></div>`).join('')}</div>` : ''}
         ${r.chart ? this.renderChart(message) : ''}
         ${r.chart?.note ? `<p class="chat-paragraph">${emphasisMarkup(r.chart.note, r)}</p>` : ''}
+        ${r.libraryImage && /^assets\/(?:conversation-materials\/zhou-champion\.svg|library-materials\/material-\d{2}\.webp|album-samples\/IMG_\d+\.PNG|library-samples\/(?:champion-current|champion-previous|model-deliveries|test-drive|followup-checklist)\.webp)$/.test(r.libraryImage.src) ? `<figure class="chat-library-image"><button type="button" data-chat-action="material-preview" data-material-key="${escape(r.libraryImage.key||r.libraryImage.src.split('/').pop().replace(/\.\w+$/,''))}" aria-label="查看图片：${escape(r.libraryImage.name)}"><img width="${Number.isFinite(r.libraryImage.width)&&r.libraryImage.width>0?r.libraryImage.width:720}" height="${Number.isFinite(r.libraryImage.height)&&r.libraryImage.height>0?r.libraryImage.height:720}" src="${escape(r.libraryImage.src)}" alt="${escape(r.libraryImage.name)}" loading="eager" decoding="async"></button><figcaption>${escape(r.libraryImage.name)}</figcaption></figure>` : ''}
+        ${r.libraryFiles?.length ? `<div class="chat-reply-files">${r.libraryFiles.filter(file=>/^assets\/conversation-materials\/[a-z-]+\.(pdf|csv)$/.test(file.url)).map(file=>`<button type="button" data-chat-action="material-preview" data-material-key="${escape(file.key)}" aria-label="查看文件：${escape(file.name)}"><img src="assets/library-document.svg" alt=""><span><strong>${escape(file.name)}</strong><small>${escape(file.name.split('.').pop().toUpperCase())} · ${Math.max(1,Math.round(file.size/1024))}KB</small></span><img src="assets/library-chevron.svg" alt=""></button>`).join('')}</div>` : ''}
         ${r.rows && !r.profile ? `<div class="chat-table-wrap"><table><thead><tr>${r.headers.map(text => `<th>${escape(text)}</th>`).join('')}</tr></thead><tbody>${r.rows.map(row => `<tr>${row.map(text => `<td>${/^[-+]?\d+(?:[,.]\d+)*%?$/.test(String(text)) ? `<strong>${escape(text)}</strong>` : emphasisMarkup(text, r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
         ${r.sources.length ? `<section class="chat-source-disclosure"><button type="button" class="chat-sources" data-chat-action="sources" aria-controls="sources-${escape(message.id)}" aria-expanded="${this.expandedSources.has(message.id)}"><span><img src="assets/cff1a.svg" alt="">数据来源·${r.sources.length}项</span><span><span class="source-toggle-label">${this.expandedSources.has(message.id) ? '收起' : '展开'}</span><img src="assets/289e6.svg" alt=""></span></button><ol class="chat-source-content" id="sources-${escape(message.id)}" ${this.expandedSources.has(message.id) ? '' : 'hidden'}>${r.sources.map((source, i) => `<li><h3>${String(i + 1).padStart(2, '0')} · ${escape(source.title)}</h3>${source.description.split('。').filter(Boolean).map(line => `<p>${escape(line)}</p>`).join('')}<p>数据更新时间：${escape(source.updated)}</p>${source.url ? `<a href="${escape(source.url)}" target="_blank" rel="noopener noreferrer">查看公开来源 ↗</a>` : ''}</li>`).join('')}</ol></section>` : ''}
         <div class="chat-answer-actions" data-name="AnswerActions" data-current="${message === this.session.messages.at(-1)}" ${message === this.session.messages.at(-1) ? '' : 'hidden'}>
@@ -599,6 +609,7 @@ window.ChatConversations = (() => {
       if (!button || button.matches(':disabled')) return;
       const message = this.session.messages.find(m => m.id === button.closest('[data-message-id]')?.dataset.messageId);
       const action = button.dataset.chatAction;
+      if(action==='material-preview'){location.assign('library.html?conversation='+encodeURIComponent(this.session.id)+'&preview='+encodeURIComponent(button.dataset.materialKey)+(button.closest('.chat-reply-files')?'#files':'#images'));return}
       if (action === 'attachment') {
         try { await AttachmentStorage.download(button.dataset.attachmentId); } catch { this.onError('附件暂时无法打开，请重新添加'); }
       } else if (action === 'followup') this.submit(button.textContent);

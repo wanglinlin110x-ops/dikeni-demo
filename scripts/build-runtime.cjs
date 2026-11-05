@@ -4,7 +4,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const root = path.resolve(__dirname, '..');
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex').slice(0, 16);
-const common = ['font-size.js','motion.js','demo-access.js','sales-dialogue.js','home-replies.js','chat-engine.js','attachments.js','dialogue-understanding.js','chat-session.js'];
+const common = ['font-size.js','motion.js','demo-access.js','sales-dialogue.js','home-replies.js','chat-engine.js','attachments.js','dialogue-understanding.js','conversation-materials.js','chat-session.js'];
 const groups = {
   home: ['font-size.js','motion.js','voice-input.js',...common.slice(2),'voice-understanding.js','app.js','home-ip.js'],
   chat: [...common,'voice-input.js','voice-understanding.js','app.js'],

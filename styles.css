@@ -1330,7 +1330,7 @@ body:is([data-page="index"],[data-page="input"]) .home-figma-icon img{position:s
 
 .history-project{display:flex;align-items:center;position:relative;gap:14px;width:100%;min-height:42px;padding:0 16px;background:white;color:#101210;text-align:left;font-size:30px;font-weight:500;line-height:42px}
 .history-project img{width:40px;height:40px;flex-shrink:0;object-fit:contain;pointer-events:none}
-.chat-library-image{margin:24px 0 0;overflow:hidden;border-radius:24px;background:#fff}.chat-library-image img{width:100%;max-height:700px;object-fit:contain}
+.chat-library-image{margin:24px 0 0;overflow:hidden;border-radius:24px;background:#fff}.chat-library-image img{display:block;width:100%;height:auto;max-height:none;object-fit:contain}
 
 /* Updated Figma 10:4362: masked IP, chart/library and plain project folder. */
 .history-content{display:flex;flex-direction:column;gap:40px}
@@ -1351,3 +1351,8 @@ body:is([data-page="index"],[data-page="input"]) .home-figma-icon img{position:s
 
 /* Shared reply annotations: reduce the preceding 40px gap by 16px on the design canvas. */
 body[data-page="conversation"] .chat-thread .chat-answer>.chat-answer-note{margin-top:-16px}
+.conversation-materials{position:absolute;z-index:4;top:116px;left:104px;width:64px;height:64px;display:flex;align-items:center;justify-content:center;background:transparent;border-radius:50%}.conversation-materials img{width:48px;height:48px;pointer-events:none}.mobile-layout .conversation-materials{top:calc(26px + var(--safe-top,0px))}.material-located{outline:1px solid #07b1c7;outline-offset:4px;border-radius:24px}
+
+body[data-page="conversation"] .s51>.conversation-materials{top:20px;left:auto;right:16px;width:80px;height:80px}
+
+.chat-library-image>button{display:block;width:100%;padding:0;background:transparent;border:0;text-align:left}.chat-library-image figcaption{padding:16px 20px;font-size:24px;line-height:1.5;color:#777}.chat-reply-files{display:flex;flex-direction:column;gap:16px;margin-top:24px}.chat-reply-files>button{display:flex;align-items:center;gap:20px;width:100%;padding:24px;background:white;border-radius:24px;text-align:left;color:#101210}.chat-reply-files>button>img{width:40px;height:40px;flex-shrink:0}.chat-reply-files>button>img:last-child{width:24px;height:24px;transform:rotate(180deg)}.chat-reply-files span{display:flex;flex:1;min-width:0;flex-direction:column;gap:8px}.chat-reply-files strong{font-size:28px;line-height:1.5;overflow-wrap:anywhere}.chat-reply-files small{font-size:24px;line-height:1.4;color:#888}.font-large body[data-page="conversation"] .chat-reply-files strong{font-size:32px}
