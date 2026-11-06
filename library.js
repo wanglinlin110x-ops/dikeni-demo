@@ -356,7 +356,7 @@
   const currentSession=sessions.find(s=>s.id===conversationId);
   const references=new Map();
   for(const session of sessions)for(const message of session.messages){
-    const add=(key)=>{if(!references.has(key))references.set(key,[]);references.get(key).push({sessionId:session.id,messageId:message.id})};
+    const add=(key)=>{if(!references.has(key))references.set(key,[]);references.get(key).push({sessionId:session.id,messageId:message.id,inherited:Boolean(message.origin)})};
     const output=message.role==='assistant'&&message.state==='complete'?message.reply:null;
     for(const file of output?.libraryFiles||[]){if(samples.some(item=>item.key===file.key))add(file.key)}
     const image=output?.libraryImage;
@@ -381,7 +381,7 @@
   const node = (tag, className, text) => {const el=document.createElement(tag);el.className=className;if(text)el.textContent=text;return el};
   function message(title, detail) {const p=node('p','library-message');p.append(node('strong','',title),document.createTextNode(detail));content.append(p)}
   function openChat(item,button){
-    const refs=references.get(item.key)||[],ref=refs.find(record=>record.sessionId===conversationId)||refs[0];
+    const refs=references.get(item.key)||[],ref=refs.find(record=>record.sessionId===conversationId)||refs.findLast(record=>!record.inherited)||refs[0];
     if(!ref){status.textContent='原对话暂时无法定位';return}
     ChatConversations.activate(ref.sessionId);
     location.assign('conversation.html#message-'+encodeURIComponent(ref.messageId));

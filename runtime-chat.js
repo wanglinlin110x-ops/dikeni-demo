@@ -1210,6 +1210,14 @@ window.ChatConversations = (() => {
     if (!percent) return escape(value);
     return `${percent[1] ? `<span class="metric-symbol">${escape(percent[1])}</span>` : ''}<span class="metric-digits">${escape(percent[2])}</span><span class="metric-symbol">%</span>`;
   };
+  function quoteAnswer(text,reference,context){
+    if(reference&&/哪个.*(?:多|高)|哪种.*(?:多|高)|谁.*更多/.test(text)){
+      const reply=reference.reply,chart=reply.chart;
+      const pairs=chart&&chart.labels.length>1?chart.labels.map((label,i)=>[label,chart.values[i]]):(reply.metrics||[]).filter(([value,label])=>/^\d+$/.test(value)&&/交付.*辆/.test(label)).map(([value,label])=>[label.replace(/交付.*$/,''),Number(value)]);
+      if(pairs.length>1&&pairs.every(pair=>Number.isFinite(pair[1]))){const sorted=[...pairs].sort((a,b)=>b[1]-a[1]);return{kind:'answer',homeReply:true,homeReplyVersion:2,title:'根据引用内容进行对比',paragraphs:[`${sorted[0][0]}更多，为${sorted[0][1]}辆，比${sorted[1][0]}多${sorted[0][1]-sorted[1][1]}辆。`],context:structuredClone(context),sources:[],followups:[]}}
+    }
+    return DemoChat.reply(text,context);
+  }
   function initializeHistory(data){
     if(data.initialHistoryVersion===1||!window.ConversationMaterials?.initialSessions)return data;
     const comparable=text=>String(text||'').replace(/[\s？?，,。！!]/g,'');
@@ -1289,6 +1297,25 @@ window.ChatConversations = (() => {
       if (data.activeId === sessionId) data.activeId = data.sessions.filter(s => s.messages.length).sort((a, b) => b.updated - a.updated)[0]?.id || null;
       return write(data);
     }
+    static branch(sessionId,messageId){
+      const data=read(),source=data.sessions.find(session=>session.id===sessionId);
+      const index=source?.messages.findIndex(message=>message.id===messageId)??-1;
+      if(index<0||source.messages[index].role!=='assistant'||source.messages[index].state!=='complete')throw Error('branch-message');
+      const rootSessionId=source.branch?.rootSessionId||source.id,baseTitle=source.branch?.baseTitle||source.title;
+      const number=(data.branchCounts?.[rootSessionId]||data.sessions.filter(session=>session.branch?.rootSessionId===rootSessionId).length)+1;
+      const messages=source.messages.slice(0,index+1).map(message=>{
+        const copied={id:id(),role:message.role,origin:structuredClone(message.origin||{sessionId:source.id,messageId:message.id})};
+        for(const key of ['text','reply','attachments','inputSource','resolved','reference'])if(message[key]!==undefined)copied[key]=structuredClone(message[key]);
+        if(message.role==='assistant'){copied.state=message.state==='interrupted'?'interrupted':'complete';if(copied.state==='interrupted')copied.progress=message.progress||0}
+        return copied;
+      });
+      const branchId=id(),mapping=new Map(source.messages.slice(0,index+1).map((message,i)=>[message.id,messages[i].id]));
+      for(const message of messages)if(message.reference?.sessionId===source.id&&mapping.has(message.reference.messageId)){message.reference.sessionId=branchId;message.reference.messageId=mapping.get(message.reference.messageId)}
+      const session={id:branchId,title:baseTitle+'（分支'+(number===1?'':number)+'）',updated:Date.now(),messages,context:structuredClone(messages.at(-1).reply.context||{}),branch:{sourceSessionId:source.id,sourceMessageId:messageId,sourceTitle:source.title,rootSessionId,baseTitle,cutMessageId:messages.at(-1).id}};
+      data.sessions.push(session);data.activeId=session.id;data.branchCounts={...data.branchCounts,[rootSessionId]:number};
+      if(!write(data))throw Error('branch-storage');
+      return session;
+    }
     static activeId() { return read().activeId; }
     constructor({ host, onBusy, onSources, onError, onFeedback }) {
       Object.assign(this, { host, onBusy, onSources, onError, onFeedback });
@@ -1305,7 +1332,7 @@ window.ChatConversations = (() => {
       });
       this.render();
       host.addEventListener('click', event => this.action(event));
-      this.bindAnswerContext();
+      this.setupReplyTools();
       this.resumeGeneration();
       window.addEventListener('pagehide', () => { this.suspended = true; clearTimeout(this.timer); this.modelRun?.controller.abort(); if (this.busy) this.persist(); });
       window.addEventListener('pageshow', event => {
@@ -1381,23 +1408,25 @@ window.ChatConversations = (() => {
       text = text.trim();
       if ((!text && !attachments.length) || this.busy) return false;
       const previous = structuredClone(this.session);
-      const voice = options.source === 'voice' ? window.VoiceUnderstanding?.understand(text, this.session.context) : null;
+      const voice = options.source === 'voice' ? window.VoiceUnderstanding?.understand(text, this.quoteDraft?.context||this.session.context) : null;
+      const reference=this.quoteDraft?structuredClone(this.quoteDraft):null;
+      const responseContext=reference?.context||this.session.context;
       const response = attachments.length ? {
         kind: 'answer', title: '附件已收到', paragraphs: [`已添加${attachments.length}个附件。`, '当前暂不支持自动解读附件内容；你可以把需要处理的文字粘贴到输入框中继续提问。'],
         context: { ...this.session.context, pending: null, journey: null, lastIntent: 'attachment' }, sources: [], followups: [],
-      } : DemoChat.reply(voice?.query || text, this.session.context);
+      } : quoteAnswer(voice?.query || text,reference,responseContext);
       this.session.messages.forEach(message => { if (message.reply?.kind === 'clarify') message.resolved = true; });
-      this.session.messages.push({ id: id(), role: 'user', text, ...(voice ? { inputSource: 'voice', voice } : {}), ...(attachments.length ? { attachments } : {}) });
+      this.session.messages.push({ id: id(), role: 'user', text, ...(reference?{reference}:{}), ...(voice ? { inputSource: 'voice', voice } : {}), ...(attachments.length ? { attachments } : {}) });
       const directVoice = window.VoiceUnderstanding?.canAnswerDirectly(voice, response);
       const message = { id: id(), role: 'assistant', reply: response, state: 'pending', ...(voice ? { voiceReply: true } : {}),
-        ...(!attachments.length && !response.homeReply && !directVoice && window.DemoUnderstanding?.enabled ? { modelRequest: { text, context: previous.context } } : {}) };
+        ...(!attachments.length && !response.homeReply && !directVoice && window.DemoUnderstanding?.enabled ? { modelRequest: { text, context: responseContext, ...(reference?{reference}:{} ) } } : {}) };
       this.session.messages.push(message);
       this.session.context = response.context;
       if (this.session.title === '新对话') this.session.title = (text || attachments[0]?.name || '附件消息').slice(0, 26);
       this.session.updated = Date.now();
       this.stickToBottom = true;
       if (!this.persist()) { this.session = previous; return false; }
-      this.render(); this.finish(message); return true;
+      this.setQuote(null);this.render(); this.finish(message); return true;
     }
     finish(message, delay = message.voiceReply ? 0 : 550 + Math.random() * 300) {
       this.onBusy(true);
@@ -1481,7 +1510,7 @@ window.ChatConversations = (() => {
           }
           if (visible > 0) lastText = block.element;
         } else if (visible && wasHidden && cursor) block.element.classList.add('stream-reveal');
-        if (block.element.matches('.chat-answer-actions[data-current="false"]')) block.element.hidden = true;
+        if(block.element.matches('.chat-answer-actions'))block.element.hidden=true;
         remaining -= block.units;
       }
       const lists = new Set(blocks.map(block => block.element.closest('.chat-answer-list')).filter(Boolean));
@@ -1550,15 +1579,23 @@ window.ChatConversations = (() => {
       this.persist(); this.render(); this.onBusy(false);
     }
     render() {
-      this.closeAnswerContext?.();
       const anchor = !this.stickToBottom && this.scroller ? [...this.host.querySelectorAll('[data-message-id]')].find(node => node.getBoundingClientRect().bottom > this.scroller.getBoundingClientRect().top) : null;
       const anchorId = anchor?.dataset.messageId, anchorTop = anchor?.getBoundingClientRect().top;
       const last = this.session.messages.at(-1);
       this.host.innerHTML = this.session.messages.length ? this.session.messages.map(message => {
-        if (message.role === 'user') return `<div class="chat-user" data-input-source="${message.inputSource === 'voice' ? 'voice' : 'text'}" data-message-id="${escape(message.id)}">${message.attachments?.length ? `<div class="chat-user-attachments">${message.attachments.map(file => `<button type="button" data-chat-action="attachment" data-attachment-id="${escape(file.id)}" aria-label="下载附件：${escape(file.name)}">${file.type?.startsWith('image/') ? `<img data-attachment-id="${escape(file.id)}" alt="${escape(file.name)}">` : '<img src="assets/attachment-file.svg" alt="">'}<span>${escape(file.name)}</span></button>`).join('')}</div>` : ''}${message.text ? `<p>${escape(message.text)}</p>` : ''}</div>`;
+        if (message.role === 'user') return `<div class="chat-user" data-input-source="${message.inputSource === 'voice' ? 'voice' : 'text'}" data-message-id="${escape(message.id)}">${message.attachments?.length ? `<div class="chat-user-attachments">${message.attachments.map(file => `<button type="button" data-chat-action="attachment" data-attachment-id="${escape(file.id)}" aria-label="下载附件：${escape(file.name)}">${file.type?.startsWith('image/') ? `<img data-attachment-id="${escape(file.id)}" alt="${escape(file.name)}">` : '<img src="assets/attachment-file.svg" alt="">'}<span>${escape(file.name)}</span></button>`).join('')}</div>` : ''}${message.reference?`<button type="button" class="chat-message-reference" data-chat-action="quote-source" aria-label="查看引用的回复"><span>${escape(message.reference.title)}</span><small>${escape(message.reference.text)}</small></button>`:''}${message.text ? `<p>${escape(message.text)}</p>` : ''}</div>`;
         if (message.state === 'pending') return `${message.regeneration ? `<div class="chat-response" data-message-id="${escape(message.id)}">${this.renderReply(message)}</div>` : ''}<div class="thinking-status" role="status"><span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>正在思考...</span></div>`;
         return `<div class="chat-response" data-message-id="${escape(message.id)}" data-generation-state="${escape(message.state)}">${this.renderReply(message)}${last === message && message.state === 'complete' && !message.reply.unavailable && message.reply.followups?.length ? `<section class="followup-section"><h2>推荐追问</h2><div class="followup-options">${message.reply.followups.map(text => `<button data-chat-action="followup">${escape(text)}</button>`).join('')}</div></section>` : ''}</div>`;
       }).join('') : '<p class="chat-empty">开始一段新对话。你可以查询销量、对比车型，或整理客户跟进。</p>';
+      if(this.session.branch){
+        const target=this.host.querySelector(`[data-message-id="${this.session.branch.cutMessageId}"]`);
+        if(target){
+          const branch=this.session.branch,source=Conversation.list().find(session=>session.id===branch.sourceSessionId),title=source?.title||branch.sourceTitle||branch.baseTitle||'原对话';
+          const href='conversation.html?session='+encodeURIComponent(branch.sourceSessionId)+'#message-'+encodeURIComponent(branch.sourceMessageId);
+          const notice=document.createElement('div');notice.className='chat-branch-notice';notice.innerHTML=`<div class="chat-branch-divider"><span class="chat-branch-label"><span>分支来自：</span><a data-chat-action="branch-source" href="${escape(href)}" title="${escape(title)}">${escape(title)}</a></span></div>`;target.after(notice);
+        }
+      }
+      const heading=document.querySelector('.s52');if(heading)heading.textContent='迪客牛仔';
       window.AttachmentStorage?.hydrate(this.host);
       this.host.setAttribute('aria-busy', String(this.busy));
       this.plans = new Map();
@@ -1604,7 +1641,7 @@ window.ChatConversations = (() => {
         <fieldset ${message.resolved ? 'disabled' : ''}><legend>${escape(r.question)}</legend><p class="clarification-hint">${escape(r.multiple ? '请选择两款车型，选满后自动发送；也可以直接输入需要对比的车型。' : r.hint)}</p>
         <div class="clarification-options">${r.options.map(text => `<button type="button" data-chat-action="select" aria-pressed="false">${escape(text)}</button>`).join('')}</div>
         ${message.resolved ? '<p class="clarification-resolved">已补充 / 已继续对话</p>' : ''}</fieldset></form>`;
-      return `<article tabindex="0" aria-haspopup="dialog" class="chat-answer${r.context?.homeScenario?.key==='hanChampion'?' chat-answer-han':''}${r.unavailable ? ' chat-answer-unavailable' : ''}${r.profile ? ' chat-answer-champion' : ''}${r.chart?.labels.every(text => /^\d+月$/.test(text)) ? ' chat-answer-trend' : ''}" data-name="Article">
+      return `<article tabindex="0" class="chat-answer${r.context?.homeScenario?.key==='hanChampion'?' chat-answer-han':''}${r.unavailable ? ' chat-answer-unavailable' : ''}${r.profile ? ' chat-answer-champion' : ''}${r.chart?.labels.every(text => /^\d+月$/.test(text)) ? ' chat-answer-trend' : ''}" data-name="Article">
         ${r.profile ? `<header class="chat-champion-profile">${r.profile.avatar ? `<img class="chat-champion-avatar" src="${escape(r.profile.avatar)}" alt="${escape(r.profile.name)}头像">` : `<span class="chat-champion-avatar chat-avatar-initial avatar-tone-${Number.isInteger(r.profile.avatarTone) && r.profile.avatarTone >= 0 && r.profile.avatarTone < 6 ? r.profile.avatarTone : 0}" aria-hidden="true">${escape((r.profile.name || '访').slice(0, 1))}</span>`}<div class="chat-profile-info"><div class="chat-profile-heading"><h2>${escape(r.profile.name)}</h2><span class="chat-profile-badge"><img src="assets/conversation-d3bb4.svg" alt="">${escape(r.profile.badge)}</span></div><p class="chat-profile-store">${escape(r.profile.store)}</p>${r.profile.role && r.profile.role !== '销售顾问' ? `<p class="chat-person-role">${escape(r.profile.role)}${r.profile.tenure ? ` · 入职约${escape(r.profile.tenure)}` : ''}</p>` : ''}</div></header>` : `<h2>${escape(r.title)}</h2>`}
         ${paragraphMarkup(r.paragraphs, r)}
 
@@ -1626,11 +1663,12 @@ window.ChatConversations = (() => {
         ${r.libraryFiles?.length ? `<div class="chat-reply-files">${r.libraryFiles.filter(file=>/^assets\/conversation-materials\/[a-z-]+\.(pdf|csv)$/.test(file.url)).map(file=>`<button type="button" data-chat-action="material-preview" data-material-key="${escape(file.key)}" aria-label="查看文件：${escape(file.name)}"><img src="assets/library-document.svg" alt=""><span><strong>${escape(file.name)}</strong><small>${escape(file.name.split('.').pop().toUpperCase())} · ${Math.max(1,Math.round(file.size/1024))}KB</small></span><img src="assets/library-chevron.svg" alt=""></button>`).join('')}</div>` : ''}
         ${r.rows && !r.profile ? `<div class="chat-table-wrap"><table><thead><tr>${r.headers.map(text => `<th>${escape(text)}</th>`).join('')}</tr></thead><tbody>${r.rows.map(row => `<tr>${row.map(text => `<td>${/^[-+]?\d+(?:[,.]\d+)*%?$/.test(String(text)) ? `<strong>${escape(text)}</strong>` : emphasisMarkup(text, r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}
         ${r.sources.length ? `<section class="chat-source-disclosure"><button type="button" class="chat-sources" data-chat-action="sources" aria-controls="sources-${escape(message.id)}" aria-expanded="${this.expandedSources.has(message.id)}"><span><img src="assets/cff1a.svg" alt="">数据来源·${r.sources.length}项</span><span><span class="source-toggle-label">${this.expandedSources.has(message.id) ? '收起' : '展开'}</span><img src="assets/289e6.svg" alt=""></span></button><ol class="chat-source-content" id="sources-${escape(message.id)}" ${this.expandedSources.has(message.id) ? '' : 'hidden'}>${r.sources.map((source, i) => `<li><h3>${String(i + 1).padStart(2, '0')} · ${escape(source.title)}</h3>${source.description.split('。').filter(Boolean).map(line => `<p>${escape(line)}</p>`).join('')}<p>数据更新时间：${escape(source.updated)}</p>${source.url ? `<a href="${escape(source.url)}" target="_blank" rel="noopener noreferrer">查看公开来源 ↗</a>` : ''}</li>`).join('')}</ol></section>` : ''}
-        <div class="chat-answer-actions" data-name="AnswerActions" data-current="${message === this.session.messages.at(-1)}" ${message === this.session.messages.at(-1) ? '' : 'hidden'}>
+        <div class="chat-answer-actions" data-name="AnswerActions" data-current="${message === this.session.messages.at(-1)}" ${message.state==='complete'?'':'hidden'}>
           <button data-chat-action="copy" aria-label="复制回答"><img src="assets/conversation-1dd93.svg" alt=""></button>
           <button data-chat-action="like" aria-label="赞同回答" aria-pressed="${Boolean(message.liked)}"><img src="assets/${message.liked ? 'feedback-selected.svg' : 'conversation-47792.svg'}" alt=""></button>
           <button data-chat-action="dislike" aria-label="不满意" aria-pressed="${Boolean(message.disliked)}"><img src="assets/${message.disliked ? 'feedback-selected.svg' : 'conversation-47792.svg'}" alt=""></button>
           <button data-chat-action="share" aria-label="分享回答"><img src="assets/conversation-f917c.svg" alt=""></button>
+          <button data-chat-action="more" aria-label="更多操作" aria-haspopup="dialog" aria-expanded="false"><img src="assets/reply-more.svg" alt=""></button>
           <button data-chat-action="regenerate" aria-label="重新生成回答" ${this.busy ? 'disabled' : ''}><img src="assets/conversation-0a9d0.svg" alt=""></button>
         </div>
       </article>`;
@@ -1660,119 +1698,61 @@ window.ChatConversations = (() => {
       this.updateFeedbackIcons(message, selected && !wasSelected ? 'dislike' : null);
       this.persist();
     }
-    bindAnswerContext() {
-      let press;
-      const clear = () => { clearTimeout(press?.timer); press = undefined; };
-      const sourceFor = target => target.closest('.chat-source-disclosure');
-      const articleFor = target => sourceFor(target) ? null : target.closest('article.chat-answer');
-      ['selectstart', 'contextmenu', 'dragstart'].forEach(name => this.host.addEventListener(name, event => {
-        if (sourceFor(event.target)) event.preventDefault();
-      }));
-      this.host.addEventListener('pointerdown', event => {
-        if (event.button !== 0 || !event.isPrimary || event.target.closest('button,a,input,textarea')) return;
-        const article = articleFor(event.target); if (!article) return;
-        clear(); const current = { x: event.clientX, y: event.clientY };
-        press = current;
-        current.timer = setTimeout(() => {
-          if (press === current && article.isConnected && !document.hidden) this.openAnswerContext(article, { x: current.x, y: current.y, held: true });
-        }, 450);
-      });
-      this.host.addEventListener('pointermove', event => { if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > 10) clear(); });
-      ['pointerup', 'pointercancel', 'pointerleave'].forEach(name => this.host.addEventListener(name, clear));
-      this.scroller?.addEventListener('scroll', clear, { passive: true });
-      this.host.addEventListener('contextmenu', event => {
-        const article = articleFor(event.target); if (!article || event.target.closest('button,a')) return;
-        event.preventDefault(); clear(); this.openAnswerContext(article, { x: event.clientX, y: event.clientY });
-      });
-      this.host.addEventListener('keydown', event => {
-        if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
-          const article = articleFor(event.target); if (!article) return;
-          event.preventDefault(); this.openAnswerContext(article);
-        }
-      });
-      document.addEventListener('keydown', event => {
-        if (!this.answerContext) return;
-        if (event.key === 'Escape') { event.preventDefault(); this.closeAnswerContext(); }
-        else if (event.key === 'Tab') {
-          const controls = [...this.answerContext.view.querySelectorAll('button:not(:disabled)')];
-          const first = controls[0], last = controls.at(-1);
-          if (event.shiftKey && (document.activeElement === first || document.activeElement === this.answerContext.view.querySelector('[role="dialog"]'))) { event.preventDefault(); last.focus(); }
-          else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-        }
-      });
-      document.addEventListener('demo-back', event => { if (this.answerContext) { event.preventDefault(); this.closeAnswerContext(); } });
-      const reposition = () => requestAnimationFrame(() => this.positionAnswerContext());
-      window.addEventListener('resize', reposition); window.visualViewport?.addEventListener('resize', reposition);
-      window.addEventListener('pagehide', () => { clear(); this.closeAnswerContext(); });
-      document.addEventListener('visibilitychange', () => { if (document.hidden) clear(); });
+    setupReplyTools(){
+      this.moreMenu=document.createElement('dialog');this.moreMenu.className='reply-more-menu';this.moreMenu.setAttribute('aria-label','回复更多操作');
+      this.moreMenu.innerHTML='<div class="reply-more-content"><div class="history-context-actions reply-more-actions"><button type="button" data-chat-action="branch"><span>创建分支</span><img src="assets/reply-create-branch-v2.svg" alt=""></button><button type="button" data-chat-action="reference"><span>引用</span><img src="assets/reply-reference.svg" alt=""></button></div></div>';
+      document.body.append(this.moreMenu);this.moreMenu.addEventListener('click',event=>{if(event.target.closest('[data-chat-action]'))this.action(event);else if(event.target===this.moreMenu)this.closeReplyMenu()});
+      this.moreMenu.addEventListener('close',()=>{this.moreTrigger?.setAttribute('aria-expanded','false');this.moreMessageId=null});
+      this.quoteCard=document.createElement('div');this.quoteCard.className='composer-quote';this.quoteCard.hidden=true;
+      this.quoteCard.innerHTML='<span class="composer-quote-line"></span><button type="button" class="composer-quote-text" aria-label="查看引用的回复"></button><button type="button" class="composer-quote-remove" aria-label="取消引用"><img src="assets/quote-close.svg" alt=""></button>';
+      const composer=document.querySelector('.s36');composer.parentElement.append(this.quoteCard);
+      this.quoteCard.querySelector('.composer-quote-remove').onclick=()=>this.setQuote(null);this.quoteCard.querySelector('.composer-quote-text').onclick=()=>this.locateQuote(this.quoteDraft);
+      window.addEventListener('resize',()=>this.closeReplyMenu());window.addEventListener('pagehide',()=>this.closeReplyMenu());
     }
-    openAnswerContext(article, origin) {
-      const id = article.closest('[data-message-id]')?.dataset.messageId;
-      const message = this.session.messages.find(item => item.id === id);
-      if (message?.state !== 'complete' || this.answerContext?.id === id) return;
-      this.closeAnswerContext();
-      const view = document.createElement('section'); view.className = 'answer-context';
-      view.innerHTML = `<button class="answer-context-veil" aria-label="关闭回答操作"></button><div class="answer-context-panel" role="dialog" aria-modal="true" aria-label="回答操作" tabindex="-1"><div class="answer-context-primary"></div><div class="answer-context-feedback"></div></div>`;
-      const labels = { copy: '复制', share: '分享', regenerate: '重新生成', like: message.liked ? '取消赞同' : '赞同', dislike: message.disliked ? '修改不满意反馈' : '不满意' };
-      for (const action of ['copy', 'share', 'regenerate', 'like', 'dislike']) {
-        const original = article.querySelector(`.chat-answer-actions [data-chat-action="${action}"]`);
-        if (!original) continue;
-        const control = document.createElement('button'); control.dataset.answerAction = action;
-        control.setAttribute('aria-label', original.getAttribute('aria-label'));
-        if (original.hasAttribute('aria-pressed')) control.setAttribute('aria-pressed', original.getAttribute('aria-pressed'));
-        control.disabled = original.disabled;
-        const image = original.querySelector('img').cloneNode(true), label = document.createElement('span'); label.textContent = labels[action];
-        control.append(image, label); view.querySelector(action === 'like' || action === 'dislike' ? '.answer-context-feedback' : '.answer-context-primary').append(control);
-        control.addEventListener('click', () => {
-          this.closeAnswerContext();
-          // Reuse the card's handlers and state, including hidden historical actions.
-          original.click();
-        });
-      }
-      const screen = this.host.closest('.design-screen');
-      const blocked = [screen.firstElementChild, document.querySelector('.demo-nav'), document.querySelector('.nav-toggle')].filter(Boolean).map(node => ({ node, inert: node.inert }));
-      blocked.forEach(({ node }) => { node.inert = true; });
-      this.answerContext = { view, article, id, origin, blocked, suppressRelease: Boolean(origin?.held) };
-      // The release of the opening hold must not click the newly appeared menu.
-      view.addEventListener('pointerdown', () => { if (this.answerContext) this.answerContext.suppressRelease = false; });
-      view.addEventListener('click', event => {
-        if (this.answerContext?.suppressRelease) {
-          this.answerContext.suppressRelease = false;
-          event.preventDefault(); event.stopImmediatePropagation();
-        }
-      }, true);
-      document.getSelection()?.removeAllRanges(); document.activeElement?.blur(); screen.append(view);
-      this.positionAnswerContext();
-      DemoMotion.animate(view.querySelector('.answer-context-panel'), [{ opacity: 0, transform: 'scale(.97)' }, { opacity: 1, transform: 'scale(1)' }], 140);
-      view.querySelector('.answer-context-veil').addEventListener('click', () => this.closeAnswerContext());
-      view.querySelector('[role="dialog"]').focus({ preventScroll: true });
+    closeReplyMenu(){if(this.moreMenu?.open)this.moreMenu.close();this.moreTrigger?.setAttribute('aria-expanded','false')}
+    openReplyMenu(message,button){
+      this.closeReplyMenu();this.moreMessageId=message.id;this.moreTrigger=button;button.setAttribute('aria-expanded','true');this.moreMenu.showModal();
+      const screen=this.host.closest('.design-screen'),canvas=screen.getBoundingClientRect(),zoom=canvas.width/750,rect=button.getBoundingClientRect();
+      const content=this.moreMenu.querySelector('.reply-more-content');content.style.zoom=zoom;content.style.width='360px';content.style.setProperty('--context-target',44/zoom+'px');this.moreMenu.style.width=360*zoom+'px';
+      const bounds=this.moreMenu.getBoundingClientRect(),gap=12*zoom;
+      const left=Math.max(canvas.left+24*zoom,Math.min(rect.left,canvas.right-bounds.width-24*zoom)-32*zoom);
+      const top=Math.max(12,rect.top-bounds.height-gap);
+      content.style.transformOrigin='bottom left';
+      this.moreMenu.style.left=left+'px';this.moreMenu.style.top=top+'px';
+      DemoMotion.animate(content,[{opacity:0,transform:'scale(.97)'},{opacity:1,transform:'scale(1)'}],150);
     }
-    positionAnswerContext() {
-      const context = this.answerContext; if (!context) return;
-      const screen = this.host.closest('.design-screen'), rect = screen.getBoundingClientRect(), scale = rect.width / screen.offsetWidth;
-      const panel = context.view.querySelector('[role="dialog"]');
-      const header = screen.querySelector('[data-name="Header"]').getBoundingClientRect();
-      const top = Math.max(24, (header.bottom - rect.top) / scale + 16);
-      const bottom = document.documentElement.classList.contains('mobile-layout') ? 24 : 88;
-      panel.style.setProperty('--answer-target', `${44 / scale}px`);
-      panel.style.maxHeight = `${Math.max(80, rect.height / scale - top - bottom)}px`;
-      const source = context.article.getBoundingClientRect();
-      const x = ((context.origin?.x ?? source.right) - rect.left) / scale;
-      const y = ((context.origin?.y ?? source.top) - rect.top) / scale;
-      panel.style.left = `${Math.max(24, Math.min(x - panel.offsetWidth / 2, screen.offsetWidth - panel.offsetWidth - 24))}px`;
-      panel.style.top = `${Math.max(top, Math.min(y - panel.offsetHeight / 4, rect.height / scale - panel.offsetHeight - bottom))}px`;
+    setQuote(reference){
+      this.quoteDraft=reference;this.quoteCard.hidden=!reference;document.querySelector('.design-screen').classList.toggle('has-quote',Boolean(reference));
+      const text=this.quoteCard.querySelector('.composer-quote-text');text.textContent=reference?.text||'';text.title=reference?.text||'';
     }
-    closeAnswerContext() {
-      const context = this.answerContext; if (!context) return;
-      context.view.remove(); context.blocked.forEach(({ node, inert }) => { node.inert = inert; });
-      if (context.article.isConnected) context.article.focus({ preventScroll: true });
-      this.answerContext = undefined;
+    locateQuote(reference){
+      const target=reference&&this.host.querySelector(`[data-message-id="${reference.messageId}"] article`);
+      if(!target){this.onError('引用的回复暂时无法定位，已保留引用内容');return}this.host.querySelectorAll('.material-located').forEach(node=>node.classList.remove('material-located'));target.scrollIntoView({block:'center',behavior:'instant'});target.classList.add('material-located');setTimeout(()=>target.classList.remove('material-located'),1600);
     }
     async action(event) {
       const button = event.target.closest('[data-chat-action]');
       if (!button || button.matches(':disabled')) return;
-      const message = this.session.messages.find(m => m.id === button.closest('[data-message-id]')?.dataset.messageId);
+      const message = this.session.messages.find(m => m.id === (button.closest('[data-message-id]')?.dataset.messageId||this.moreMessageId));
       const action = button.dataset.chatAction;
+      if(action==='more'){if(message?.state==='complete')this.openReplyMenu(message,button);return}
+      if(action==='reference'){
+        if(message?.state!=='complete')return;this.closeReplyMenu();document.dispatchEvent(new CustomEvent('demo-quote-select'));
+        const reply=structuredClone(message.reply);this.setQuote({sessionId:this.session.id,messageId:message.id,title:reply.title||'历史回复',text:(reply.paragraphs||[]).join('\n')||reply.title,context:structuredClone(reply.context||{}),reply});
+        const input=document.querySelector('.message-input');input.focus({preventScroll:true});this.stickToBottom=true;this.scrollToLatest();return;
+      }
+      if(action==='quote-source'){this.locateQuote(message?.reference);return}
+      if(action==='branch'){
+        if(this.branchCreating||message?.state!=='complete')return;
+        this.branchCreating=true;button.disabled=true;this.closeReplyMenu();
+        try{const branch=Conversation.branch(this.session.id,message.id);for(const key of ['demo-pending-message','demo-pending-attachments','demo-pending-input-source'])sessionStorage.removeItem(key);await DemoMotion.navigate('conversation.html?branch='+encodeURIComponent(branch.id)+'#message-'+branch.branch.cutMessageId)}
+        catch{this.branchCreating=false;button.disabled=false;this.onError('分支创建失败，请重试')}
+        return;
+      }
+      if(action==='branch-source'){
+        event.preventDefault();const source=this.session.branch;
+        if(!source||!Conversation.list().some(session=>session.id===source.sourceSessionId)){this.onError('来源对话已删除，当前分支仍可继续聊天');return}
+        Conversation.activate(source.sourceSessionId);await DemoMotion.navigate(button.href);return;
+      }
       if(action==='material-preview'){location.assign('library.html?conversation='+encodeURIComponent(this.session.id)+'&preview='+encodeURIComponent(button.dataset.materialKey)+(button.closest('.chat-reply-files')?'#files':'#images'));return}
       if (action === 'attachment') {
         try { await AttachmentStorage.download(button.dataset.attachmentId); } catch { this.onError('附件暂时无法打开，请重新添加'); }
@@ -1858,8 +1838,8 @@ window.ChatConversations = (() => {
         const preceding = this.session.messages.slice(0, index);
         const question = preceding.findLast(item => item.role === 'user');
         if (!question) return;
-        const context = preceding.findLast(item => item.role === 'assistant')?.reply.context || {};
-        message.regeneration = { original: { reply: message.reply, state: message.state, ...(message.progress !== undefined ? { progress: message.progress } : {}) }, nextReply: question.attachments?.length ? { ...message.reply, context: { ...context, pending: null, journey: null, lastIntent: 'attachment' } } : question.dialogueUnderstanding && window.DemoUnderstanding ? DemoUnderstanding.reply(question.dialogueUnderstanding, context) : DemoChat.reply(question.inputSource === 'voice' ? question.voice?.query || question.text : question.text, context) };
+        const context = question.reference?.context||preceding.findLast(item => item.role === 'assistant')?.reply.context || {};
+        message.regeneration = { original: { reply: message.reply, state: message.state, ...(message.progress !== undefined ? { progress: message.progress } : {}) }, nextReply: question.attachments?.length ? { ...message.reply, context: { ...context, pending: null, journey: null, lastIntent: 'attachment' } } : question.dialogueUnderstanding && window.DemoUnderstanding ? DemoUnderstanding.reply(question.dialogueUnderstanding, context) : quoteAnswer(question.inputSource === 'voice' ? question.voice?.query || question.text : question.text,question.reference,context) };
         if (!question.attachments?.length && !message.regeneration.nextReply.homeReply && !question.dialogueUnderstanding && window.DemoUnderstanding?.enabled) message.modelRequest = { text: question.text, context };
         message.state = 'pending'; delete message.progress;
         this.session.updated = Date.now();
@@ -2472,6 +2452,7 @@ window.VoiceUnderstanding = (() => {
   const nav = $('.demo-nav');
   const page = document.body.dataset.page;
   const isChatFlow = ['index', 'input', 'conversation'].includes(page);
+  const fromRecent = page === 'conversation' && new URLSearchParams(location.search).get('from') === 'recent';
   let chat;
   let attachments;
   let thinking = false;
@@ -2511,6 +2492,10 @@ window.VoiceUnderstanding = (() => {
     });
   }
   $('.nav-toggle').onclick = () => nav.classList.toggle('open');
+  if (fromRecent) {
+    const button = $('[data-name="Button - 返回助手首页"]');
+    if (button) { button.dataset.name = 'Button - 打开菜单'; button.querySelector('img').src = 'assets/home-menu-v2.svg'; }
+  }
   $$('[data-name^="Button -"]').forEach(button => {
     const name = button.dataset.name;
     if (name.endsWith(':align')) return;
@@ -2554,6 +2539,7 @@ window.VoiceUnderstanding = (() => {
     if (voiceInput?.active) { event.preventDefault(); voiceInput.cancel(false); }
     else if (attachments && !attachments.panel.hidden) { event.preventDefault(); attachments.close(); }
     else if (activeOverlay) { event.preventDefault(); if (historyContext) closeHistoryContext(); else closeOverlay(); }
+    else if (fromRecent) { event.preventDefault(); openOverlay('history', $('[data-name="Button - 打开菜单"]')); }
   });
   if (isChatFlow) {
     const screen = $('.design-screen');
@@ -2680,6 +2666,7 @@ window.VoiceUnderstanding = (() => {
     }
     updateSend();
   }
+  document.addEventListener('demo-quote-select',()=>{attachments?.close(false);voiceInput?.cancel(false)});
   updateSend();
   function updateSuggestionIcon(button) {
     const icon = $('.s29', button);
@@ -2921,8 +2908,9 @@ window.VoiceUnderstanding = (() => {
       if (button) selectSidebar('main');
       if (!button) return;
       if (button.dataset.longPressed === 'true') { delete button.dataset.longPressed; return; }
+      sessionStorage.setItem('demo-recent-sidebar-scroll', String($('.history-content', history).scrollTop));
       ChatConversations.activate(button.dataset.sessionId);
-      DemoMotion.navigate('conversation.html');
+      DemoMotion.navigate('conversation.html?session='+encodeURIComponent(button.dataset.sessionId)+'&from=recent');
     });
     document.addEventListener('keydown', event => {
       if (!activeOverlay) return;
@@ -2970,6 +2958,7 @@ window.VoiceUnderstanding = (() => {
     nav.inert = true;
     $('.nav-toggle').inert = true;
     activeOverlay.hidden = false;
+    if (name === 'history' && fromRecent) $('.history-content', activeOverlay).scrollTop = Number(sessionStorage.getItem('demo-recent-sidebar-scroll')) || 0;
     if (!immediate) DemoMotion.overlay(activeOverlay, true);
     trigger?.setAttribute('aria-expanded', 'true');
     $('[role="dialog"]', activeOverlay).focus({ preventScroll: true });
@@ -3097,6 +3086,8 @@ window.VoiceUnderstanding = (() => {
     }
   }
   if (page === 'conversation') {
+    const params=new URLSearchParams(location.search),requestedId=params.get('branch')||params.get('session');
+    if(requestedId&&ChatConversations.list().some(session=>session.id===requestedId))ChatConversations.activate(requestedId);
     // Explicit review link opens the revised scenario without rewriting old turns.
     if (new URLSearchParams(location.search).get('preview') === 'champion-september') {
       ChatConversations.create();
@@ -3182,7 +3173,7 @@ window.VoiceUnderstanding = (() => {
   $('.conversation-materials')?.addEventListener('click',()=>{const id=ChatConversations.activeId();sessionStorage.setItem('demo-chat-reading-position',JSON.stringify({id,scroll:chat?.scroller?.scrollTop||0}));DemoMotion.navigate('library.html?conversation='+encodeURIComponent(id))});
   if(page==='conversation'){
     const message=location.hash.match(/^#message-([a-zA-Z0-9-]+)$/),resume=location.hash.match(/^#resume-chat-([a-zA-Z0-9-]+)$/);
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{if(message){const target=$(`[data-message-id="${message[1]}"]`);target?.scrollIntoView({block:'center',behavior:'instant'});const highlight=target?.querySelector('article.chat-answer,form.clarification-card')||target;highlight?.classList.add('material-located');setTimeout(()=>highlight?.classList.remove('material-located'),1600)}else if(resume){try{const saved=JSON.parse(sessionStorage.getItem('demo-chat-reading-position'));if(saved?.id===resume[1]&&chat?.scroller)chat.scroller.scrollTop=saved.scroll}catch{}}}));
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{if(message){const target=$(`[data-message-id="${message[1]}"]`);target?.scrollIntoView({block:'center',behavior:'instant'});const notice=target?.nextElementSibling;if(notice?.classList.contains('chat-branch-notice')&&chat?.scroller){if(!notice.nextElementSibling)chat.scroller.scrollTop=chat.scroller.scrollHeight;else notice.scrollIntoView({block:'center',behavior:'instant'})}if(!new URLSearchParams(location.search).has('branch')){const highlight=target?.querySelector('article.chat-answer,form.clarification-card')||target;highlight?.classList.add('material-located');setTimeout(()=>highlight?.classList.remove('material-located'),1600)}}else if(resume){try{const saved=JSON.parse(sessionStorage.getItem('demo-chat-reading-position'));if(saved?.id===resume[1]&&chat?.scroller)chat.scroller.scrollTop=saved.scroll}catch{}}}));
   }
   restoreSidebar();
   window.DemoStartup?.ready();

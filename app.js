@@ -4,6 +4,7 @@
   const nav = $('.demo-nav');
   const page = document.body.dataset.page;
   const isChatFlow = ['index', 'input', 'conversation'].includes(page);
+  const fromRecent = page === 'conversation' && new URLSearchParams(location.search).get('from') === 'recent';
   let chat;
   let attachments;
   let thinking = false;
@@ -43,6 +44,10 @@
     });
   }
   $('.nav-toggle').onclick = () => nav.classList.toggle('open');
+  if (fromRecent) {
+    const button = $('[data-name="Button - 返回助手首页"]');
+    if (button) { button.dataset.name = 'Button - 打开菜单'; button.querySelector('img').src = 'assets/home-menu-v2.svg'; }
+  }
   $$('[data-name^="Button -"]').forEach(button => {
     const name = button.dataset.name;
     if (name.endsWith(':align')) return;
@@ -86,6 +91,7 @@
     if (voiceInput?.active) { event.preventDefault(); voiceInput.cancel(false); }
     else if (attachments && !attachments.panel.hidden) { event.preventDefault(); attachments.close(); }
     else if (activeOverlay) { event.preventDefault(); if (historyContext) closeHistoryContext(); else closeOverlay(); }
+    else if (fromRecent) { event.preventDefault(); openOverlay('history', $('[data-name="Button - 打开菜单"]')); }
   });
   if (isChatFlow) {
     const screen = $('.design-screen');
@@ -212,6 +218,7 @@
     }
     updateSend();
   }
+  document.addEventListener('demo-quote-select',()=>{attachments?.close(false);voiceInput?.cancel(false)});
   updateSend();
   function updateSuggestionIcon(button) {
     const icon = $('.s29', button);
@@ -453,8 +460,9 @@
       if (button) selectSidebar('main');
       if (!button) return;
       if (button.dataset.longPressed === 'true') { delete button.dataset.longPressed; return; }
+      sessionStorage.setItem('demo-recent-sidebar-scroll', String($('.history-content', history).scrollTop));
       ChatConversations.activate(button.dataset.sessionId);
-      DemoMotion.navigate('conversation.html');
+      DemoMotion.navigate('conversation.html?session='+encodeURIComponent(button.dataset.sessionId)+'&from=recent');
     });
     document.addEventListener('keydown', event => {
       if (!activeOverlay) return;
@@ -502,6 +510,7 @@
     nav.inert = true;
     $('.nav-toggle').inert = true;
     activeOverlay.hidden = false;
+    if (name === 'history' && fromRecent) $('.history-content', activeOverlay).scrollTop = Number(sessionStorage.getItem('demo-recent-sidebar-scroll')) || 0;
     if (!immediate) DemoMotion.overlay(activeOverlay, true);
     trigger?.setAttribute('aria-expanded', 'true');
     $('[role="dialog"]', activeOverlay).focus({ preventScroll: true });
@@ -629,6 +638,8 @@
     }
   }
   if (page === 'conversation') {
+    const params=new URLSearchParams(location.search),requestedId=params.get('branch')||params.get('session');
+    if(requestedId&&ChatConversations.list().some(session=>session.id===requestedId))ChatConversations.activate(requestedId);
     // Explicit review link opens the revised scenario without rewriting old turns.
     if (new URLSearchParams(location.search).get('preview') === 'champion-september') {
       ChatConversations.create();
@@ -714,7 +725,7 @@
   $('.conversation-materials')?.addEventListener('click',()=>{const id=ChatConversations.activeId();sessionStorage.setItem('demo-chat-reading-position',JSON.stringify({id,scroll:chat?.scroller?.scrollTop||0}));DemoMotion.navigate('library.html?conversation='+encodeURIComponent(id))});
   if(page==='conversation'){
     const message=location.hash.match(/^#message-([a-zA-Z0-9-]+)$/),resume=location.hash.match(/^#resume-chat-([a-zA-Z0-9-]+)$/);
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{if(message){const target=$(`[data-message-id="${message[1]}"]`);target?.scrollIntoView({block:'center',behavior:'instant'});const highlight=target?.querySelector('article.chat-answer,form.clarification-card')||target;highlight?.classList.add('material-located');setTimeout(()=>highlight?.classList.remove('material-located'),1600)}else if(resume){try{const saved=JSON.parse(sessionStorage.getItem('demo-chat-reading-position'));if(saved?.id===resume[1]&&chat?.scroller)chat.scroller.scrollTop=saved.scroll}catch{}}}));
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{if(message){const target=$(`[data-message-id="${message[1]}"]`);target?.scrollIntoView({block:'center',behavior:'instant'});const notice=target?.nextElementSibling;if(notice?.classList.contains('chat-branch-notice')&&chat?.scroller){if(!notice.nextElementSibling)chat.scroller.scrollTop=chat.scroller.scrollHeight;else notice.scrollIntoView({block:'center',behavior:'instant'})}if(!new URLSearchParams(location.search).has('branch')){const highlight=target?.querySelector('article.chat-answer,form.clarification-card')||target;highlight?.classList.add('material-located');setTimeout(()=>highlight?.classList.remove('material-located'),1600)}}else if(resume){try{const saved=JSON.parse(sessionStorage.getItem('demo-chat-reading-position'));if(saved?.id===resume[1]&&chat?.scroller)chat.scroller.scrollTop=saved.scroll}catch{}}}));
   }
   restoreSidebar();
   window.DemoStartup?.ready();
