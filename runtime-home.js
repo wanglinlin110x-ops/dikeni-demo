@@ -3206,17 +3206,26 @@ window.VoiceUnderstanding = (() => {
   poster.setAttribute('aria-hidden', 'true');
   if (!poster.getAttribute('src')) poster.src = video.poster;
   if (!poster.isConnected) video.before(poster); video.parentElement.classList.add('ip-has-fallback');
+  const firstFrame = video.poster;
+  const finalFrame = new URL('assets/ip-intro-final-frame.webp', document.baseURI).href;
   const showPoster = () => { delete video.dataset.frameReady; };
   video.addEventListener('playing', () => {
     const ready = () => { if (!video.paused && !video.ended) video.dataset.frameReady = 'true'; };
     if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(ready);
     else ready();
   });
-  // Do not swap to the poster on ended: retain the decoded final video frame.
+  // Retain the decoded final frame and keep the same frame underneath it in case
+  // Safari releases the video surface after playback ends. Never fall back to frame 1.
+  video.addEventListener('ended', () => {
+    video.pause();
+    video.dataset.frameReady = 'true';
+    poster.src = finalFrame;
+  });
   for (const name of ['error', 'emptied']) video.addEventListener(name, showPoster);
   let pending = false;
   function playEntry() {
     pending = false;
+    poster.src = firstFrame;
     showPoster();
     video.currentTime = 0;
     video.play().catch(() => { pending = true; });
