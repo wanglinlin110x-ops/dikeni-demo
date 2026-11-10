@@ -2234,13 +2234,15 @@ window.ChatConversations = (() => {
       const screen=this.host.closest('.design-screen');
       this.turnRail=document.createElement('button');this.turnRail.type='button';this.turnRail.className='turn-navigation';this.turnRail.hidden=true;
       this.turnRail.setAttribute('aria-label','浏览当前对话');this.turnRail.setAttribute('aria-expanded','false');screen.append(this.turnRail);
+      this.bottomButton=document.createElement('button');this.bottomButton.type='button';this.bottomButton.className='chat-jump-bottom';this.bottomButton.hidden=true;this.bottomButton.setAttribute('aria-label','回到底部');this.bottomButton.innerHTML='<img src="assets/chat-jump-bottom.svg" alt="">';screen.append(this.bottomButton);
+      this.bottomButton.onclick=()=>{this.closeTurnPreview();this.stickToBottom=true;this.scroller.scrollTop=this.scroller.scrollHeight;this.syncTurnNavigation()};
       this.turnPreview=document.createElement('button');this.turnPreview.type='button';this.turnPreview.className='turn-preview';this.turnPreview.hidden=true;this.turnPreview.setAttribute('aria-label','定位到预览对话');this.turnPreview.innerHTML='<strong></strong><span></span>';screen.append(this.turnPreview);
       const close=()=>{this.turnGesture=null;this.turnPreview.hidden=true;this.turnRail.classList.remove('is-scrubbing');this.turnRail.setAttribute('aria-expanded','false');this.paintTurnMarks(this.turnActive||0)};
       this.closeTurnPreview=close;
       const select=y=>{
         const marks=[...this.turnRail.children];if(!marks.length)return;
         const closest=marks.reduce((best,n)=>Math.abs(n.getBoundingClientRect().top+n.getBoundingClientRect().height/2-y)<Math.abs(best.getBoundingClientRect().top+best.getBoundingClientRect().height/2-y)?n:best);
-        const entries=this.turnEntries||[],count=entries.length,rect=this.turnRail.getBoundingClientRect(),index=count<=16?Number(closest.dataset.turnIndex):Math.max(0,Math.min(count-1,Math.round((y-rect.top-16*rect.width/64)/Math.max(1,rect.height-32*rect.width/64)*(count-1))));
+        const entries=this.turnEntries||[],count=entries.length,first=marks[0].getBoundingClientRect(),last=marks.at(-1).getBoundingClientRect(),index=count===marks.length?Number(closest.dataset.turnIndex):Math.max(0,Math.min(count-1,Math.round((y-first.top-first.height/2)/Math.max(1,last.top+last.height/2-first.top-first.height/2)*(count-1))));
         this.previewTurn(index);
       };
       this.turnRail.addEventListener('pointerdown',e=>{if(!e.isPrimary||e.button!==0||this.turnRail.hidden)return;e.preventDefault();this.turnGesture={id:e.pointerId,y:e.clientY,moved:false};this.turnRail.setPointerCapture(e.pointerId)});
@@ -2257,6 +2259,7 @@ window.ChatConversations = (() => {
       this.scroller?.addEventListener('wheel',close,{passive:true});
       window.addEventListener('resize',()=>{close();update()});window.addEventListener('pagehide',close);
       document.addEventListener('focusin',update);document.addEventListener('focusout',update);document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+      new ResizeObserver(update).observe(this.host);
       new MutationObserver(update).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class','hidden','open']});this.syncTurnNavigation();
     }
     paintTurnMarks(index){
@@ -2278,12 +2281,18 @@ window.ChatConversations = (() => {
     syncTurnNavigation(){
       if(!this.turnRail)return;
       const screen=this.host.closest('.design-screen'),messages=this.session.messages,turns=messages.filter(m=>m.role==='user');
-      const blocked=screen.matches('.home-keyboard,.voice-review')||Boolean(screen.querySelector('.ui-overlay:not([hidden]),.voice-panel:not([hidden]),.voice-compact:not([hidden])'))||Boolean(document.querySelector('dialog[open]'))||Boolean(document.activeElement?.matches('input,textarea'));
+      const blocked=screen.matches('.home-keyboard,.voice-review')||Boolean(screen.querySelector('.ui-overlay:not([hidden]),.voice-panel:not([hidden]),.voice-compact:not([hidden]),.attachment-panel:not([hidden])'))||Boolean(document.querySelector('dialog[open]'))||Boolean(document.activeElement?.matches('input,textarea'));
       const hidden=turns.length<4||blocked;if(this.turnRail.hidden!==hidden)this.turnRail.hidden=hidden;if(hidden&&!this.turnPreview.hidden)this.closeTurnPreview();
       const zoom=screen.getBoundingClientRect().width/750,heading=screen.querySelector('.s51')?.getBoundingClientRect(),top=(heading?.bottom||screen.getBoundingClientRect().top)+32*zoom;
       let active=0;turns.forEach((m,i)=>{const n=this.host.querySelector(`[data-message-id="${m.id}"]`);if(n?.getBoundingClientRect().top<=top)active=i});if(this.scroller&&this.scroller.scrollHeight-this.scroller.scrollTop-this.scroller.clientHeight<20)active=turns.length-1;this.turnActive=active;
       this.turnEntries=this.turnEntries||turns.map(m=>{const index=messages.indexOf(m),next=messages.slice(index+1).find(n=>n.role==='user'),end=next?messages.indexOf(next):messages.length,reply=messages.slice(index+1,end).find(n=>n.role==='assistant'&&n.state==='complete')?.reply;return{id:m.id,title:m.text||'附件提问',summary:reply?[...(reply.paragraphs||[]),reply.quote||reply.question||''].filter(Boolean).join('')||reply.title||'': '回复生成中…'}});
-      const count=Math.min(16,turns.length),indices=Array.from({length:count},(_,i)=>Math.round(i*(turns.length-1)/Math.max(1,count-1))),signature=indices.join(',');
+      const canvas=screen.getBoundingClientRect(),composer=document.querySelector('.s36')?.getBoundingClientRect(),quote=document.querySelector('.composer-quote:not([hidden])')?.getBoundingClientRect(),bottom=Math.min(composer?.top||canvas.bottom,quote?.top||canvas.bottom),regionTop=(heading?.bottom||canvas.top)+32*zoom,regionBottom=bottom-32*zoom;
+      const available=Math.max(0,(regionBottom-regionTop)/zoom),height=Math.min(1000,available,Math.max(18,(turns.length-1)*42+18));
+      this.turnRail.style.height=height+'px';this.turnRail.style.top=((regionTop-canvas.top)/zoom+height/2+Math.max(0,available-height)/2)+'px';
+      const distance=this.scroller?this.scroller.scrollHeight-this.scroller.scrollTop-this.scroller.clientHeight:0,hideBottom=blocked||distance<=8||(this.bottomButton.hidden&&distance<80)||bottom-canvas.top<200*zoom;
+      if(this.bottomButton.hidden!==hideBottom)this.bottomButton.hidden=hideBottom;
+      this.bottomButton.style.top=((bottom-canvas.top)/zoom-104)+'px';this.bottomButton.style.setProperty('--bottom-hit',44/zoom+'px');
+      const count=Math.min(turns.length,24,Math.max(1,Math.floor((height-18)/42)+1)),indices=Array.from({length:count},(_,i)=>Math.round(i*(turns.length-1)/Math.max(1,count-1))),signature=indices.join(',');
       if(this.turnRail.dataset.turns!==signature){this.turnRail.dataset.turns=signature;this.turnRail.innerHTML=indices.map(i=>`<i data-turn-index="${i}"></i>`).join('')}
       if(this.turnPreview.hidden)this.paintTurnMarks(active);
     }
