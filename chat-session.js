@@ -177,6 +177,7 @@ window.ChatConversations = (() => {
       this.render();
       host.addEventListener('click', event => this.action(event));
       this.setupReplyTools();
+      this.setupTurnNavigation();
       this.resumeGeneration();
       window.addEventListener('pagehide', () => { this.suspended = true; clearTimeout(this.timer); this.modelRun?.controller.abort(); if (this.busy) this.persist(); });
       window.addEventListener('pageshow', event => {
@@ -451,6 +452,8 @@ window.ChatConversations = (() => {
         if (replacement) this.scroller.scrollTop += (replacement.getBoundingClientRect().top - anchorTop) / (parseFloat(getComputedStyle(document.querySelector('.design-screen')).zoom) || 1);
       }
       this.scrollToLatest();
+      this.turnEntries=null;
+      this.syncTurnNavigation?.();
     }
     renderChart(message) {
       const { chart } = message.reply;
@@ -541,6 +544,69 @@ window.ChatConversations = (() => {
       else { delete message.feedbackDraft; delete message.feedback; }
       this.updateFeedbackIcons(message, selected && !wasSelected ? 'dislike' : null);
       this.persist();
+    }
+    setupTurnNavigation(){
+      const screen=this.host.closest('.design-screen');
+      this.turnRail=document.createElement('button');this.turnRail.type='button';this.turnRail.className='turn-navigation';this.turnRail.hidden=true;
+      this.turnRail.setAttribute('aria-label','浏览当前对话');this.turnRail.setAttribute('aria-expanded','false');screen.append(this.turnRail);
+      this.turnPreview=document.createElement('button');this.turnPreview.type='button';this.turnPreview.className='turn-preview';this.turnPreview.hidden=true;this.turnPreview.setAttribute('aria-label','定位到预览对话');this.turnPreview.innerHTML='<strong></strong><span></span>';screen.append(this.turnPreview);
+      const close=()=>{this.turnGesture=null;this.turnPreview.hidden=true;this.turnRail.classList.remove('is-scrubbing');this.turnRail.setAttribute('aria-expanded','false');this.paintTurnMarks(this.turnActive||0)};
+      this.closeTurnPreview=close;
+      const select=y=>{
+        const marks=[...this.turnRail.children];if(!marks.length)return;
+        const closest=marks.reduce((best,n)=>Math.abs(n.getBoundingClientRect().top+n.getBoundingClientRect().height/2-y)<Math.abs(best.getBoundingClientRect().top+best.getBoundingClientRect().height/2-y)?n:best);
+        const entries=this.turnEntries||[],count=entries.length,rect=this.turnRail.getBoundingClientRect(),index=count<=16?Number(closest.dataset.turnIndex):Math.max(0,Math.min(count-1,Math.round((y-rect.top-16*rect.width/64)/Math.max(1,rect.height-32*rect.width/64)*(count-1))));
+        this.previewTurn(index);
+      };
+      this.turnRail.addEventListener('pointerdown',e=>{if(!e.isPrimary||e.button!==0||this.turnRail.hidden)return;e.preventDefault();this.turnGesture={id:e.pointerId,y:e.clientY,moved:false};this.turnRail.setPointerCapture(e.pointerId)});
+      this.turnRail.addEventListener('pointermove',e=>{const g=this.turnGesture;if(!g||g.id!==e.pointerId)return;if(Math.abs(e.clientY-g.y)>6)g.moved=true;if(g.moved)select(e.clientY)});
+      this.turnRail.addEventListener('pointerup',e=>{const g=this.turnGesture;if(!g||g.id!==e.pointerId)return;const id=this.turnPreview.dataset.turnId;this.turnGesture=null;close();if(g.moved&&id)this.locateTurn(id)});
+      this.turnRail.addEventListener('pointercancel',close);this.turnRail.addEventListener('lostpointercapture',()=>{if(this.turnGesture)close()});
+      this.turnRail.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','Enter',' '].includes(e.key)){e.preventDefault();if(e.key==='Enter'&&!this.turnPreview.hidden){const id=this.turnPreview.dataset.turnId;close();this.locateTurn(id)}else this.previewTurn(Math.max(0,Math.min((this.turnEntries?.length||1)-1,(this.turnPreview.hidden?this.turnActive:this.turnPreviewIndex)+(e.key==='ArrowUp'?-1:e.key==='ArrowDown'?1:0))))}else if(e.key==='Escape')close()});
+      this.turnPreview.onclick=()=>{const id=this.turnPreview.dataset.turnId;close();this.locateTurn(id)};
+      document.addEventListener('pointerdown',e=>{if(!this.turnRail.contains(e.target)&&!this.turnPreview.contains(e.target))close()},{capture:true});
+      let frame;const update=()=>{if(frame)return;frame=requestAnimationFrame(()=>{frame=0;this.syncTurnNavigation()})};
+      const readingKey='demo-turn-reading-'+this.session.id;let savedReading;try{savedReading=JSON.parse(sessionStorage.getItem(readingKey))}catch{}
+      this.scroller?.addEventListener('scroll',()=>{try{sessionStorage.setItem(readingKey,JSON.stringify({scroll:this.scroller.scrollTop}))}catch{}update()},{passive:true});
+      if(savedReading&&Number.isFinite(savedReading.scroll)&&!location.hash)requestAnimationFrame(()=>requestAnimationFrame(()=>{this.stickToBottom=false;this.scroller.scrollTop=savedReading.scroll;update()}));
+      this.scroller?.addEventListener('wheel',close,{passive:true});
+      window.addEventListener('resize',()=>{close();update()});window.addEventListener('pagehide',close);
+      document.addEventListener('focusin',update);document.addEventListener('focusout',update);document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+      new MutationObserver(update).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class','hidden','open']});this.syncTurnNavigation();
+    }
+    paintTurnMarks(index){
+      const marks=[...this.turnRail.children];if(!marks.length)return;
+      const nearest=marks.reduce((best,n)=>Math.abs(Number(n.dataset.turnIndex)-index)<Math.abs(Number(best.dataset.turnIndex)-index)?n:best);
+      for(const mark of marks){const selected=mark===nearest,neighbor=Math.abs(marks.indexOf(mark)-marks.indexOf(nearest))===1;if(mark.classList.contains('is-current')!==selected)mark.classList.toggle('is-current',selected);if(mark.classList.contains('is-neighbor')!==neighbor)mark.classList.toggle('is-neighbor',neighbor)}
+    }
+    previewTurn(index){
+      const entry=this.turnEntries?.[index];if(!entry)return;
+      this.turnRail.classList.add('is-scrubbing');
+      this.turnPreviewIndex=index;this.turnPreview.dataset.turnId=entry.id;
+      this.turnPreview.querySelector('strong').textContent=entry.title;this.turnPreview.querySelector('span').textContent=entry.summary||'点击查看这一轮对话';
+      this.turnPreview.hidden=false;this.turnRail.setAttribute('aria-expanded','true');this.paintTurnMarks(index);
+      const screen=this.host.closest('.design-screen'),rect=screen.getBoundingClientRect(),zoom=rect.width/750,marks=[...this.turnRail.children],mark=marks.reduce((best,n)=>Math.abs(Number(n.dataset.turnIndex)-index)<Math.abs(Number(best.dataset.turnIndex)-index)?n:best),r=mark.getBoundingClientRect();
+      const heading=screen.querySelector('.s51')?.getBoundingClientRect(),composer=document.querySelector('.s36')?.getBoundingClientRect(),height=this.turnPreview.getBoundingClientRect().height;
+      const min=(heading?.bottom||rect.top)+16*zoom,max=(composer?.top||rect.bottom)-height-20*zoom;
+      this.turnPreview.style.top=(Math.max(min,Math.min(r.top+r.height/2-height/2,max))-rect.top)/zoom+'px';
+    }
+    syncTurnNavigation(){
+      if(!this.turnRail)return;
+      const screen=this.host.closest('.design-screen'),messages=this.session.messages,turns=messages.filter(m=>m.role==='user');
+      const blocked=screen.matches('.home-keyboard,.voice-review')||Boolean(screen.querySelector('.ui-overlay:not([hidden]),.voice-panel:not([hidden]),.voice-compact:not([hidden])'))||Boolean(document.querySelector('dialog[open]'))||Boolean(document.activeElement?.matches('input,textarea'));
+      const hidden=turns.length<4||blocked;if(this.turnRail.hidden!==hidden)this.turnRail.hidden=hidden;if(hidden&&!this.turnPreview.hidden)this.closeTurnPreview();
+      const zoom=screen.getBoundingClientRect().width/750,heading=screen.querySelector('.s51')?.getBoundingClientRect(),top=(heading?.bottom||screen.getBoundingClientRect().top)+32*zoom;
+      let active=0;turns.forEach((m,i)=>{const n=this.host.querySelector(`[data-message-id="${m.id}"]`);if(n?.getBoundingClientRect().top<=top)active=i});if(this.scroller&&this.scroller.scrollHeight-this.scroller.scrollTop-this.scroller.clientHeight<20)active=turns.length-1;this.turnActive=active;
+      this.turnEntries=this.turnEntries||turns.map(m=>{const index=messages.indexOf(m),next=messages.slice(index+1).find(n=>n.role==='user'),end=next?messages.indexOf(next):messages.length,reply=messages.slice(index+1,end).find(n=>n.role==='assistant'&&n.state==='complete')?.reply;return{id:m.id,title:m.text||'附件提问',summary:reply?[...(reply.paragraphs||[]),reply.quote||reply.question||''].filter(Boolean).join('')||reply.title||'': '回复生成中…'}});
+      const count=Math.min(16,turns.length),indices=Array.from({length:count},(_,i)=>Math.round(i*(turns.length-1)/Math.max(1,count-1))),signature=indices.join(',');
+      if(this.turnRail.dataset.turns!==signature){this.turnRail.dataset.turns=signature;this.turnRail.innerHTML=indices.map(i=>`<i data-turn-index="${i}"></i>`).join('')}
+      if(this.turnPreview.hidden)this.paintTurnMarks(active);
+    }
+    locateTurn(id){
+      const question=this.host.querySelector(`[data-message-id="${id}"]`);if(!question)return;
+      this.stickToBottom=false;const screen=this.host.closest('.design-screen'),zoom=screen.getBoundingClientRect().width/750,header=screen.querySelector('.s51')?.getBoundingClientRect();
+      this.scroller.scrollTop+=(question.getBoundingClientRect().top-(header?.bottom||screen.getBoundingClientRect().top)-24*zoom)/zoom;
+      this.syncTurnNavigation();
     }
     setupReplyTools(){
       this.moreMenu=document.createElement('dialog');this.moreMenu.className='reply-more-menu';this.moreMenu.setAttribute('aria-label','回复更多操作');
