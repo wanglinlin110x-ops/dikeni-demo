@@ -602,12 +602,12 @@ window.ChatConversations = (() => {
       let active=0;turns.forEach((m,i)=>{const n=this.host.querySelector(`[data-message-id="${m.id}"]`);if(n?.getBoundingClientRect().top<=top)active=i});if(this.scroller&&this.scroller.scrollHeight-this.scroller.scrollTop-this.scroller.clientHeight<20)active=turns.length-1;this.turnActive=active;
       this.turnEntries=this.turnEntries||turns.map(m=>{const index=messages.indexOf(m),next=messages.slice(index+1).find(n=>n.role==='user'),end=next?messages.indexOf(next):messages.length,reply=messages.slice(index+1,end).find(n=>n.role==='assistant'&&n.state==='complete')?.reply;return{id:m.id,title:m.text||'附件提问',summary:reply?[...(reply.paragraphs||[]),reply.quote||reply.question||''].filter(Boolean).join('')||reply.title||'': '回复生成中…'}});
       const canvas=screen.getBoundingClientRect(),composer=document.querySelector('.s36')?.getBoundingClientRect(),quote=document.querySelector('.composer-quote:not([hidden])')?.getBoundingClientRect(),bottom=Math.min(composer?.top||canvas.bottom,quote?.top||canvas.bottom),regionTop=(heading?.bottom||canvas.top)+32*zoom,regionBottom=bottom-32*zoom;
-      const available=Math.max(0,(regionBottom-regionTop)/zoom),height=Math.min(1000,available,Math.max(19,(turns.length-1)*42+19));
+      const available=Math.max(0,(regionBottom-regionTop)/zoom),height=Math.min(1000,available,Math.max(19,(turns.length-1)*34+19));
       this.turnRail.style.height=height+'px';this.turnRail.style.top=((regionTop-canvas.top)/zoom+height/2+Math.max(0,available-height)/2)+'px';
       const distance=this.scroller?this.scroller.scrollHeight-this.scroller.scrollTop-this.scroller.clientHeight:0,hideBottom=blocked||distance<=8||(this.bottomButton.hidden&&distance<80)||bottom-canvas.top<200*zoom;
       if(this.bottomButton.hidden!==hideBottom)this.bottomButton.hidden=hideBottom;
       this.bottomButton.style.top=((bottom-canvas.top)/zoom-104)+'px';this.bottomButton.style.setProperty('--bottom-hit',44/zoom+'px');
-      const count=Math.min(turns.length,24,Math.max(1,Math.floor((height-19)/42)+1)),indices=Array.from({length:count},(_,i)=>Math.round(i*(turns.length-1)/Math.max(1,count-1))),signature=indices.join(',');
+      const count=Math.min(turns.length,24,Math.max(1,Math.floor((height-19)/34)+1)),indices=Array.from({length:count},(_,i)=>Math.round(i*(turns.length-1)/Math.max(1,count-1))),signature=indices.join(',');
       if(this.turnRail.dataset.turns!==signature){this.turnRail.dataset.turns=signature;this.turnRail.innerHTML=indices.map(i=>`<i data-turn-index="${i}"></i>`).join('')}
       if(this.turnPreview.hidden)this.paintTurnMarks(active);
     }
