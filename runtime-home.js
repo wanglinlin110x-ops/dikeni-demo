@@ -1863,6 +1863,7 @@ window.ChatConversations = (() => {
       host.addEventListener('click', event => this.action(event));
       this.setupReplyTools();
       this.setupTurnNavigation();
+      this.setupMessageMenu();
       this.resumeGeneration();
       window.addEventListener('pagehide', () => { this.suspended = true; clearTimeout(this.timer); this.modelRun?.controller.abort(); if (this.busy) this.persist(); });
       window.addEventListener('pageshow', event => {
@@ -2230,6 +2231,50 @@ window.ChatConversations = (() => {
       this.updateFeedbackIcons(message, selected && !wasSelected ? 'dislike' : null);
       this.persist();
     }
+    setupMessageMenu(){
+      this.messageMenu=document.createElement('dialog');this.messageMenu.className='message-action-menu reply-more-menu';this.messageMenu.setAttribute('aria-label','消息操作');this.messageMenu.innerHTML='<div class="message-menu-content"><div class="history-context-actions"></div></div>';document.body.append(this.messageMenu);
+      const close=()=>{if(this.messageMenu.open)this.messageMenu.close();this.messageMenuId=null};
+      this.messageMenu.addEventListener('pointerdown',()=>{this.messageMenuOpeningGesture=false});
+      this.messageMenu.addEventListener('click',async event=>{
+        if(this.messageMenuOpeningGesture){this.messageMenuOpeningGesture=false;event.preventDefault();return}
+        const button=event.target.closest('[data-message-action]');if(!button){if(event.target===this.messageMenu)close();return}if(button.disabled)return;
+        const message=this.session.messages.find(m=>m.id===this.messageMenuId),action=button.dataset.messageAction;if(!message)return;close();
+        if(message.role==='assistant'){
+          const source=this.host.querySelector(`[data-message-id="${message.id}"] [data-chat-action="${action}"]`);
+          if(source){await this.action({target:source,preventDefault(){}});return}
+          this.moreMessageId=message.id;await this.action({target:button,event,preventDefault(){}});this.moreMessageId=null;return;
+        }
+        if(action==='copy'||action==='share'){
+          try{if(action==='share'&&navigator.share&&(!navigator.canShare||navigator.canShare({text:message.text})))await navigator.share({text:message.text});else{await navigator.clipboard.writeText(message.text||'');this.onError(action==='copy'?'已复制问题':'问题已复制，可粘贴分享')}}catch(error){if(error.name!=='AbortError')this.onError('操作未完成，请重试')}return;
+        }
+        if(action==='followup'){
+          document.dispatchEvent(new CustomEvent('demo-quote-select'));const index=this.session.messages.indexOf(message),context=structuredClone(this.session.messages[index+1]?.reply?.context||this.session.context||{}),reply={title:'用户问题',paragraphs:[message.text||'附件提问'],context};
+          this.setQuote({sessionId:this.session.id,messageId:message.id,title:'用户问题',text:message.text||'附件提问',context,reply});document.querySelector('.message-input').focus({preventScroll:true});this.stickToBottom=true;this.scrollToLatest();return;
+        }
+        if(action==='delete'){
+          if(this.busy)return;const previous=this.session.messages,index=previous.indexOf(message);this.session.messages=previous.filter(m=>m.id!==message.id).map(m=>m===previous[index+1]&&m.role==='assistant'?{...m,questionDeleted:true}:m);
+          if(!this.persist()){this.session.messages=previous;return}this.render();this.onError('已删除该条消息');
+        }
+      });
+      this.messageMenu.addEventListener('cancel',()=>{this.messageMenuId=null});
+      let press,suppress;
+      const cancel=()=>{if(press)clearTimeout(press.timer);press=null};
+      const target=event=>{if(event.target.closest('button,a,input,textarea,.followup-section'))return null;const node=event.target.closest('.chat-user,.chat-response');if(!node)return null;const message=this.session.messages.find(m=>m.id===node.dataset.messageId);return message&&(message.role==='user'||message.state==='complete')?{node,message}:null};
+      this.host.addEventListener('pointerdown',event=>{cancel();if(!event.isPrimary||event.button!==0)return;const selected=target(event);if(!selected)return;press={x:event.clientX,y:event.clientY,id:event.pointerId,timer:setTimeout(()=>{suppress={id:selected.message.id,until:performance.now()+900};window.getSelection()?.removeAllRanges();this.openMessageMenu(selected.message,selected.node,event.clientX,event.clientY);this.messageMenuOpeningGesture=true;cancel()},450)}});
+      this.host.addEventListener('pointermove',event=>{if(press&&Math.hypot(event.clientX-press.x,event.clientY-press.y)>10)cancel()},{passive:true});
+      for(const name of ['pointerup','pointercancel'])document.addEventListener(name,cancel,{passive:true});
+      this.scroller?.addEventListener('scroll',cancel,{passive:true});
+      this.host.addEventListener('contextmenu',event=>{const selected=target(event);if(!selected)return;event.preventDefault();cancel();if(!this.messageMenu.open)this.openMessageMenu(selected.message,selected.node,event.clientX,event.clientY)});
+      this.host.addEventListener('click',event=>{if(suppress&&performance.now()<suppress.until&&event.target.closest('[data-message-id]')?.dataset.messageId===suppress.id){event.preventDefault();event.stopImmediatePropagation()}suppress=null},true);
+      window.addEventListener('resize',()=>{cancel();close()});window.addEventListener('pagehide',()=>{cancel();close()});document.addEventListener('visibilitychange',()=>{if(document.hidden){cancel();close()}});
+    }
+    openMessageMenu(message,node,x,y){
+      this.closeReplyMenu();this.closeTurnPreview?.();this.messageMenuId=message.id;
+      const assistant=message.role==='assistant',items=assistant?[['copy','复制','conversation-1dd93.svg'],['like','点赞','conversation-47792.svg'],['dislike','不满意','conversation-47792.svg'],['reference','引用','reply-reference.svg'],['branch','创建分支','reply-create-branch-v2.svg'],['share','转发','conversation-f917c.svg'],['regenerate','重新生成','conversation-0a9d0.svg']]:[['copy','复制','conversation-1dd93.svg'],['followup','追问','reply-reference.svg'],['share','分享','conversation-f917c.svg'],['delete','删除','history-menu-trash.svg']];
+      const list=this.messageMenu.querySelector('.history-context-actions');list.innerHTML=items.map(([action,label,icon])=>`<button type="button" data-message-action="${action}" ${assistant?`data-chat-action="${action}"`:''} ${this.busy&&['regenerate','delete'].includes(action)?'disabled':''} ${['like','dislike'].includes(action)?`aria-pressed="${Boolean(message[action==='like'?'liked':'disliked'])}"`:''}><img src="assets/${icon}" alt=""><span>${label}</span></button>`).join('');
+      const canvas=this.host.closest('.design-screen').getBoundingClientRect(),zoom=canvas.width/750,content=this.messageMenu.firstElementChild;content.style.zoom=zoom;content.style.width='520px';content.style.maxHeight=(innerHeight-32)/zoom+'px';content.style.setProperty('--context-target',44/zoom+'px');this.messageMenu.style.width=520*zoom+'px';this.messageMenu.showModal();
+      const bounds=this.messageMenu.getBoundingClientRect();this.messageMenu.style.left=Math.max(canvas.left+24*zoom,Math.min(x,canvas.right-bounds.width-24*zoom))+'px';this.messageMenu.style.top=Math.max(16,Math.min(y,innerHeight-bounds.height-16))+'px';
+    }
     setupTurnNavigation(){
       const screen=this.host.closest('.design-screen');
       this.turnRail=document.createElement('button');this.turnRail.type='button';this.turnRail.className='turn-navigation';this.turnRail.hidden=true;
@@ -2330,7 +2375,7 @@ window.ChatConversations = (() => {
       const text=this.quoteCard.querySelector('.composer-quote-text');text.textContent=reference?.text||'';text.title=reference?.text||'';
     }
     locateQuote(reference){
-      const target=reference&&this.host.querySelector(`[data-message-id="${reference.messageId}"] article`);
+      const target=reference&&this.host.querySelector(`[data-message-id="${reference.messageId}"] article,.chat-user[data-message-id="${reference.messageId}"]`);
       if(!target){this.onError('引用的回复暂时无法定位，已保留引用内容');return}this.host.querySelectorAll('.material-located').forEach(node=>node.classList.remove('material-located'));target.scrollIntoView({block:'center',behavior:'instant'});target.classList.add('material-located');setTimeout(()=>target.classList.remove('material-located'),1600);
     }
     async action(event) {
@@ -2338,6 +2383,7 @@ window.ChatConversations = (() => {
       if (!button || button.matches(':disabled')) return;
       const message = this.session.messages.find(m => m.id === (button.closest('[data-message-id]')?.dataset.messageId||this.moreMessageId));
       const action = button.dataset.chatAction;
+      const article=button.closest('article')||this.host.querySelector(`[data-message-id="${message?.id}"] article,[data-message-id="${message?.id}"] form`);
       if(action==='more'){if(message?.state==='complete')this.openReplyMenu(message,button);return}
       if(action==='reference'){
         if(message?.state!=='complete')return;this.closeReplyMenu();document.dispatchEvent(new CustomEvent('demo-quote-select'));
@@ -2414,7 +2460,7 @@ window.ChatConversations = (() => {
         }
       }
       else if (action === 'copy') {
-        try { await navigator.clipboard.writeText(button.closest('article').innerText); this.onError('已复制回答'); }
+        try { await navigator.clipboard.writeText(article?.innerText||[message.reply?.title,...(message.reply?.paragraphs||[])].filter(Boolean).join('\n')); this.onError('已复制回答'); }
         catch { this.onError('当前浏览器未开放剪贴板权限'); }
       } else if (action === 'like') {
         message.liked = !message.liked;
@@ -2424,12 +2470,12 @@ window.ChatConversations = (() => {
         }
         this.updateFeedbackIcons(message, message.liked ? 'like' : null);
         this.persist();
-        if (button.closest('.chat-answer-actions').hidden) this.onError(message.liked ? '已赞同这条回答' : '已取消赞同');
+        if (!button.closest('.chat-answer-actions')||button.closest('.chat-answer-actions').hidden) this.onError(message.liked ? '已赞同这条回答' : '已取消赞同');
       } else if (action === 'dislike') {
         // Opening the form alone is not negative feedback.
-        this.onFeedback?.(message, button.closest('.chat-answer-actions').hidden ? button.closest('article') : button);
+        this.onFeedback?.(message, !button.closest('.chat-answer-actions')||button.closest('.chat-answer-actions').hidden ? article : button);
       } else if (action === 'share') {
-        const data = { title: message.reply.title, text: button.closest('article').innerText };
+        const data = { title: message.reply.title, text: article?.innerText||[message.reply?.title,...(message.reply?.paragraphs||[])].filter(Boolean).join('\n') };
         try {
           if (navigator.share && (!navigator.canShare || navigator.canShare(data))) await navigator.share(data);
           else { await navigator.clipboard.writeText(data.text); this.onError('回答内容已复制，可粘贴分享'); }
@@ -2438,6 +2484,7 @@ window.ChatConversations = (() => {
         }
       } else if (action === 'regenerate') {
         if (this.busy) return;
+        if(message.questionDeleted){this.onError('原提问已删除，无法重新生成这条回答');return}
         const index = this.session.messages.indexOf(message);
         const preceding = this.session.messages.slice(0, index);
         const question = preceding.findLast(item => item.role === 'user');
