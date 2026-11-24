@@ -17,6 +17,15 @@ window.AttachmentStorage = (() => {
     });
   }
   return {
+    async clearWithMetadata(commit) {
+      const db=await database();
+      return new Promise((resolve,reject)=>{
+        const transaction=db.transaction('files','readwrite'),request=transaction.objectStore('files').clear();let failure;
+        request.onsuccess=()=>{try{commit()}catch(error){failure=error;transaction.abort()}};
+        transaction.oncomplete=()=>resolve();
+        transaction.onerror=transaction.onabort=()=>reject(failure||transaction.error||new Error('文件清理失败'));
+      });
+    },
     put: (file, id = crypto.randomUUID()) => { const metadata = { id, name: file.name, type: file.type, size: file.size, added: Date.now() }; return run('readwrite', store => store.put({ ...metadata, blob: file })).then(() => metadata); },
     get: id => run('readonly', store => store.get(id)),
     list: () => run('readonly', store => store.getAll()).then(rows => rows.sort((a,b) => b.added-a.added)),

@@ -4,7 +4,7 @@
   const nav = $('.demo-nav');
   const page = document.body.dataset.page;
   const isChatFlow = ['index', 'input', 'conversation'].includes(page);
-  const fromRecent = page === 'conversation' && new URLSearchParams(location.search).get('from') === 'recent';
+  const fromRecent = page === 'conversation' && ['recent','main'].includes(new URLSearchParams(location.search).get('from'));
   let chat;
   let attachments;
   let thinking = false;
@@ -323,15 +323,15 @@
     history.innerHTML = `<button class="overlay-backdrop" aria-label="关闭侧边栏"></button>
       <aside class="history-panel" role="dialog" aria-modal="true" aria-labelledby="history-title" tabindex="-1">
         <div class="history-content">
-          <header class="history-account"><img class="history-avatar" src="assets/account-chen-zhiyuan.png?v=20261027-small" alt="陈志远头像"><h2 id="history-title">陈志远</h2><div class="font-size-switch" role="group" aria-label="阅读字号"><button class="font-size-option" type="button" data-font-size-toggle="standard" aria-pressed="true">标准</button><button class="font-size-option" type="button" data-font-size-toggle="large" aria-pressed="false">大字</button></div></header>
+          <header class="history-heading"><h2 id="history-title"><img class="history-wordmark" src="assets/history-wordmark.svg" alt="迪客牛仔"></h2><button class="history-search" type="button" aria-label="搜索对话"><img src="assets/history-search.svg" alt=""></button></header>
           <nav class="history-list" aria-label="对话列表">
             <div class="history-primary"><button class="history-main"><span class="history-mascot" aria-hidden="true"><span class="history-mascot-background"></span><span class="history-mascot-crop"><img class="history-mascot-image" src="assets/history-mascot.png" alt=""></span></span>主对话</button>
-            <button class="history-library"><span class="history-library-icon"><img src="assets/history-library-chart.svg" alt=""></span>资料库</button><button class="history-project"><img src="assets/history-project-folder.svg" alt="">项目</button></div><img class="history-divider" src="assets/history-divider.svg" alt="">
+            <button class="history-library"><span class="history-library-icon"><img src="assets/history-library-rounded.svg" alt=""></span>资料库</button><button class="history-project" hidden><img src="assets/history-project-folder.svg" alt="">项目</button></div><img class="history-divider" src="assets/history-divider.svg" alt="">
             <div class="history-pinned-list"></div><h3 class="history-recent-title">最近</h3>
 
           </nav>
         </div>
-        <div class="history-footer"><button class="history-new"><img src="assets/151b1.svg" alt="">新建对话</button></div>
+        <div class="history-footer"><div class="history-new-row"><button class="history-new">新建对话</button></div><div class="history-account"><div class="history-user"><img class="history-avatar" src="assets/account-chen-zhiyuan.png?v=20261027-small" alt="用户头像"><span>仰望厂端超级管理员</span></div><button class="history-settings" type="button" aria-label="设置"><img src="assets/history-settings.svg" alt=""></button></div></div>
       </aside><div class="overlay-status" aria-hidden="true"></div><div class="overlay-home-indicator" aria-hidden="true"></div>`;
     const feedback = document.createElement('div');
     feedback.className = 'ui-overlay feedback-overlay';
@@ -403,6 +403,7 @@
     $('.history-rename', context).addEventListener('submit', event => {
       event.preventDefault(); if (!historyContext || !$('input', context).value.trim()) return;
       if (!ChatConversations.update(historyContext.id, { title: $('input', context).value })) { toast('保存未完成，请重试'); return; }
+      if(chat?.session.id===historyContext.id){const updated=ChatConversations.list().find(item=>item.id===historyContext.id);chat.session.title=updated.title;chat.session.customTitle=updated.customTitle;chat.renderHeading()}
       closeHistoryContext(); refreshHistory();
     });
     $$('.overlay-backdrop, .feedback-close', host).forEach(button => button.addEventListener('click', closeOverlay));
@@ -427,6 +428,12 @@
       delete feedbackMessage.feedbackDraft; feedbackMessage = undefined;
       chat.persist(); closeOverlay(); toast('反馈已保存在当前浏览器');
     });
+    $('.history-settings', history).addEventListener('click', () => {
+      rememberSidebar('settings');
+      sessionStorage.setItem('demo-settings-return',location.pathname.split('/').pop()+location.search);
+      DemoMotion.navigate('settings.html');
+    });
+    $('.history-search', history).addEventListener('click', () => toast('对话搜索功能暂未开放'));
     $('.history-project', history).addEventListener('click', () => {
       rememberSidebar('project');
       sessionStorage.setItem('demo-project-return', location.pathname.split('/').pop() || 'index.html');
@@ -438,8 +445,11 @@
       DemoMotion.navigate('library.html');
     });
     $('.history-main', history).addEventListener('click', () => {
-      selectSidebar('main');
-      if (ChatConversations.list().length) DemoMotion.navigate('conversation.html'); else closeOverlay();
+      try{
+        ChatConversations.openMain();
+        selectSidebar('main');
+        DemoMotion.navigate('conversation.html?main=1&from=main');
+      }catch{toast('主对话未能打开，请检查浏览器存储后重试')}
     });
     DemoFontSize.updateButtons();
     $$('[data-font-size-toggle]', history).forEach(button => button.addEventListener('click', () => {
@@ -457,7 +467,7 @@
     $('.history-list', history).append(recentList);
     $('.history-list', history).addEventListener('click', event => {
       const button = event.target.closest('[data-session-id]');
-      if (button) selectSidebar('main');
+      if (button) selectSidebar('recent');
       if (!button) return;
       if (button.dataset.longPressed === 'true') { delete button.dataset.longPressed; return; }
       sessionStorage.setItem('demo-recent-sidebar-scroll', String($('.history-content', history).scrollTop));
@@ -478,7 +488,7 @@
   }
   function selectSidebar(section) {
     sessionStorage.setItem('demo-sidebar-selected', section);
-    for (const name of ['main','library','project']) {
+    for (const name of ['main','library','project','settings']) {
       const button = $(`.history-${name}`);
       if (name === section) button?.setAttribute('aria-current','page');
       else button?.removeAttribute('aria-current');
@@ -490,7 +500,7 @@
   }
   function restoreSidebar(event) {
     if (!isChatFlow) return;
-    const hash = location.hash.match(/^#sidebar-(library|project)$/);
+    const hash = location.hash.match(/^#sidebar-(library|project|settings)$/);
     let saved;try { saved=JSON.parse(sessionStorage.getItem('demo-sidebar-return')); } catch {}
     const back = event?.persisted || performance.getEntriesByType('navigation')[0]?.type === 'back_forward';
     if (!hash && !(back && saved?.page === location.pathname.split('/').pop())) return;
@@ -511,7 +521,7 @@
     $('.nav-toggle').inert = true;
     activeOverlay.hidden = false;
     if (name === 'history' && fromRecent) $('.history-content', activeOverlay).scrollTop = Number(sessionStorage.getItem('demo-recent-sidebar-scroll')) || 0;
-    if (!immediate) DemoMotion.overlay(activeOverlay, true);
+    DemoMotion.overlay(activeOverlay, true, immediate);
     trigger?.setAttribute('aria-expanded', 'true');
     $('[role="dialog"]', activeOverlay).focus({ preventScroll: true });
   }
@@ -609,7 +619,7 @@
     if (!list) return;
     list.replaceChildren();
     const pinned = $('.history-pinned-list'); pinned.replaceChildren();
-    const sessions = ChatConversations.list();
+    const sessions = ChatConversations.list().filter(session=>!session.isMainChat);
     let previousGroup;
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
@@ -639,7 +649,9 @@
   }
   if (page === 'conversation') {
     const params=new URLSearchParams(location.search),requestedId=params.get('branch')||params.get('session');
-    if(requestedId&&ChatConversations.list().some(session=>session.id===requestedId))ChatConversations.activate(requestedId);
+    let mainSession;
+    if(params.get('main')==='1'){try{mainSession=ChatConversations.openMain()}catch{mainSession={id:'main-chat-v1',isMainChat:true,title:'主对话',messages:[],context:{}};toast('主对话未能保存，请检查浏览器存储')}}
+    else if(requestedId&&ChatConversations.list().some(session=>session.id===requestedId))ChatConversations.activate(requestedId);
     // Explicit review link opens the revised scenario without rewriting old turns.
     if (new URLSearchParams(location.search).get('preview') === 'champion-september') {
       ChatConversations.create();
@@ -648,6 +660,7 @@
       history.replaceState(history.state, '', location.pathname + location.hash);
     }
     chat = new ChatConversations({
+      session:mainSession,
       host: $('[data-node-id="9:1388"]'),
       onBusy: value => { thinking = value; updateSend(); },
       onError: toast,
@@ -662,12 +675,14 @@
         openOverlay('feedback', trigger);
       },
     });
+    selectSidebar(chat.session.isMainChat?'main':'recent');
+    if(chat.session.isMainChat){$('.s52').textContent='主对话';document.title='主对话 · 迪客牛仔'}
     try {
-      const pending = sessionStorage.getItem('demo-pending-message');
+      const pending = chat.session.isMainChat||chat.artifactRequestHandled ? null : sessionStorage.getItem('demo-pending-message');
       let files = [];
-      try { files = JSON.parse(sessionStorage.getItem('demo-pending-attachments') || '[]'); } catch {}
-      const source = sessionStorage.getItem('demo-pending-input-source');
-      ['demo-pending-message', 'demo-pending-attachments', 'demo-pending-input-source'].forEach(key => sessionStorage.removeItem(key));
+      try { files = chat.session.isMainChat||chat.artifactRequestHandled ? [] : JSON.parse(sessionStorage.getItem('demo-pending-attachments') || '[]'); } catch {}
+      const source = chat.session.isMainChat||chat.artifactRequestHandled ? null : sessionStorage.getItem('demo-pending-input-source');
+      if(!chat.session.isMainChat&&!chat.artifactRequestHandled)['demo-pending-message', 'demo-pending-attachments', 'demo-pending-input-source'].forEach(key => sessionStorage.removeItem(key));
       if ((pending || files.length) && !chat.submit(pending || '', files, { source })) {
         const input = $('.message-input');
         input.value = pending || '';

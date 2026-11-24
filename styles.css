@@ -678,7 +678,7 @@ body[data-page="conversation"] .followup-section{padding:24px 0 0}
 body[data-page="conversation"] .followup-section h2{font-size:24px;font-weight:400;line-height:36px;color:#444}
 body[data-page="conversation"] .followup-options{margin-top:20px}
 body[data-page="conversation"] .clarification-card{padding:32px 24px}
-body[data-page="conversation"] .message-input{font-family:"PingFang SC",Arial,sans-serif}
+:is(body[data-page="conversation"],.reader-edit-canvas) .message-input{font-family:"PingFang SC",Arial,sans-serif}
 body[data-page="conversation"] .chat-user p{font-size:30px;font-weight:500;line-height:normal}
 body[data-page="conversation"] .chat-source-disclosure{width:100%;padding:24px 0;background:white;border-radius:24px;overflow:hidden}
 body[data-page="conversation"] .chat-source-disclosure .chat-sources{margin:0;padding:0 24px;border-radius:0;background:transparent}
@@ -925,8 +925,8 @@ body:is([data-page="index"],[data-page="input"]) .s34{order:-1}
 body:is([data-page="index"],[data-page="input"]) .s17{padding-bottom:64px}
 
 /* Conversation details from Figma 9:1377; data and existing answer actions stay dynamic. */
-body[data-page="conversation"] .s53{left:24px;top:28px;width:64px;height:64px;grid-template-columns:1fr;grid-template-rows:1fr;box-shadow:none;background:transparent}
-body[data-page="conversation"] .s53 .s16{width:40px;height:40px}
+:is(body[data-page="conversation"],.reader-header-canvas,.settings-header) .s53{left:24px;top:28px;width:64px;height:64px;grid-template-columns:1fr;grid-template-rows:1fr;box-shadow:none;background:transparent}
+:is(body[data-page="conversation"],.reader-header-canvas,.settings-header) .s53 .s16{width:40px;height:40px}
 body[data-page="conversation"] .chat-profile-info{min-width:0;flex:1}
 .chat-profile-heading{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
 body[data-page="conversation"] .chat-profile-heading h2{font-size:36px;line-height:50px;margin:0}
@@ -960,10 +960,10 @@ body:is([data-page="index"],[data-page="input"]) .s16{width:48px;height:48px}
 body:is([data-page="index"],[data-page="input"]) .s16 img{width:auto;height:auto;max-width:none;transform:none}
 body:is([data-page="index"],[data-page="input"]) .assistant-close{right:24px}
 body:is([data-page="index"],[data-page="input"]) .assistant-close img{width:auto;height:auto;max-width:none}
-body[data-page="conversation"] .s53{left:24px}
-body[data-page="conversation"] .s53 .s16{width:48px;height:48px}
-body[data-page="conversation"] .s53 img{width:auto;height:auto;max-width:none}
-body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .s36{filter:none;box-shadow:0 10px 23px rgba(38,55,91,.12)}
+:is(body[data-page="conversation"],.reader-header-canvas,.settings-header) .s53{left:24px}
+:is(body[data-page="conversation"],.reader-header-canvas,.settings-header) .s53 .s16{width:48px;height:48px}
+:is(body[data-page="conversation"],.reader-header-canvas,.settings-header) .s53 img{width:auto;height:auto;max-width:none}
+:is(body:is([data-page="index"],[data-page="input"],[data-page="conversation"]),.reader-edit-canvas) .s36{filter:none;box-shadow:0 10px 23px rgba(38,55,91,.12)}
 
 
 /* Figma 43:1126: identical thumb silhouette in outline and selected states. */
@@ -1004,7 +1004,7 @@ body[data-page="conversation"] .chat-answer-actions :is([data-chat-action="like"
 .chat-horizontal-row small{display:block;font-size:22px;font-weight:400;color:#888;line-height:32px}
 
 /* Figma 9:1285: add, flexible text field, voice and send. */
-body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .composer-attachments .s36{gap:20px;padding:16px 24px 16px 32px}
+:is(body:is([data-page="index"],[data-page="input"],[data-page="conversation"]) .composer-attachments,.reader-edit-canvas) .s36{gap:20px;padding:16px 24px 16px 32px}
 .composer-attachments .s39{order:1;flex:1;min-width:0;width:auto}
 .composer-attachments .s37{order:2;position:relative}
 .composer-attachments .s41,.composer-attachments .s47{order:3;width:56px;height:56px;border-radius:28px;grid-template-columns:56px;grid-template-rows:56px}
@@ -1175,7 +1175,7 @@ body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-m
 body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-metrics .metric-percentage{justify-content:flex-start;gap:2px;line-height:56px}
 body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-metrics .metric-symbol{font-size:32px;line-height:52px}
 body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-metrics+.chat-source-disclosure{margin-top:-20px}
-body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-sources{line-height:36px}
+body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-sources{line-height:33.8px}
 .font-large body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-profile-store{line-height:44px}
 .font-large body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-person-facts dt{line-height:44px}
 .font-large body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-person-facts dd{font-size:36px;line-height:54px}
@@ -1186,7 +1186,7 @@ body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-s
 .font-large body[data-page="conversation"] .chat-answer-champion:has(>.chat-metrics) .chat-metrics .metric-symbol{font-size:36px;line-height:64px}
 
 
-/* Figma 16:6986: inline sources, with no native selection/callout/tap overlay. */
+/* Figma 16:6483 / 16:6986: shared inline sources with no selection/callout/tap overlay. */
 body[data-page="conversation"] .chat-source-disclosure,
 body[data-page="conversation"] .chat-source-disclosure *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important;-webkit-tap-highlight-color:transparent;-webkit-user-drag:none}
 body[data-page="conversation"] .chat-source-disclosure{overflow-anchor:none;touch-action:pan-y}
@@ -1194,11 +1194,11 @@ body[data-page="conversation"] .chat-source-disclosure:has(>.chat-sources[aria-e
 body[data-page="conversation"] .chat-source-disclosure .chat-sources{touch-action:pan-y;cursor:pointer;outline:none}
 body[data-page="conversation"] .chat-source-disclosure .chat-sources:focus-visible{outline:2px solid #07b1c7;outline-offset:-4px;border-radius:12px}
 body[data-page="conversation"] .chat-source-disclosure:has(>.chat-sources[aria-expanded="true"]) .chat-sources{line-height:33.8px}
-body[data-page="conversation"] .chat-source-content{margin:24px 0 0;padding:24px 24px 0;border-top:1px solid transparent;background:url("assets/source-divider.svg") top center/100% 1px no-repeat}
+body[data-page="conversation"] .chat-source-content{width:100%;margin:24px 0 0;padding:24px 24px 0;border-top:1px solid transparent;background:url("assets/source-divider.svg") top center/100% 1px no-repeat}
 body[data-page="conversation"] .chat-source-content h3{color:#101210;line-height:36px}
 .font-large body[data-page="conversation"] .chat-thread .chat-source-content h3{line-height:50px}
 
-/* Reply visual system, Figma 64:735. The 750px canvas remains the scaling basis. */
+/* Shared reply presentation, Figma 9:1377. The 750px canvas remains the scaling basis. */
 body[data-page="conversation"] .chat-thread :is(.chat-answer,.clarification-card){background:#f8f8f8;border-radius:24px;padding:40px 24px 24px;color:#101210}
 body[data-page="conversation"] .chat-thread .chat-answer{gap:40px}
 body[data-page="conversation"] .chat-thread .chat-answer>.chat-paragraph+.chat-paragraph{margin-top:-16px}
@@ -1239,9 +1239,9 @@ body[data-page="conversation"] .chat-thread .chat-table-wrap tr:last-child td{bo
 body[data-page="conversation"] .chat-thread :is(.chat-script,.chat-next-step){min-width:0;width:100%;padding:24px;border-radius:24px;background:#fff;border:0}
 body[data-page="conversation"] .chat-thread :is(.chat-script,.chat-next-step) h3{font-size:26px;line-height:40px;font-weight:600;color:#101210;margin:0 0 16px}
 body[data-page="conversation"] .chat-thread .chat-script blockquote{margin:0;font-size:30px;line-height:46px;color:#101210;overflow-wrap:anywhere}
-body[data-page="conversation"] .chat-thread .clarification-card legend{font-size:30px;line-height:44.4px;font-weight:600;color:#101210}
-body[data-page="conversation"] .chat-thread .clarification-options{gap:12px;margin-top:24px}
-body[data-page="conversation"] .chat-thread .clarification-options button{border-radius:26px;font-size:28px;line-height:40px;padding:12px 18px}
+body[data-page="conversation"] .chat-thread .clarification-card legend{font-size:28px;line-height:41.44px;font-weight:400;color:#666}
+body[data-page="conversation"] .chat-thread .clarification-options{gap:16px;margin-top:30px}
+body[data-page="conversation"] .chat-thread .clarification-options button{border-radius:24px;font-size:27px;line-height:39.96px;padding:13px 22px}
 body[data-page="conversation"] .chat-thread .clarification-hint{font-size:26px;line-height:40px;color:#777}
 /* Reading mode changes text while preserving chrome, chart bars and icon geometry. */
 .font-large body[data-page="conversation"] .chat-thread .chat-answer>h2{font-size:40px;line-height:58px}
@@ -1341,8 +1341,8 @@ body[data-page="conversation"] .s51>.conversation-materials{top:20px;left:auto;r
 .chat-library-image>button{display:block;width:100%;padding:0;background:transparent;border:0;text-align:left}.chat-library-image figcaption{padding:16px 20px;font-size:24px;line-height:1.5;color:#777}.chat-reply-files{display:flex;flex-direction:column;gap:16px;margin-top:24px}.chat-reply-files>button{display:flex;align-items:center;gap:20px;width:100%;padding:24px;background:white;border-radius:24px;text-align:left;color:#101210}.chat-reply-files>button>img{width:40px;height:40px;flex-shrink:0}.chat-reply-files>button>img:last-child{width:24px;height:24px;transform:rotate(180deg)}.chat-reply-files span{display:flex;flex:1;min-width:0;flex-direction:column;gap:8px}.chat-reply-files strong{font-size:28px;line-height:1.5;overflow-wrap:anywhere}.chat-reply-files small{font-size:24px;line-height:1.4;color:#888}.font-large body[data-page="conversation"] .chat-reply-files strong{font-size:32px}
 
 /* Compact internal spacing for the Han champion conversation (750px canvas). */
-body[data-page="conversation"] .chat-thread .chat-answer.chat-answer-han{gap:24px}
-body[data-page="conversation"] .chat-thread .chat-answer-han>.chat-paragraph+.chat-paragraph{margin-top:-4px}
+body[data-page="conversation"] .chat-thread .chat-answer.chat-answer-han{gap:40px}
+body[data-page="conversation"] .chat-thread .chat-answer-han>.chat-paragraph+.chat-paragraph{margin-top:-16px}
 body[data-page="conversation"] .chat-thread .chat-answer-han>:is(.chat-library-image,.chat-reply-files){margin-top:0}
 body[data-page="conversation"] .chat-thread .chat-answer-han .chat-library-image figcaption{padding-top:12px;padding-bottom:12px}
 
@@ -1356,7 +1356,7 @@ body[data-page="conversation"] .chat-thread .chat-answer :is(button,img,svg){-we
 
 .chat-branch-divider .chat-branch-label{max-width:calc(100% - 72px);min-width:0;gap:0}.chat-branch-label>span{flex-shrink:0}.chat-branch-label a{color:#777777;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:inherit;font-size:inherit}.chat-branch-label a:focus-visible{outline:2px solid #07b1c7;outline-offset:3px}
 
-.reply-more-menu{position:fixed;margin:0;max-width:calc(100vw - 24px);padding:0;border:0;border-radius:0;background:transparent;color:#111;overflow:visible;max-height:calc(100dvh - 24px)}.reply-more-menu::backdrop{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}.reply-more-content{transform-origin:top left;padding:0}.reply-more-actions{width:100%}.reply-more-actions img{width:48px;height:48px;filter:none}.reply-more-actions .reply-quote-icon{width:40px;height:40px;flex-shrink:0;font-size:40px;line-height:40px;text-align:center}.reply-more-actions button:focus-visible{outline:3px solid #07b1c7;outline-offset:-3px}
+.reply-more-menu{position:fixed;margin:0;max-width:calc(100vw - 24px);padding:0;border:0;border-radius:0;background:transparent;color:#111;overflow:visible;max-height:calc(100dvh - 24px)}.reply-more-menu::backdrop{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}.reply-more-content{transform-origin:top left;padding:0}.reply-more-actions{width:100%}.reply-more-actions img{width:40px;height:40px;filter:none}.reply-more-actions .reply-quote-icon{width:40px;height:40px;flex-shrink:0;font-size:40px;line-height:40px;text-align:center}.reply-more-actions button:focus-visible{outline:3px solid #07b1c7;outline-offset:-3px}
 
 .design-screen.has-quote{--quote-space:78px}.composer-quote{position:absolute;top:calc(20px + var(--attachment-draft-space));left:40px;right:40px;height:68px;display:flex;gap:8px;align-items:center;padding:16px 12px;background:#f8f8f8;border-radius:12px;color:#999;user-select:none;-webkit-user-select:none}.composer-quote-line{width:4px;height:24px;background:#e9e9eb;border-radius:8px;flex-shrink:0}.composer-quote-text{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:24px;line-height:34px;color:#999;text-align:left;padding:0;background:transparent}.composer-quote-remove{width:32px;height:32px;flex-shrink:0;border-radius:40px;display:grid;place-items:center;padding:4px;background:#0005;position:relative}.composer-quote-remove::before{content:"";position:absolute;left:50%;top:50%;width:var(--tap-target,88px);height:var(--tap-target,88px);transform:translate(-50%,-50%)}.composer-quote-remove img{width:24px;height:24px;pointer-events:none}body[data-page="conversation"] .design-screen.composer-attachments.has-quote:not(.home-keyboard):not(.voice-review) .s36:not(.voice-recording){top:calc(108px + var(--attachment-draft-space))}
 .chat-message-reference{display:flex;flex-direction:column;gap:8px;max-width:100%;margin-bottom:12px;padding:16px 20px;border-left:4px solid #dce2e2;border-radius:12px;background:#f8f8f8;color:#777;text-align:left}.chat-message-reference span{font-size:24px;line-height:34px}.chat-message-reference small{font-size:24px;line-height:34px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
@@ -1378,6 +1378,114 @@ body[data-page="conversation"] .chat-thread .chat-answer :is(button,img,svg){-we
 
 /* Shared action menus: icon first, label follows; message long press suppresses native callouts. */
 .history-context-actions button{justify-content:flex-start}.history-context-actions button>img{order:-1}.reply-more-actions img{filter:brightness(0)}
-.message-action-menu .history-context-actions{width:100%}.message-menu-content{overflow:auto;overscroll-behavior:contain;border-radius:26px;box-shadow:0 10px 40px #1c29331a}.message-action-menu img{width:40px;height:40px;filter:brightness(0)}.message-action-menu [data-message-action="dislike"] img{transform:rotate(180deg)}.message-action-menu [data-message-action="delete"]{color:#f05252}.message-action-menu [data-message-action="delete"] img{filter:none}.message-action-menu button:disabled{opacity:.4;cursor:default}
+.message-action-menu .history-context-actions{width:100%}.message-menu-content{overflow:auto;overscroll-behavior:contain;border-radius:26px;box-shadow:0 10px 40px #1c29331a}.message-action-menu img{width:40px;height:40px;object-fit:contain;filter:brightness(0)}.message-action-menu [data-message-action="dislike"] img{transform:rotate(180deg)}.message-action-menu [data-message-action="delete"]{color:#f05252}.message-action-menu [data-message-action="delete"] img{filter:none}.message-action-menu button:disabled{opacity:.4;cursor:default}
 .chat-user,.chat-answer,.clarification-card{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 body[data-page="conversation"] .chat-thread :is(.chat-user,.chat-answer,.clarification-card),body[data-page="conversation"] .chat-thread :is(.chat-user,.chat-answer,.clarification-card) :not(input):not(textarea){-webkit-touch-callout:none!important;-webkit-user-select:none!important;user-select:none!important}
+
+/* Keep all contextual action icons on the same logical-size grid. */
+.history-context-actions img{width:40px;height:40px;object-fit:contain;flex:0 0 40px}
+
+/* Optical menu icon adjustment: preserve the original layout box and center. */
+.message-action-menu :is([data-message-action="reference"],[data-message-action="branch"],[data-message-action="share"],[data-message-action="followup"])>img,.reply-more-actions :is([data-chat-action="reference"],[data-chat-action="branch"])>img{transform:scale(1.2);transform-origin:center}
+
+/* A file card always identifies the immutable output version. */
+.chat-artifact-file{overflow:hidden;background:#fff;border-radius:24px}
+.chat-artifact-file>button:first-child{display:flex;align-items:center;gap:20px;width:100%;padding:24px;background:#fff;text-align:left;color:#101210}
+.chat-artifact-file>button:first-child>img{width:40px;height:40px;flex-shrink:0}
+.chat-artifact-file>button:first-child>img:last-child{width:24px;height:24px;transform:rotate(180deg)}
+.chat-artifact-file button:disabled{color:#888}
+.chat-artifact-history{width:100%;padding:16px 24px;border-top:1px solid #ededf0;background:#fff;color:#009fb4;font-size:24px;line-height:36px;text-align:left}
+.artifact-version{display:inline-block;margin-left:8px;font-size:24px;font-weight:500;color:#777;white-space:nowrap}
+.chat-answer-artifact .artifact-table-wide table{min-width:920px;table-layout:fixed}.chat-answer-artifact .artifact-table-wide th:first-child{width:130px}.chat-answer-artifact .artifact-table-wide th:nth-child(2){width:300px}
+.chat-image-version{display:block;margin-top:6px;color:#999;font-size:22px;line-height:32px}
+
+/* Figma 10:4422 — sidebar navigation and account footer, 750px design canvas. */
+.history-panel{width:630px;background:#fff;padding-bottom:68px}
+.history-content{padding:0 24px 265px;gap:24px;overflow-y:auto}
+.history-heading{position:sticky;top:0;z-index:2;isolation:isolate;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:4px 16px;height:88px;min-height:88px;flex-shrink:0}
+.history-heading::before{content:"";position:absolute;inset:0 -24px;z-index:-1;background:#fff}
+.history-heading h2{display:flex;align-items:center;height:48px;margin:0;line-height:0}.history-heading .history-wordmark{max-width:none;pointer-events:none}
+.history-search,.history-settings{position:relative;display:grid;place-items:center;width:48px;height:48px;padding:0;background:transparent;flex-shrink:0}
+.history-search::before,.history-settings::before{content:"";position:absolute;inset:-20px}
+.history-search img,.history-settings img{max-width:none;pointer-events:none}
+.history-primary :is(.history-main,.history-library){font-size:32px;line-height:46px;font-weight:500;min-height:86px;padding:20px 16px;background:transparent}
+.history-primary .history-main{width:516px;max-width:100%}
+.history-project[hidden]{display:none}
+.history-library-icon{width:40px;height:40px}
+.history-library-icon img{zoom:1;max-width:none}
+.history-primary button[aria-current="page"]::before{inset:4px 0;background:#f8f8f8;border-radius:16px}
+.history-divider{margin:40px 0}
+.history-recent-list{gap:12px;padding:0}
+.history-list .history-recent-title{margin:0 0 12px}
+.history-pinned-list{gap:12px;margin:0 0 40px}
+.history-pinned-list:empty{display:none}
+.history-pinned-list:not(:empty)::before{content:"置顶";display:block;padding:0 16px;font-size:24px;line-height:36px;color:#999}
+.history-list :is(.history-recent-list,.history-pinned-list) .history-recent{padding:14px 16px;font-size:30px;line-height:42px;background:transparent;border-radius:20px;color:#101210}
+.history-list :is(.history-recent.selected,.history-recent:hover){background:#f8f8f8}
+.history-footer{position:absolute;bottom:68px;left:0;width:100%;display:flex;flex-direction:column;gap:24px;padding:0;flex-shrink:0;background:transparent}
+.history-new-row{display:flex;justify-content:center;padding:0 24px}
+.history-new{width:auto;max-width:100%;height:80px;min-height:80px;padding:16px 100px;font-size:32px;line-height:48px;white-space:nowrap;background:#07b1c7;border-radius:60px;box-shadow:0 10px 12px rgba(7,177,199,.2)}
+.history-footer .history-account{display:flex;justify-content:space-between;align-items:center;padding:24px 32px;border-top:1px solid #f0eef3;gap:40px;background:#fff}
+.history-user{flex:1;overflow:hidden;display:flex;align-items:center;gap:12px;min-width:0;font-size:34px;font-weight:600;line-height:48px;color:#101210}
+.history-user>span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-user .history-avatar{width:72px;height:72px;border-radius:36px}
+:where(html.mobile-layout) .history-panel{padding-bottom:max(24px,var(--safe-bottom,0px))}
+:where(html.mobile-layout) .history-footer{bottom:max(24px,var(--safe-bottom,0px));padding-bottom:0}
+
+/* The drawer reveals the existing page at the right, beneath its own backdrop. */
+.design-screen.sidebar-open>:first-child{transform:translateX(var(--sidebar-width,630px))}
+.design-screen.sidebar-open>:is(.turn-navigation,.turn-preview,.chat-jump-bottom){visibility:hidden}
+
+body[data-page="conversation"] .conversation-materials img{width:auto;height:auto;max-width:none}
+
+/* Figma237:1911 — structured sales reply, reuse the existing card and typography. */
+.chat-sales-analysis{display:flex;flex-direction:column;gap:40px;min-width:0;width:100%}
+.chat-sales-section{display:flex;flex-direction:column;gap:24px;min-width:0}
+.chat-sales-section h3{margin:0;font-size:30px;font-weight:600;line-height:44.4px;color:#101210;overflow-wrap:anywhere}
+.chat-sales-scope{margin:0;padding:0 0 0 24px;border-left:3px solid #d4d4d4;color:#777;font-size:26px;line-height:40px;overflow-wrap:anywhere}
+.chat-sales-scope p{margin:0}.chat-sales-scope p+p{margin-top:12px}
+body[data-page="conversation"] .chat-sales-section .chat-answer-list{gap:0;padding-left:45px}
+.chat-sales-analysis .chat-table-wrap{max-width:100%;min-width:0}
+.font-large body[data-page="conversation"] .chat-sales-section h3{font-size:36px;line-height:56px}
+.font-large body[data-page="conversation"] .chat-sales-scope{font-size:30px;line-height:46px}
+
+.chat-answer-sales>h2+.chat-paragraph{margin-top:-16px}
+
+/* Conversation titles and file names share one-line truncation; actions keep their slots. */
+body[data-page="conversation"] .s51>.s13{position:absolute;left:128px;right:124px;min-width:0;align-items:stretch}
+body[data-page="conversation"] .s52{width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+.chat-artifact-file>button:first-child>span{overflow:hidden}
+.chat-artifact-file>button:first-child strong{display:flex;align-items:center;gap:8px;min-width:0;width:100%}
+.chat-artifact-file .chat-file-title{display:block;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow-wrap:normal}
+.chat-artifact-file .artifact-version{flex:none;margin-left:0}
+
+.chat-artifact-file>button:first-child>img{width:64px;height:64px;object-fit:contain}
+
+/* Sales table: grey action bar, square grid cells and a horizontally scrollable body. */
+.chat-table-card{width:100%;min-width:0;border:1px solid #d4d4d4;border-radius:20px;overflow:hidden;background:#f8f8f8}
+.chat-table-toolbar{height:68px;padding:0 24px;background:#e8e8e8;display:flex;align-items:center;justify-content:space-between;color:#777;font-size:28px;line-height:40px}
+.chat-table-toolbar>div{display:flex;align-items:center;gap:8px}.chat-table-toolbar button{display:flex;align-items:center;justify-content:center;width:64px;height:64px;padding:12px;background:transparent;border:0;border-radius:0}
+.chat-table-toolbar img{width:40px;height:40px;object-fit:contain;filter:brightness(0);opacity:.55}
+body[data-page="conversation"] .chat-thread .chat-table-card .chat-table-wrap,.chat-table-preview .chat-table-wrap{padding:0;border-radius:0;background:#f8f8f8;margin:0;overflow-x:auto;max-width:100%}
+.chat-table-card table,.chat-table-preview table{border-collapse:collapse;width:100%;text-align:left;table-layout:fixed}
+body[data-page="conversation"] .chat-thread .chat-table-card :is(th,td),.chat-table-preview :is(th,td){padding:24px 28px;border-right:1px solid #d4d4d4;border-bottom:1px solid #d4d4d4;font-size:28px;line-height:44px;color:#101210;vertical-align:top}
+body[data-page="conversation"] .chat-thread .chat-table-card th,.chat-table-preview th{font-weight:600;white-space:nowrap}
+body[data-page="conversation"] .chat-thread .chat-table-card td strong{font-weight:400}
+.chat-table-card :is(th,td):last-child,.chat-table-preview :is(th,td):last-child{border-right:0}
+.chat-table-card tr:last-child td,.chat-table-preview tr:last-child td{border-bottom:0}
+.chat-table-card .artifact-table-wide table,.chat-table-preview .artifact-table-wide table{min-width:1120px}
+.chat-table-card .artifact-table-wide th:first-child,.chat-table-preview .artifact-table-wide th:first-child{width:140px}
+.chat-table-card .artifact-table-wide th:nth-child(2),.chat-table-preview .artifact-table-wide th:nth-child(2){width:250px}
+.chat-table-card .artifact-table-wide th:nth-child(3),.chat-table-preview .artifact-table-wide th:nth-child(3){width:250px}
+.chat-table-preview{position:fixed;inset:auto;margin:0;padding:0;max-width:none;max-height:none;border:0;border-radius:0;background:#fff;color:#101210;overflow:hidden}
+.chat-table-preview[open]{display:flex;flex-direction:column}.chat-table-preview::backdrop{background:#0006}
+.chat-table-preview>header{height:60px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #ededf0}.chat-table-preview h2{margin:0;font-size:17px;font-weight:600}.chat-table-preview header button{width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:transparent}.chat-table-preview header img{width:24px;height:24px;filter:brightness(0)}
+.chat-table-preview-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain}.chat-table-preview .chat-table-wrap{max-width:none;overflow:visible}
+.font-large body[data-page="conversation"] .chat-thread .chat-table-card :is(th,td){font-size:34px;line-height:52px}
+
+/* Table headings stay light grey; every data cell stays white in both views. */
+body[data-page="conversation"] .chat-thread .chat-table-card .chat-table-wrap,.chat-table-preview .chat-table-wrap{background:#fff}
+body[data-page="conversation"] .chat-thread .chat-table-card th,.chat-table-preview th{background:#f8f8f8}
+body[data-page="conversation"] .chat-thread .chat-table-card td,.chat-table-preview td{background:#fff}
+
+.reply-more-actions [data-chat-action="delete"]{color:#f05252}.reply-more-actions [data-chat-action="delete"] img{filter:none}

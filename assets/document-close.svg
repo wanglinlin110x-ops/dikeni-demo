@@ -1,0 +1,11 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Menu / Close_MD" clip-path="url(#clip0_0_4)">
+<circle id="Ellipse 1" cx="24" cy="24" r="24" fill="black" fill-opacity="0.32"/>
+<path id="Vector" d="M32.9999 32.9999L24 24M24 24L15 15M24 24L33 15M24 24L15 33" stroke-width="2.99999" stroke-linecap="round" stroke-linejoin="round" stroke="white"/>
+</g>
+<defs>
+<clipPath id="clip0_0_4">
+<rect width="48" height="48" fill="white"/>
+</clipPath>
+</defs>
+</svg>

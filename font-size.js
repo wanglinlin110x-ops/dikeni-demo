@@ -41,6 +41,7 @@ window.DemoFontSize = (() => {
     apply(large);
   }
   apply(read());
+  window.addEventListener('pageshow', () => apply(read()));
   window.addEventListener('storage', event => { if (event.key === key || event.key === null) apply(read()); });
   window.addEventListener('resize', () => requestAnimationFrame(updateTargets));
   requestAnimationFrame(updateTargets);

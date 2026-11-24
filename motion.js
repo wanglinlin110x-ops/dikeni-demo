@@ -74,17 +74,30 @@ window.DemoMotion = (() => {
       }
     }
   }
-  function overlay(element, open) {
+  function overlay(element, open, immediate = false) {
     const panel = element.querySelector('[role="dialog"]');
     const backdrop = element.querySelector('.overlay-backdrop');
     const history = element.classList.contains('history-overlay');
+    const root = history ? element.parentElement : null;
+    const page = root?.firstElementChild;
     const current = panel ? getComputedStyle(panel).transform : 'none';
+    const pageCurrent = page ? getComputedStyle(page).transform : 'none';
     const opacity = backdrop ? getComputedStyle(backdrop).opacity : '1';
-    [panel, backdrop].forEach(node => node?.getAnimations().forEach(animation => animation.cancel()));
+    [panel, backdrop, page].forEach(node => node?.getAnimations().forEach(animation => animation.cancel()));
+    const width = panel?.offsetWidth || 630;
+    if (history) {
+      root.style.setProperty('--sidebar-width', width + 'px');
+      root.classList.toggle('sidebar-open', open);
+    }
+    // Restored sidebars and reduced-motion views still get the final page position.
+    if (immediate) return Promise.resolve();
     const offscreen = history ? 'translateX(-100%)' : 'translateY(100%)';
+    const duration = open ? 260 : 200;
+    const easing = open ? 'cubic-bezier(.2,.8,.2,1)' : 'cubic-bezier(.4,0,1,1)';
     return Promise.all([
-      animate(panel, open ? [{ transform: offscreen }, { transform: 'translate(0)' }] : [{ transform: current }, { transform: offscreen }], open ? 260 : 200, open ? undefined : 'cubic-bezier(.4,0,1,1)'),
-      animate(backdrop, open ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity }, { opacity: 0 }], open ? 220 : 200),
+      animate(panel, open ? [{ transform: offscreen }, { transform: 'translate(0)' }] : [{ transform: current }, { transform: offscreen }], duration, easing),
+      animate(backdrop, open ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity }, { opacity: 0 }], duration, easing),
+      history ? animate(page, [{ transform: pageCurrent }, { transform: open ? `translateX(${width}px)` : 'translateX(0)' }], duration, easing) : Promise.resolve(),
     ]);
   }
   document.addEventListener('click', event => {

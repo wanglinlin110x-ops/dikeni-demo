@@ -4,7 +4,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const root = path.resolve(__dirname, '..');
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex').slice(0, 16);
-const common = ['font-size.js','motion.js','demo-access.js','sales-dialogue.js','home-replies.js','chat-engine.js','attachments.js','dialogue-understanding.js','conversation-materials.js','chat-session.js'];
+const common = ['font-size.js','motion.js','demo-access.js','sales-dialogue.js','home-replies.js','chat-engine.js','attachments.js','local-data.js','dialogue-understanding.js','conversation-materials.js','artifact-versions.js','chat-session.js'];
 const groups = {
   home: ['font-size.js','motion.js','voice-input.js',...common.slice(2),'voice-understanding.js','app.js','home-ip.js'],
   chat: [...common,'voice-input.js','voice-understanding.js','app.js'],
@@ -41,6 +41,7 @@ for (const file of fs.readdirSync(root).filter(file => file.endsWith('.html'))) 
     html = html.replace(/<link rel="preload" as="script" data-runtime-preload[^>]*>/g,'');
     html = html.replace('</head>',`<link rel="preload" as="script" data-runtime-preload href="${versions[name]}"></head>`);
   }
+  if(['library.html','settings.html'].includes(file))html=html.replace(/(src|href)="([^"?]+\.(?:js|css))(?:\?[^" ]*)?"/g,(match,attribute,asset)=>{const target=path.join(root,asset);return fs.existsSync(target)?`${attribute}="${asset}?v=${hash(fs.readFileSync(target))}"`:match});
   if(html!==fs.readFileSync(full,'utf8'))fs.writeFileSync(full,html);
 }
 console.log('Runtime bundles and content-based cache versions generated.');
