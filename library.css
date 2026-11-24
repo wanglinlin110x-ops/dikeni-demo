@@ -177,7 +177,7 @@ body[data-page="library"]{font-family:Arial,"PingFang SC",sans-serif;font-size:1
 .materials-versions header button{width:44px;height:44px;background:transparent;border-radius:0}
 .materials-versions header button>img{width:calc(40px * var(--versions-scale,.5));height:calc(40px * var(--versions-scale,.5))}
 .materials-version-document{flex:none;margin:4px 0 12px;font-size:calc(26px * var(--versions-scale,.5));line-height:1.5;color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.materials-version-list{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.materials-version-list{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .materials-version-open[aria-current="true"]{background:transparent}
 .library-shell:has(.materials-versions[open])::after{z-index:25}
 .file-action-menu:not(.file-menu-from-reader) [data-image-action="versions"]{display:none}

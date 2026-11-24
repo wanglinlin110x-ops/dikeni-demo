@@ -581,7 +581,14 @@
     try{sessionStorage.setItem('demo-artifact-edit',JSON.stringify({...ref,key:item.key,...(request?{request}:{})}))}catch{notify('暂时无法引用此版本，请重试');return}
     ChatConversations.activate(ref.sessionId);location.assign('conversation.html?session='+encodeURIComponent(ref.sessionId));return true;
   }
-  function fitVersions(){const rect=document.querySelector('.library-shell').getBoundingClientRect(),viewport=window.visualViewport,bottom=Math.min(rect.bottom,innerHeight,viewport?viewport.offsetTop+viewport.height:innerHeight),top=Math.max(0,rect.top,viewport?.offsetTop||0),available=Math.max(120,bottom-top-24);versionsDialog.style.setProperty('--versions-scale',rect.width/750);versionsDialog.style.width=rect.width+'px';versionsDialog.style.maxHeight=Math.min(rect.height*.72,available)+'px';versionsDialog.style.left=rect.left+'px';versionsDialog.style.top='auto';versionsDialog.style.bottom=Math.max(0,innerHeight-bottom)+'px'}
+  function fitVersions(){
+    const rect=document.querySelector('.library-shell').getBoundingClientRect(),viewport=window.visualViewport,bottom=Math.min(rect.bottom,innerHeight,viewport?viewport.offsetTop+viewport.height:innerHeight),top=Math.max(0,rect.top,viewport?.offsetTop||0),available=Math.max(120,bottom-top-24),limit=Math.min(rect.height*.72,available);
+    versionsDialog.style.setProperty('--versions-scale',rect.width/750);versionsDialog.style.width=rect.width+'px';versionsDialog.style.maxHeight=limit+'px';versionsDialog.style.left=rect.left+'px';versionsDialog.style.top='auto';versionsDialog.style.bottom=Math.max(0,innerHeight-bottom)+'px';
+    if(!versionsDialog.open)return;
+    // Give WebKit a definite sheet height: max-height alone can collapse its flex scroll area.
+    const list=versionsDialog.querySelector('.materials-version-list'),style=getComputedStyle(versionsDialog),blockHeight=element=>{const css=getComputedStyle(element);return element.getBoundingClientRect().height+parseFloat(css.marginTop)+parseFloat(css.marginBottom)},chrome=parseFloat(style.paddingTop)+parseFloat(style.paddingBottom)+blockHeight(versionsDialog.querySelector('header'))+blockHeight(versionsDialog.querySelector('.materials-version-document')),rows=[...list.children].reduce((height,row)=>height+blockHeight(row),0);
+    versionsDialog.style.height=Math.min(limit,Math.ceil(chrome+rows))+'px';
+  }
   window.addEventListener('resize',()=>{if(versionsDialog.open){fitVersions();requestAnimationFrame(fitVersions)}});
   window.visualViewport?.addEventListener('resize',()=>{if(fileMenu.open&&fileMenu.classList.contains('file-menu-from-reader'))fitReaderMenu();if(versionsDialog.open)fitVersions()});
   function showVersions(item){
