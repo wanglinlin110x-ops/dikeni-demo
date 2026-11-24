@@ -490,7 +490,8 @@
   window.addEventListener('pageshow',()=>{editingDocument=false;updateEditSend()});
   let readerEdited=false;
 
-  readerMore.onclick=()=>{if(!previewItem)return;showFileMenu(previewItem,readerMore);fileMenu.classList.add('file-menu-from-reader');const shell=document.querySelector('.library-shell').getBoundingClientRect(),anchor=readerMore.getBoundingClientRect();fileMenu.style.setProperty('--file-menu-scale',shell.width/750);fileMenu.style.width=Math.min(520*shell.width/750,shell.width-32)+'px';const bounds=fileMenu.getBoundingClientRect();fileMenu.style.left=shell.right-bounds.width-16+'px';fileMenu.style.top=Math.max(16,Math.min(anchor.bottom+8,innerHeight-bounds.height-16))+'px'};
+  function fitReaderMenu(){const shell=document.querySelector('.library-shell').getBoundingClientRect(),anchor=readerMore.getBoundingClientRect(),viewport=window.visualViewport,bottom=Math.min(innerHeight,viewport?viewport.offsetTop+viewport.height:innerHeight);fileMenu.style.setProperty('--file-menu-scale',shell.width/750);fileMenu.style.width=Math.min(520*shell.width/750,shell.width-32)+'px';const bounds=fileMenu.getBoundingClientRect();fileMenu.style.left=shell.right-bounds.width-16+'px';fileMenu.style.top=Math.max(16,Math.min(anchor.bottom+8,bottom-bounds.height-16))+'px'}
+  readerMore.onclick=()=>{if(!previewItem)return;showFileMenu(previewItem,readerMore);fileMenu.classList.add('file-menu-from-reader');fitReaderMenu()};
 
   function fitPreview(){if(!preview.classList.contains('materials-image-preview')){preview.style.removeProperty('left');preview.style.removeProperty('width');return}const rect=document.querySelector('.library-shell').getBoundingClientRect();preview.style.left=rect.left+'px';preview.style.width=rect.width+'px'}
   window.addEventListener('resize',()=>{if(preview.open)fitPreview()});
@@ -546,11 +547,14 @@
     button.onkeydown=event=>{if(event.key==='ContextMenu'||event.shiftKey&&event.key==='F10'){event.preventDefault();showMenu(item,button)}};
     button.style.touchAction='pan-y';button.dataset.imageKey=item.key;
   }
-  function handleMaterialAction(event){const button=event.target.closest('[data-image-action]');if(!button){const r=dialog.getBoundingClientRect();if(event.target===dialog&&(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom))closeMenu();return}const item=activeItem,trigger=activeButton;if(!item)return;const action=button.dataset.imageAction;closeMenu();
+  let openingVersions=false;
+  async function handleMaterialAction(event){const button=event.target.closest('[data-image-action]');if(!button){const r=dialog.getBoundingClientRect();if(event.target===dialog&&(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom))closeMenu();return}const item=activeItem||(fileMenu.classList.contains('file-menu-from-reader')?previewItem:null),trigger=activeButton;if(!item)return;const action=button.dataset.imageAction;event.preventDefault();event.stopPropagation();closeMenu();
     if(action==='copy'){readerCopy.click();return}
-    if(action==='versions'){if(preview.open&&preview.classList.contains('materials-file-page')){returnVersionsItem=undefined;versionsReaderOrigin=item}showVersions(item);return}
-    if(action==='edit'){editVersion(item);return}
-    if(action==='versions'){if(preview.open&&preview.classList.contains('materials-file-page')){returnVersionsItem=undefined;versionsReaderOrigin=item}showVersions(item);return}
+    if(action==='versions'){
+      if(openingVersions)return;openingVersions=true;
+      if(preview.open&&preview.classList.contains('materials-file-page')){returnVersionsItem=undefined;versionsReaderOrigin=item}
+      try{await new Promise(resolve=>requestAnimationFrame(resolve));showVersions(item)}catch{notify('历史版本暂时无法读取，请重试')}finally{openingVersions=false}return;
+    }
     if(action==='edit'){editVersion(item);return}
     if(action==='locate'){openChat(item,trigger,true);return}
     if(action==='download'){download(item);return}
@@ -563,7 +567,7 @@
   fileMenu.onclick=event=>{if(fileOpeningGesture){fileOpeningGesture=false;event.preventDefault();return}if(event.target.closest('[data-image-action]'))handleMaterialAction(event);else if(event.target===fileMenu){const r=fileMenu.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)closeMenu()}};
   fileMenu.addEventListener('close',()=>{if(!fileMenu.open){activeButton?.resetMaterialPress?.();activeItem=undefined;activeButton=undefined}});
   dialog.addEventListener('close',()=>{clearMenuFocus();activeItem=undefined;activeButton=undefined});
-  document.addEventListener('pointerup',cancelPress);document.addEventListener('pointercancel',cancelPress);content.addEventListener('scroll',cancelPress,{passive:true});window.addEventListener('resize',()=>{cancelPress();closeMenu()});document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelPress();closeMenu()}});window.addEventListener('pagehide',event=>{cancelPress();closeMenu();if(preview.open)preview.close();clearTimeout(toastTimer);if(!event.persisted)objectURLs.forEach(url=>URL.revokeObjectURL(url));sessionStorage.setItem('demo-materials-scroll:'+location.pathname+location.search+location.hash,String(content.scrollTop))});
+  document.addEventListener('pointerup',cancelPress);document.addEventListener('pointercancel',cancelPress);content.addEventListener('scroll',cancelPress,{passive:true});window.addEventListener('resize',()=>{cancelPress();if(fileMenu.open&&fileMenu.classList.contains('file-menu-from-reader'))fitReaderMenu();else closeMenu()});document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelPress();closeMenu()}});window.addEventListener('pagehide',event=>{cancelPress();closeMenu();if(preview.open)preview.close();clearTimeout(toastTimer);if(!event.persisted)objectURLs.forEach(url=>URL.revokeObjectURL(url));sessionStorage.setItem('demo-materials-scroll:'+location.pathname+location.search+location.hash,String(content.scrollTop))});
   const versionsDialog=node('dialog','materials-versions');versionsDialog.setAttribute('aria-label','历史版本');versionsDialog.innerHTML='<header><h2>历史版本</h2><button type="button" aria-label="关闭历史版本"><img src="assets/ab4c6.svg" alt=""></button></header><p class="materials-version-document"></p><div class="materials-version-list"></div>';document.querySelector('.library-shell').append(versionsDialog);
   let returnVersionsItem,versionsReaderOrigin;const versionScrolls=new Map();
   const closeVersions=()=>{if(versionsDialog.dataset.artifactId)versionScrolls.set(versionsDialog.dataset.artifactId,versionsDialog.querySelector('.materials-version-list').scrollTop);versionsDialog.close();if(versionsReaderOrigin){const item=versionsReaderOrigin;versionsReaderOrigin=undefined;if(!preview.open||previewItem?.key!==item.key)openPreview(item,false)}};
@@ -577,8 +581,9 @@
     try{sessionStorage.setItem('demo-artifact-edit',JSON.stringify({...ref,key:item.key,...(request?{request}:{})}))}catch{notify('暂时无法引用此版本，请重试');return}
     ChatConversations.activate(ref.sessionId);location.assign('conversation.html?session='+encodeURIComponent(ref.sessionId));return true;
   }
-  function fitVersions(){const rect=document.querySelector('.library-shell').getBoundingClientRect(),bottom=Math.min(rect.bottom,innerHeight),available=Math.max(120,bottom-Math.max(0,rect.top)-24);versionsDialog.style.setProperty('--versions-scale',rect.width/750);versionsDialog.style.width=rect.width+'px';versionsDialog.style.maxHeight=Math.min(rect.height*.72,available)+'px';versionsDialog.style.left=rect.left+'px';versionsDialog.style.top=Math.max(Math.max(0,rect.top),bottom-versionsDialog.getBoundingClientRect().height)+'px'}
+  function fitVersions(){const rect=document.querySelector('.library-shell').getBoundingClientRect(),viewport=window.visualViewport,bottom=Math.min(rect.bottom,innerHeight,viewport?viewport.offsetTop+viewport.height:innerHeight),top=Math.max(0,rect.top,viewport?.offsetTop||0),available=Math.max(120,bottom-top-24);versionsDialog.style.setProperty('--versions-scale',rect.width/750);versionsDialog.style.width=rect.width+'px';versionsDialog.style.maxHeight=Math.min(rect.height*.72,available)+'px';versionsDialog.style.left=rect.left+'px';versionsDialog.style.top='auto';versionsDialog.style.bottom=Math.max(0,innerHeight-bottom)+'px'}
   window.addEventListener('resize',()=>{if(versionsDialog.open){fitVersions();requestAnimationFrame(fitVersions)}});
+  window.visualViewport?.addEventListener('resize',()=>{if(fileMenu.open&&fileMenu.classList.contains('file-menu-from-reader'))fitReaderMenu();if(versionsDialog.open)fitVersions()});
   function showVersions(item){
     refreshOutputs();
     const list=versionsDialog.querySelector('.materials-version-list');list.replaceChildren();const versions=versionsOf(item),latest=versions.find(f=>!state.deleted.includes(f.key));
@@ -587,6 +592,7 @@
       const row=node('section','materials-version-row'),deleted=ArtifactVersions.isDeleted(file),open=node('button','materials-version-open'),image=node('img',''),info=node('span','materials-version-info');image.src=fileIcon(file);image.alt='';open.type='button';open.disabled=deleted;open.setAttribute('aria-label',`预览：${file.title} V${file.version}`);const heading=node('span','materials-version-heading');heading.append(node('strong','',displayFileName(file)),node('span','file-version-badge'+(file.key===latest?.key?' is-latest':''),'V'+file.version));info.append(heading,node('small','',deleted?'已删除':fileLine(file).replace(/^V\d+ · /,'')));open.append(image,info);row.append(open);
       if(file.key===previewItem?.key)open.setAttribute('aria-current','true');if(!deleted)bindMenu(file,open,()=>{versionScrolls.set(item.artifactId,list.scrollTop);versionsDialog.close();returnVersionsItem=item;openPreview(file,false)});list.append(row);
     }
+    if(!versions.length)list.append(node('p','library-message','当前文档没有可查看的版本，请返回对话确认文档是否已生成完成。'));
     fitVersions();const opening=!versionsDialog.open;if(opening)versionsDialog.showModal();fitVersions();list.scrollTop=versionScrolls.get(item.artifactId)||0;if(opening&&!matchMedia('(prefers-reduced-motion:reduce)').matches)versionsDialog.animate([{transform:'translateY(24px)',opacity:0},{transform:'translateY(0)',opacity:1}],{duration:180,easing:'ease-out'});
   }
   const deleteDialog=node('dialog','materials-delete');deleteDialog.setAttribute('aria-label','删除成果');deleteDialog.innerHTML='<h2>删除成果</h2><p></p><button type="button" data-delete-scope="version"></button><button type="button" data-delete-scope="all">删除全部版本</button><button type="button" data-delete-scope="cancel">取消</button>';document.querySelector('.library-shell').append(deleteDialog);let deleteItem;
