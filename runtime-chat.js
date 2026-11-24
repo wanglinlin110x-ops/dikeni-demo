@@ -93,13 +93,16 @@ window.DemoMotion = (() => {
   const level = pathname => /workbench\.html$/.test(pathname) ? 0 : /(?:index|input)\.html$/.test(pathname) ? 1 : 2;
   const storageKey = 'demo-page-transition';
   let navigating = false;
+  let documentEditEntry=Boolean(history.state?.documentEditEntry);
+  try{const selected=JSON.parse(sessionStorage.getItem('demo-artifact-edit'));const requested=new URLSearchParams(location.search).get('session');if(selected?.request&&selected.sessionId===requested){documentEditEntry=true;history.replaceState({...history.state,documentEditEntry:true},'',location.href)}}catch{}
   function back() {
     if (!document.dispatchEvent(new CustomEvent('demo-back', { cancelable: true }))) return;
+    if(documentEditEntry){history.back();return}
     const page = document.body.dataset.page;
     navigate(page === 'index' ? 'workbench.html' : 'index.html');
   }
   // Native edge/back gestures follow the product hierarchy, not previously visited examples.
-  if (document.body.dataset.page !== 'workbench' && matchMedia('(pointer: coarse)').matches) {
+  if (!documentEditEntry && document.body.dataset.page !== 'workbench' && matchMedia('(pointer: coarse)').matches) {
     const guard = () => history.pushState({ demoBackGuard: true }, '', location.href);
     history.replaceState({ demoBackBase: true }, '', location.href);
     guard();
@@ -1315,14 +1318,36 @@ window.ArtifactVersions=(()=>{
     }
     return doc;
   }
+  function editDocument(base,text){
+    let doc=documentFor(base,text);
+    const rename=text.match(/标题(?:改为|改成|调整为|设为)[：:\s]*[“「"]?(.+?)[”」"]?[。！!]*$/);
+    if(rename)doc.title=rename[1].replace(/[”」"]$/,'').trim();
+    else if(/标题/.test(text)&&/去掉|删除|移除/.test(text)){
+      const quoted=text.match(/[“「"]([^”」"]+)[”」"]/);
+      if(quoted)doc.title=doc.title.replace(quoted[1],'').trim();
+      else if(/（|\(|括号|零售口径|市场常用/.test(text))doc.title=doc.title.replace(/[（(][^）)]*[）)]/g,'').trim();
+    }
+    const addition=text.match(/(?:补充|增加|加上|加|添加|写入|写)(?:一句|一段|说明|内容|备注)?[：:]\s*(.+)$/)||text.match(/(?:补充|增加|加上|加入|添加|加|写入|写)(?:一句|一段|说明|内容|备注)[：:\s“「"]*(.+?)[”」"]?$/);
+    if(addition)doc=mergeSections(doc,[{title:'补充说明',paragraphs:[addition[1].trim()],items:[]}]);
+    if(base.kind==='sales-analysis'&&/补充|增加|完善|优化|更新/.test(text)){
+      const sections=salesPresentation({document:base,version:1}).salesAnalysis?.sections||[];
+      const selected=/风险|注意|口径/.test(text)?sections.filter(s=>/注意/.test(s.title)):/完善|优化/.test(text)?sections:[];
+      if(selected.length)doc=mergeSections(doc,selected);
+    }
+    return doc;
+  }
   function resolve(text,context,session,reference){
     const files=session.messages.filter(m=>m.role==='assistant'&&m.state==='complete').flatMap(m=>m.reply?.libraryFiles||[]).filter(f=>f.artifactId&&f.document);
-    const selected=context?.artifact,mergeRequested=mergeReplyRequest(text),base=selected?(files.find(f=>f.artifactId===selected.id&&f.version===selected.version)||files.findLast(f=>f.artifactId===selected.id)):mergeRequested?files.at(-1):null;
+    const selected=context?.artifact,mergeRequested=mergeReplyRequest(text),editWords=/(?:增加|补充|补上|补全|加上|加入|加进|加一句|加一段|加个|添加|删除|删掉|去掉|移除|优化|调整|修改|改一下|改下|改成|改为|细化|精简|压缩|完善|重新生成|更新|写入)/.test(text),newDocument=/新建|另(?:外)?(?:一份|一个)|新的文档|重新创建/.test(text);
+    const base=selected?(files.find(f=>selected.key&&f.key===selected.key)||files.find(f=>f.artifactId===selected.id&&f.version===selected.version)):!newDocument&&(mergeRequested||editWords)?files.at(-1):null;
     const initial=/方程豹.*(?:钛7|零售)|钛7.*(?:销量|分析)/.test(text)||/^(?:请|帮我|请帮我)?(?:整理|生成|制作)(?:一份|个)?(?:陈宇的)?客户(?:试驾)?跟进清单[。！!？?]*$/.test(text);
-    const modify=base&&(mergeRequested||/(?:增加|补充|加上|加个|加一列|添加|删除|去掉|移除|优化|调整|修改|改成|改为|细化|精简|压缩|改一下|完善|重新生成|补上|加|分析|总结)/.test(text));
+    const modify=base&&!newDocument&&(reference?.artifactEdit||mergeRequested||editWords);
+    if(selected&&!base&&!newDocument)return{kind:'answer',homeReply:true,homeReplyVersion:2,title:'这个版本暂时不可用',paragraphs:['请重新选择要修改的文档版本，不会自动替换成其他版本。'],sources:[],followups:[],context};
     if(!initial&&!modify)return null;
     if(modify&&isDeleted(base))return{kind:'answer',homeReply:true,homeReplyVersion:2,title:'这个版本已删除',paragraphs:['请选择仍然可用的版本后继续修改。'],sources:[],followups:[],context};
-    const artifactId=modify?base.artifactId:'followup-'+crypto.randomUUID(),version=modify?Math.max(...files.filter(f=>f.artifactId===artifactId).map(f=>f.version))+1:1;
+    const artifactId=modify?base.artifactId:'followup-'+crypto.randomUUID();
+    const stored=window.ChatConversations?.list?.()||[],issued=[...files,...stored.flatMap(s=>s.messages.filter(m=>m.role==='assistant'&&['complete','pending','streaming'].includes(m.state)).flatMap(m=>m.reply?.libraryFiles||[]))];
+    const version=modify?Math.max(0,...issued.filter(f=>f.artifactId===artifactId&&Number.isInteger(f.version)).map(f=>f.version))+1:1;
     if(modify&&mergeRequested){
       const quoted=reference&&!reference.artifactEdit?reference.reply:null;
       const source=quoted||session.messages.findLast(message=>message.role==='assistant'&&message.state==='complete'&&!message.reply?.unavailable&&(message.reply?.context?.artifact?.id===base.artifactId||message.reply?.libraryFiles?.some(file=>file.artifactId===base.artifactId)))?.reply;
@@ -1340,7 +1365,9 @@ window.ArtifactVersions=(()=>{
       reply.paragraphs=[`已将相关回答中的${sections.map(section=>'“'+section.title+'”').join('、')}补充到文档正文，生成V${version}，原有版本继续保留。`];
       return reply;
     }
-    return replyFor(fileFor(artifactId,version,documentFor(modify?base.document:null,text),new Date().toISOString(),modify?base.version:null));
+    const document=modify?editDocument(base.document,text):documentFor(null,text);
+    if(modify&&JSON.stringify(document)===JSON.stringify(base.document)&&!/重新生成/.test(text))return{kind:'answer',homeReply:true,homeReplyVersion:2,title:'当前文档未产生新版本',paragraphs:['这次要求没有改变文档内容。请说明具体要修改的标题、字段，或用“补充：…”提供新增内容。'],sources:[],followups:[],context:{...context,artifact:{id:base.artifactId,key:base.key,version:base.version}}};
+    return replyFor(fileFor(artifactId,version,document,new Date().toISOString(),modify?base.version:null));
   }
   function stamp(session){for(const message of session.messages){if(message.role!=='assistant'||!message.reply)continue;const time=message.createdAt||new Date(session.updated||Date.now()).toISOString();message.createdAt=time;
     for(const item of [...(message.reply.libraryFiles||[]),...(message.reply.libraryImage?[message.reply.libraryImage]:[])]){
@@ -2970,7 +2997,7 @@ window.VoiceUnderstanding = (() => {
     let swipe;
     screen.addEventListener('touchstart', event => {
       swipe = undefined;
-      if (event.touches.length !== 1 || activeOverlay || voiceInput?.active || event.target.closest('input,textarea,button,a,[role="button"]')) return;
+      if (event.touches.length !== 1 || activeOverlay || voiceInput?.active || event.target.closest('input,textarea,button,a,[role="button"],.chat-table-card,.chat-table-wrap,table')) return;
       const touch = event.touches[0];
       swipe = { x: touch.clientX, y: touch.clientY };
     }, { passive: true });

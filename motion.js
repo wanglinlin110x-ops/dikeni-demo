@@ -37,13 +37,16 @@ window.DemoMotion = (() => {
   const level = pathname => /workbench\.html$/.test(pathname) ? 0 : /(?:index|input)\.html$/.test(pathname) ? 1 : 2;
   const storageKey = 'demo-page-transition';
   let navigating = false;
+  let documentEditEntry=Boolean(history.state?.documentEditEntry);
+  try{const selected=JSON.parse(sessionStorage.getItem('demo-artifact-edit'));const requested=new URLSearchParams(location.search).get('session');if(selected?.request&&selected.sessionId===requested){documentEditEntry=true;history.replaceState({...history.state,documentEditEntry:true},'',location.href)}}catch{}
   function back() {
     if (!document.dispatchEvent(new CustomEvent('demo-back', { cancelable: true }))) return;
+    if(documentEditEntry){history.back();return}
     const page = document.body.dataset.page;
     navigate(page === 'index' ? 'workbench.html' : 'index.html');
   }
   // Native edge/back gestures follow the product hierarchy, not previously visited examples.
-  if (document.body.dataset.page !== 'workbench' && matchMedia('(pointer: coarse)').matches) {
+  if (!documentEditEntry && document.body.dataset.page !== 'workbench' && matchMedia('(pointer: coarse)').matches) {
     const guard = () => history.pushState({ demoBackGuard: true }, '', location.href);
     history.replaceState({ demoBackBase: true }, '', location.href);
     guard();

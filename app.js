@@ -98,7 +98,7 @@
     let swipe;
     screen.addEventListener('touchstart', event => {
       swipe = undefined;
-      if (event.touches.length !== 1 || activeOverlay || voiceInput?.active || event.target.closest('input,textarea,button,a,[role="button"]')) return;
+      if (event.touches.length !== 1 || activeOverlay || voiceInput?.active || event.target.closest('input,textarea,button,a,[role="button"],.chat-table-card,.chat-table-wrap,table')) return;
       const touch = event.touches[0];
       swipe = { x: touch.clientX, y: touch.clientY };
     }, { passive: true });

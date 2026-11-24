@@ -352,9 +352,11 @@
 ];
   const samples=[...materials,...legacySamples,...(window.ConversationMaterials?.catalog||[])];
   const conversationId=new URLSearchParams(location.search).get('conversation');
-  const sessions=ChatConversations.list();
-  const currentSession=sessions.find(s=>s.id===conversationId);
+  let sessions=ChatConversations.list();
+  let currentSession=sessions.find(s=>s.id===conversationId);
   const references=new Map();
+  function refreshOutputs(){
+    sessions=ChatConversations.list();currentSession=sessions.find(s=>s.id===conversationId);references.clear();
   for(const session of sessions)for(const message of session.messages){
     const add=(key)=>{if(!references.has(key))references.set(key,[]);references.get(key).push({sessionId:session.id,messageId:message.id,inherited:Boolean(message.origin)})};
     const output=message.role==='assistant'&&message.state==='complete'?message.reply:null;
@@ -372,6 +374,8 @@
     }
     for(const file of message.attachments||[]){const key='attachment:'+file.id;add(key);if(!samples.some(item=>item.key===key))samples.push({...file,key,title:file.name,attachmentId:file.id,type:file.type||'application/octet-stream'})}
   }
+  }
+  refreshOutputs();
   // Title-only display samples; they do not pretend to be generated chat attachments.
   const titleSamples=[
     ['汉车型客户试驾接待与需求确认指南','doc','application/msword'],
@@ -576,6 +580,7 @@
   function fitVersions(){const rect=document.querySelector('.library-shell').getBoundingClientRect(),bottom=Math.min(rect.bottom,innerHeight),available=Math.max(120,bottom-Math.max(0,rect.top)-24);versionsDialog.style.setProperty('--versions-scale',rect.width/750);versionsDialog.style.width=rect.width+'px';versionsDialog.style.maxHeight=Math.min(rect.height*.72,available)+'px';versionsDialog.style.left=rect.left+'px';versionsDialog.style.top=Math.max(Math.max(0,rect.top),bottom-versionsDialog.getBoundingClientRect().height)+'px'}
   window.addEventListener('resize',()=>{if(versionsDialog.open){fitVersions();requestAnimationFrame(fitVersions)}});
   function showVersions(item){
+    refreshOutputs();
     const list=versionsDialog.querySelector('.materials-version-list');list.replaceChildren();const versions=versionsOf(item),latest=versions.find(f=>!state.deleted.includes(f.key));
     versionsDialog.dataset.artifactId=item.artifactId;const documentLabel=versionsDialog.querySelector('.materials-version-document');documentLabel.textContent=readerDocumentTitle(item);documentLabel.title=documentLabel.textContent;
     for(const file of versions){
@@ -626,8 +631,8 @@
   function update(){const url=new URL(location.href);if(input.value.trim())url.searchParams.set('q',input.value.trim());else url.searchParams.delete('q');url.hash=kind;history.replaceState(null,'',url);render()}
   document.querySelector('form').onsubmit=e=>{e.preventDefault();input.blur();update()};input.oninput=update;clear.onclick=()=>{input.value='';update();input.focus()};
   for(const tab of tabs){tab.onclick=()=>{kind=tab.dataset.kind;update()};tab.onkeydown=e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const next=e.key==='Home'?tabs[0]:e.key==='End'?tabs[1]:tabs.find(t=>t!==tab);next.focus();kind=next.dataset.kind;update()}}}
-  function syncState(){try{const saved=JSON.parse(localStorage.getItem(stateKey));if(saved&&Array.isArray(saved.pinned)&&Array.isArray(saved.deleted)){const scroll=content.scrollTop;state=saved;render();content.scrollTop=scroll}}catch{}}
-  window.addEventListener('pageshow',event=>{if(event.persisted)syncState()});window.addEventListener('storage',event=>{if(event.key===stateKey)syncState()});
+  function syncState(){refreshOutputs();try{const saved=JSON.parse(localStorage.getItem(stateKey));if(saved&&Array.isArray(saved.pinned)&&Array.isArray(saved.deleted))state=saved;const scroll=content.scrollTop;render();content.scrollTop=scroll}catch{}}
+  window.addEventListener('pageshow',event=>{if(event.persisted)syncState()});window.addEventListener('storage',event=>{if(event.key===stateKey||event.key===ChatConversations.storageKey)syncState()});
   function inScope(item){if(item.presentationOnly)return !window.DemoLocalData?.isCleared()&&(!recordMode||Boolean(currentSession&&conversationId==='initial-history-followup-versions-v1'));return references.has(item.key)&&(!recordMode||(currentSession&&references.get(item.key).some(ref=>ref.sessionId===conversationId)))&&!ArtifactVersions.isDeleted(item)}
   if(!['#images','#files'].includes(location.hash)){
     const available=samples.filter(inScope),hasImages=available.some(item=>!item.type||item.type.startsWith('image/')),hasFiles=available.some(item=>item.type&&!item.type.startsWith('image/'));
