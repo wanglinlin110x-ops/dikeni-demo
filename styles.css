@@ -1489,3 +1489,7 @@ body[data-page="conversation"] .chat-thread .chat-table-card th,.chat-table-prev
 body[data-page="conversation"] .chat-thread .chat-table-card td,.chat-table-preview td{background:#fff}
 
 .reply-more-actions [data-chat-action="delete"]{color:#f05252}.reply-more-actions [data-chat-action="delete"] img{filter:none}
+
+/* File cards use the same24px separation above/below, without stacking the reply gap and file margin. */
+.chat-answer-sales>.chat-reply-files{margin-top:-16px}
+.chat-answer-sales>.chat-reply-files+.chat-answer-actions{margin-top:-16px}
