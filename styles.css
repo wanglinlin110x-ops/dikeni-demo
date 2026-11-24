@@ -518,7 +518,7 @@ body[data-page="conversation"] [data-node-id="9:1383"]{width:40px;height:40px}
 .chat-thread{gap:32px;min-height:200px;font-family:"PingFang SC",sans-serif}
 .chat-empty{padding:40px 16px;color:#939693;font-size:28px;line-height:44px}
 .chat-user{display:flex;justify-content:flex-end;width:100%;padding-top:18px}
-.chat-user p{max-width:92%;background:#e3f7f9;border-radius:26px 0 26px 26px;padding:22px 24px;color:#111;font-size:32px;line-height:44.8px;overflow-wrap:anywhere;white-space:pre-wrap}
+.chat-user p{max-width:92%;background:#e3f7f9;border-radius:26px 0 26px 26px;padding:22px 24px;color:#07B1C7;font-size:32px;line-height:44.8px;overflow-wrap:anywhere;white-space:pre-wrap}
 .chat-response{width:100%}
 .chat-answer{background:#f8f8f8;padding:24px;border-radius:24px;color:#292b29;overflow:hidden}
 .chat-answer h2{font-size:32px;line-height:46px;margin:0 0 18px;font-weight:600}
@@ -1205,7 +1205,7 @@ body[data-page="conversation"] .chat-thread .chat-answer>.chat-paragraph+.chat-p
 body[data-page="conversation"] .chat-thread .chat-answer-champion>.chat-paragraph:first-of-type{margin-top:-8px}
 body[data-page="conversation"] .chat-thread .chat-paragraph strong,
 body[data-page="conversation"] .chat-thread .chat-script strong{font-weight:600;font-size:inherit;line-height:inherit;color:inherit}
-body[data-page="conversation"] .chat-thread .chat-answer>h2{font-size:30px;line-height:44.4px;font-weight:600}
+body[data-page="conversation"] .chat-thread .chat-answer>h2{font-size:38px;line-height:44.4px;font-weight:600}
 body[data-page="conversation"] .chat-thread .chat-answer .chat-person-facts{gap:24px 12px;border:0;padding-top:0}
 body[data-page="conversation"] .chat-thread .chat-answer .chat-person-facts>div{position:relative;padding-left:24px}
 body[data-page="conversation"] .chat-thread .chat-answer .chat-person-facts>div::before{content:"";position:absolute;inset:0 auto 0 0;width:8px;background:url("assets/reply-fact-accent.svg") center/8px 100% no-repeat}
@@ -1244,7 +1244,7 @@ body[data-page="conversation"] .chat-thread .clarification-options{gap:16px;marg
 body[data-page="conversation"] .chat-thread .clarification-options button{border-radius:24px;font-size:27px;line-height:39.96px;padding:13px 22px}
 body[data-page="conversation"] .chat-thread .clarification-hint{font-size:26px;line-height:40px;color:#777}
 /* Reading mode changes text while preserving chrome, chart bars and icon geometry. */
-.font-large body[data-page="conversation"] .chat-thread .chat-answer>h2{font-size:40px;line-height:58px}
+.font-large body[data-page="conversation"] .chat-thread .chat-answer>h2{font-size:48px;line-height:58px}
 .font-large body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics :is(strong,.metric-digits){font-size:52px;line-height:72px}
 .font-large body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics .metric-percentage{line-height:72px}
 .font-large body[data-page="conversation"] .chat-thread .chat-answer .chat-metrics .metric-symbol{font-size:36px;line-height:64px}
