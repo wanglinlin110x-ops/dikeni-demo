@@ -837,7 +837,7 @@ body:is([data-page="index"],[data-page="input"]) .s24{width:100%}
 body[data-page="conversation"] .chat-answer-list{display:flex;flex-direction:column;gap:12px;margin:0;padding:0 0 0 1.35em;list-style:disc;font-size:32px;line-height:48px}
 body[data-page="conversation"] .chat-answer-list>.chat-paragraph{display:list-item;margin:0;padding:0}
 .chat-answer-list>li::marker{color:#111;font-size:.75em}
-.chat-answer-list strong{font-weight:600}
+.chat-answer-list strong{font-weight:500}
 
 /* Optional dictation presentation; default voice UI and canvas stay unchanged. */
 .voice-compact{user-select:none;position:absolute;inset:auto 0 0;height:max(100%,calc(var(--voice-tap-target,88px) + 12px));z-index:2;display:flex;align-items:center;gap:12px;padding:6px 12px;background:#f3f3f3;border-radius:60px;isolation:isolate}
@@ -1201,12 +1201,12 @@ body[data-page="conversation"] .chat-source-content h3{color:#101210;line-height
 
 /* Shared reply presentation, Figma 9:1377. The 750px canvas remains the scaling basis. */
 body[data-page="conversation"] .chat-thread :is(.chat-answer,.clarification-card){background:#f8f8f8;border-radius:24px;padding:40px 24px 24px;color:#101210}
-body[data-page="conversation"] .chat-thread .chat-answer{gap:40px}
-body[data-page="conversation"] .chat-thread .chat-answer>.chat-paragraph+.chat-paragraph{margin-top:-16px}
+body[data-page="conversation"] .chat-thread .chat-answer{gap:32px}
+body[data-page="conversation"] .chat-thread .chat-answer>.chat-paragraph+.chat-paragraph{margin-top:-8px}
 body[data-page="conversation"] .chat-thread .chat-answer-champion>.chat-paragraph:first-of-type{margin-top:-8px}
 body[data-page="conversation"] .chat-thread .chat-paragraph strong,
-body[data-page="conversation"] .chat-thread .chat-script strong{font-weight:600;font-size:inherit;line-height:inherit;color:inherit}
-body[data-page="conversation"] .chat-thread .chat-answer>h2{font-size:38px;line-height:44.4px;font-weight:600}
+body[data-page="conversation"] .chat-thread .chat-script strong{font-weight:500;font-size:inherit;line-height:inherit;color:inherit}
+body[data-page="conversation"] .chat-thread .chat-answer>h2{font-size:38px;line-height:44px;font-weight:500}
 body[data-page="conversation"] .chat-thread .chat-answer .chat-person-facts{gap:24px 12px;border:0;padding-top:0}
 body[data-page="conversation"] .chat-thread .chat-answer .chat-person-facts>div{position:relative;padding-left:24px}
 body[data-page="conversation"] .chat-thread .chat-answer .chat-person-facts>div::before{content:"";position:absolute;inset:0 auto 0 0;width:8px;background:url("assets/reply-fact-accent.svg") center/8px 100% no-repeat}
@@ -1391,7 +1391,7 @@ body[data-page="conversation"] .chat-thread :is(.chat-user,.chat-answer,.clarifi
 
 /* A file card always identifies the immutable output version. */
 .chat-artifact-file{overflow:hidden;background:#fff;border-radius:24px}
-.chat-artifact-file>button:first-child{display:flex;align-items:center;gap:20px;width:100%;padding:24px;background:#fff;text-align:left;color:#101210}
+.chat-artifact-file>button:first-child{display:flex;align-items:center;gap:24px;width:100%;min-height:100px;padding:8px 24px;background:#fff;text-align:left;color:#101210}
 .chat-artifact-file>button:first-child>img{width:40px;height:40px;flex-shrink:0}
 .chat-artifact-file>button:first-child>img:last-child{width:24px;height:24px;transform:rotate(180deg)}
 .chat-artifact-file button:disabled{color:#888}
@@ -1440,36 +1440,36 @@ body[data-page="conversation"] .chat-thread :is(.chat-user,.chat-answer,.clarifi
 body[data-page="conversation"] .conversation-materials img{width:auto;height:auto;max-width:none}
 
 /* Figma237:1911 — structured sales reply, reuse the existing card and typography. */
-.chat-sales-analysis{display:flex;flex-direction:column;gap:40px;min-width:0;width:100%}
+.chat-sales-analysis{display:flex;flex-direction:column;gap:32px;min-width:0;width:100%}
 .chat-sales-section{display:flex;flex-direction:column;gap:24px;min-width:0}
-.chat-sales-section h3{margin:0;font-size:32px;font-weight:600;line-height:48px;color:#101210;overflow-wrap:anywhere}
-.chat-sales-scope{margin:0;padding:0 0 0 24px;border-left:3px solid #d4d4d4;color:#777;font-size:26px;line-height:40px;overflow-wrap:anywhere}
-.chat-sales-scope p{margin:0}.chat-sales-scope p+p{margin-top:12px}
-body[data-page="conversation"] .chat-sales-section .chat-answer-list{gap:0;padding-left:45px}
+.chat-sales-section h3{margin:0;font-size:34px;font-weight:500;line-height:46px;color:#101210;overflow-wrap:anywhere}
+.chat-sales-scope{margin:0;padding:0 0 0 24px;border-left:3px solid #d4d4d4;color:#777;font-size:28px;line-height:40px;overflow-wrap:anywhere}
+.chat-sales-scope p{margin:0}.chat-sales-scope p+p{margin-top:24px}
+body[data-page="conversation"] .chat-sales-section .chat-answer-list{gap:24px;padding-left:0;list-style:none}
 .chat-sales-analysis .chat-table-wrap{max-width:100%;min-width:0}
 .font-large body[data-page="conversation"] .chat-sales-section h3{font-size:38px;line-height:58px}
 .font-large body[data-page="conversation"] .chat-sales-scope{font-size:30px;line-height:46px}
 
-.chat-answer-sales>h2+.chat-paragraph{margin-top:-16px}
+.chat-answer-sales>h2+.chat-paragraph{margin-top:0}
 
 /* Conversation titles and file names share one-line truncation; actions keep their slots. */
 body[data-page="conversation"] .s51>.s13{position:absolute;left:128px;right:124px;min-width:0;align-items:stretch}
 body[data-page="conversation"] .s52{width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
 .chat-artifact-file>button:first-child>span{overflow:hidden}
-.chat-artifact-file>button:first-child strong{display:flex;align-items:center;gap:8px;min-width:0;width:100%}
+.chat-artifact-file>button:first-child strong{font-size:30px;line-height:42px;font-weight:500;display:flex;align-items:center;gap:8px;min-width:0;width:100%}
 .chat-artifact-file .chat-file-title{display:block;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;overflow-wrap:normal}
 .chat-artifact-file .artifact-version{flex:none;margin-left:0}
 
-.chat-artifact-file>button:first-child>img{width:64px;height:64px;object-fit:contain}
+.chat-artifact-file>button:first-child>img{width:56px;height:56px;object-fit:contain}
 
 /* Sales table: grey action bar, square grid cells and a horizontally scrollable body. */
 .chat-table-card{width:100%;min-width:0;border:1px solid #d4d4d4;border-radius:20px;overflow:hidden;background:#f8f8f8}
 .chat-table-toolbar{height:68px;padding:0 24px;background:#e8e8e8;display:flex;align-items:center;justify-content:space-between;color:#777;font-size:28px;line-height:40px}
-.chat-table-toolbar>div{display:flex;align-items:center;gap:8px}.chat-table-toolbar button{display:flex;align-items:center;justify-content:center;width:64px;height:64px;padding:12px;background:transparent;border:0;border-radius:0}
-.chat-table-toolbar img{width:40px;height:40px;object-fit:contain;filter:brightness(0);opacity:.55}
+.chat-table-toolbar>div{display:flex;align-items:center;gap:24px}.chat-table-toolbar button{display:flex;align-items:center;justify-content:center;width:48px;height:48px;padding:5px;background:transparent;border:0;border-radius:0}
+.chat-table-toolbar img{width:38px;height:38px;object-fit:contain;filter:none;opacity:1}
 body[data-page="conversation"] .chat-thread .chat-table-card .chat-table-wrap,.chat-table-preview .chat-table-wrap{padding:0;border-radius:0;background:#f8f8f8;margin:0;overflow-x:auto;max-width:100%}
 .chat-table-card table,.chat-table-preview table{border-collapse:collapse;width:100%;text-align:left;table-layout:fixed}
-body[data-page="conversation"] .chat-thread .chat-table-card :is(th,td),.chat-table-preview :is(th,td){padding:24px 28px;border-right:1px solid #d4d4d4;border-bottom:1px solid #d4d4d4;font-size:28px;line-height:44px;color:#101210;vertical-align:top}
+body[data-page="conversation"] .chat-thread .chat-table-card :is(th,td),.chat-table-preview :is(th,td){padding:24px;border-right:1px solid #d4d4d4;border-bottom:1px solid #d4d4d4;font-size:28px;line-height:42px;color:#101210;vertical-align:top}
 body[data-page="conversation"] .chat-thread .chat-table-card th,.chat-table-preview th{font-weight:600;white-space:nowrap}
 body[data-page="conversation"] .chat-thread .chat-table-card td strong{font-weight:400}
 .chat-table-card :is(th,td):last-child,.chat-table-preview :is(th,td):last-child{border-right:0}
@@ -1486,11 +1486,28 @@ body[data-page="conversation"] .chat-thread .chat-table-card td strong{font-weig
 
 /* Table headings stay light grey; every data cell stays white in both views. */
 body[data-page="conversation"] .chat-thread .chat-table-card .chat-table-wrap,.chat-table-preview .chat-table-wrap{background:#fff}
-body[data-page="conversation"] .chat-thread .chat-table-card th,.chat-table-preview th{background:#f8f8f8}
+body[data-page="conversation"] .chat-thread .chat-table-card th,.chat-table-preview th{background:#f4f4f4}
 body[data-page="conversation"] .chat-thread .chat-table-card td,.chat-table-preview td{background:#fff}
 
 .reply-more-actions [data-chat-action="delete"]{color:#f05252}.reply-more-actions [data-chat-action="delete"] img{filter:none}
 
-/* File cards use the same24px separation above/below, without stacking the reply gap and file margin. */
-.chat-answer-sales>.chat-reply-files{margin-top:-16px}
+/* File cards follow the shared card gap without an extra top margin. */
+.chat-answer-sales>.chat-reply-files{margin-top:0}
 .chat-answer-sales>.chat-reply-files+.chat-answer-actions{margin-top:-16px}
+
+/* Figma275:565: shared content hierarchy and sales table geometry, 750px canvas. */
+body[data-page="conversation"] .chat-paragraph{font-weight:400;color:#101210}
+.chat-sales-analysis{counter-reset:sales-section}
+.chat-sales-section:not(.chat-sales-section-note){counter-increment:sales-section}
+.chat-sales-section:not(.chat-sales-section-note)>h3::before{content:counter(sales-section) ". "}
+.chat-sales-section-note{margin-top:-8px}
+.chat-sales-section-note>h3{font-size:32px;line-height:48px}
+.chat-sales-analysis>.chat-paragraph{margin-top:-8px}
+.chat-sales-section .chat-answer-list>li::before{content:"• ";font-weight:400}
+.chat-sales-section .chat-answer-list>li::marker{content:""}
+body[data-page="conversation"] .chat-thread .chat-table-card th{height:92px;box-sizing:border-box;vertical-align:middle;font-weight:500}
+body[data-page="conversation"] .chat-thread .chat-table-card tbody tr{height:120px}
+body[data-page="conversation"] .chat-thread .chat-table-card td{vertical-align:middle}
+.chat-table-card table:not(:has(th:nth-child(3))) th:first-child{width:200px}
+.chat-artifact-file>button:first-child small{line-height:34px}
+.font-large body[data-page="conversation"] .chat-sales-section-note>h3{font-size:38px;line-height:58px}
