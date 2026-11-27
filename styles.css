@@ -1445,7 +1445,7 @@ body[data-page="conversation"] .conversation-materials img{width:auto;height:aut
 .chat-sales-section h3{margin:0;font-size:34px;font-weight:500;line-height:46px;color:#101210;overflow-wrap:anywhere}
 .chat-sales-scope{margin:0;padding:0 0 0 24px;border-left:3px solid #d4d4d4;color:#777;font-size:28px;line-height:40px;overflow-wrap:anywhere}
 .chat-sales-scope p{margin:0}.chat-sales-scope p+p{margin-top:24px}
-body[data-page="conversation"] .chat-sales-section .chat-answer-list{gap:0;padding-left:40px;list-style:disc}
+body[data-page="conversation"] .chat-sales-section .chat-answer-list{gap:24px;padding-left:40px;list-style:disc}
 .chat-sales-analysis .chat-table-wrap{max-width:100%;min-width:0}
 .font-large body[data-page="conversation"] .chat-sales-section h3{font-size:38px;line-height:58px}
 .font-large body[data-page="conversation"] .chat-sales-scope{font-size:30px;line-height:46px}
