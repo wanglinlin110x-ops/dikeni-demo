@@ -1514,5 +1514,5 @@ body[data-page="conversation"] .chat-thread .chat-table-card td{vertical-align:m
 
 /* List dots align to the reply text edge; wrapped lines retain their text indent. */
 body[data-page="conversation"] .chat-sales-section .chat-answer-list>li{position:relative;padding-left:40px}
-.chat-sales-section .chat-answer-list>li::before{content:"";position:absolute;left:0;top:20px;width:8px;height:8px;border-radius:50%;background:currentColor}
+.chat-sales-section .chat-answer-list>li::before{content:"";position:absolute;left:4px;top:20px;width:8px;height:8px;border-radius:50%;background:currentColor}
 .font-large body[data-page="conversation"] .chat-sales-section .chat-answer-list>li::before{top:25px}
