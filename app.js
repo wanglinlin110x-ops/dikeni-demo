@@ -619,7 +619,11 @@
     if (!list) return;
     list.replaceChildren();
     const pinned = $('.history-pinned-list'); pinned.replaceChildren();
-    const sessions = ChatConversations.list().filter(session=>!session.isMainChat);
+    const allSessions = ChatConversations.list();
+    const mainSession = allSessions.find(session=>session.isMainChat);
+    const mainButton = $('.history-main');
+    if(mainSession && mainButton){mainButton.dataset.sessionId=mainSession.id;window.DemoTaskStatus?.decorate(mainSession,mainButton);}
+    const sessions = allSessions.filter(session=>!session.isMainChat);
     let previousGroup;
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
@@ -635,6 +639,7 @@
       button.setAttribute('aria-label', session.title);
       const title = document.createElement('span'); title.className = 'history-session-title'; title.textContent = session.title;
       button.append(title);
+      window.DemoTaskStatus?.decorate(session,button);
       if (session.id === ChatConversations.activeId()) { button.classList.add('selected'); button.setAttribute('aria-current', 'page'); }
       button.setAttribute('aria-haspopup', 'dialog'); button.setAttribute('aria-expanded', 'false');
       (session.pinned ? pinned : list).append(button);

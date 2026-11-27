@@ -105,6 +105,7 @@ window.ChatConversations = (() => {
           const last = session.messages.at(-1);
           if (last?.state === 'complete' && last.reply?.context?.lastIntent === 'rank') session.context = { ...last.reply.context };
         });
+        if(window.DemoTaskStatus?.reconcile(data))write(data);
         return data;
       }
     } catch { /* A missing or damaged cache starts a fresh session. */ }
@@ -206,6 +207,7 @@ window.ChatConversations = (() => {
       this.scroller?.addEventListener('scroll', () => {
         this.stickToBottom = this.scroller.scrollHeight - this.scroller.scrollTop - this.scroller.clientHeight < 100;
       });
+      window.DemoTaskStatus?.attach(this);
       this.render();
       host.addEventListener('click', event => this.action(event));
       this.setupReplyTools();
@@ -214,9 +216,9 @@ window.ChatConversations = (() => {
       this.restoreArtifactEdit();
       this.resumeGeneration();
       window.addEventListener('pageshow',event=>{if(event.persisted){this.render();this.restoreArtifactEdit()}});
-      window.addEventListener('pagehide', () => { this.suspended = true; clearTimeout(this.timer); this.modelRun?.controller.abort(); if (this.busy) this.persist(); });
+      window.addEventListener('pagehide', () => { this.suspended = true; clearInterval(this.taskTimer); clearTimeout(this.timer); this.modelRun?.controller.abort(); if (this.busy) this.persist(); });
       window.addEventListener('pageshow', event => {
-        if (event.persisted && this.suspended) { this.suspended = false; this.resumeGeneration(); }
+        if (event.persisted && this.suspended) { this.session = read().sessions.find(s=>s.id===this.session.id)||this.session; this.suspended = false; this.render(); this.resumeGeneration(); }
       });
     }
     restoreArtifactEdit(){
@@ -315,7 +317,9 @@ window.ChatConversations = (() => {
       const message = { id: id(), role: 'assistant', reply: response, state: 'pending', ...(voice ? { voiceReply: true } : {}),
         ...(!attachments.length && !response.homeReply && !directVoice && window.DemoUnderstanding?.enabled ? { modelRequest: { text, context: responseContext, ...(reference?{reference}:{} ) } } : {}) };
       this.session.messages.push(message);
-      this.session.context = response.context;
+      window.DemoTaskStatus?.ensure(message,this);
+      window.DemoTaskStatus?.configure(message,this);
+      this.session.context = message.reply.context;
       if (this.session.title === '新对话') this.session.title = (text || attachments[0]?.name || '附件消息').slice(0, 26);
       this.session.updated = Date.now();
       this.stickToBottom = true;
@@ -324,8 +328,15 @@ window.ChatConversations = (() => {
     }
     finish(message, delay = message.voiceReply ? 0 : 550 + Math.random() * 300) {
       this.onBusy(true);
+      if(navigator.onLine===false){window.DemoTaskStatus.fail(this,message,'offline');return;}
+      window.DemoTaskStatus?.start(this,message);
+      if(window.DemoTaskStatus)delay=DemoTaskStatus.delay(message,this);
+      this.persist();
       clearTimeout(this.timer);
       this.timer = setTimeout(async () => {
+        if(this.suspended||message.state!=='pending')return;
+        if(navigator.onLine===false){DemoTaskStatus.fail(this,message,'offline');return;}
+        if(window.DemoTaskStatus?.intercept(this,message))return;
         if (message.modelRequest && window.DemoUnderstanding?.enabled) {
           const run = { controller: new AbortController(), message };
           this.modelRun = run;
@@ -351,6 +362,7 @@ window.ChatConversations = (() => {
           }
         }
         if (message.regeneration) message.reply = message.regeneration.nextReply;
+        clearInterval(this.taskTimer);
         message.state = 'streaming'; message.progress = 0;
         this.persist(); this.render(); this.stream(message);
       }, delay);
@@ -379,7 +391,7 @@ window.ChatConversations = (() => {
         element.hidden = true;
         return { element, text, parts, units: text === null ? 1 : Math.max(1, Array.from(text).length) };
       });
-      node.querySelectorAll('button').forEach(button => { button.disabled = true; });
+      node.querySelectorAll('button:not([data-task-retry])').forEach(button => { button.disabled = true; });
       this.applyProgress(blocks, message.progress || 0, message.state === 'streaming');
       if (message.state === 'interrupted') {
         const stopped = document.createElement('p');
@@ -424,6 +436,7 @@ window.ChatConversations = (() => {
         const currentBlock = blocks.find(block => { offset += block.units; return offset > (message.progress || 0); });
         if (!currentBlock) {
           message.state = 'complete'; delete message.progress;
+          window.DemoTaskStatus?.complete(this,message);
           if (message.regeneration) {
             delete message.regeneration;
             delete message.liked; delete message.disliked; delete message.feedback; delete message.feedbackDraft;
@@ -455,6 +468,7 @@ window.ChatConversations = (() => {
       tick();
     }
     stop() {
+      clearInterval(this.taskTimer);
       const message = this.session.messages.find(m => ['pending', 'streaming'].includes(m.state));
       if (!message) return;
       clearTimeout(this.timer);
@@ -481,7 +495,8 @@ window.ChatConversations = (() => {
       const last = this.session.messages.at(-1);
       this.host.innerHTML = this.session.messages.length ? this.session.messages.map(message => {
         if (message.role === 'user') return `<div class="chat-user" data-input-source="${message.inputSource === 'voice' ? 'voice' : 'text'}" data-message-id="${escape(message.id)}">${message.attachments?.length ? `<div class="chat-user-attachments">${message.attachments.map(file => `<button type="button" data-chat-action="attachment" data-attachment-id="${escape(file.id)}" aria-label="下载附件：${escape(file.name)}">${file.type?.startsWith('image/') ? `<img data-attachment-id="${escape(file.id)}" alt="${escape(file.name)}">` : '<img src="assets/attachment-file.svg" alt="">'}<span>${escape(file.name)}</span></button>`).join('')}</div>` : ''}${message.reference?`<button type="button" class="chat-message-reference" data-chat-action="quote-source" aria-label="查看引用的回复"><span>${escape(message.reference.title)}</span>${message.reference.text?.trim()&&message.reference.text.replace(/\s/g,'')!==String(message.reference.title||'').replace(/\s/g,'')?`<small>${escape(message.reference.text)}</small>`:''}</button>`:''}${message.text ? `<p>${escape(message.text)}</p>` : ''}</div>`;
-        if (message.state === 'pending') return `${message.regeneration ? `<div class="chat-response" data-message-id="${escape(message.id)}">${this.renderReply(message)}</div>` : ''}<div class="thinking-status" role="status"><span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>正在思考...</span></div>`;
+        if(message.state==='failed')return window.DemoTaskStatus.renderFailure(message,this);
+        if (message.state === 'pending') return `${message.regeneration ? `<div class="chat-response" data-message-id="${escape(message.id)}">${this.renderReply(message)}</div>` : ''}${window.DemoTaskStatus.render(message,this)}`;
         return `<div class="chat-response" data-message-id="${escape(message.id)}" data-generation-state="${escape(message.state)}">${this.renderReply(message)}${last === message && message.state === 'complete' && !message.reply.unavailable && message.reply.followups?.length ? `<section class="followup-section"><h2>推荐追问</h2><div class="followup-options">${message.reply.followups.map(text => `<button data-chat-action="followup">${escape(text)}</button>`).join('')}</div></section>` : ''}</div>`;
       }).join('') : '<p class="chat-empty">开始一段新对话。你可以查询销量、对比车型，或整理客户跟进。</p>';
       if(this.session.branch){
@@ -496,7 +511,7 @@ window.ChatConversations = (() => {
       window.AttachmentStorage?.hydrate(this.host);
       this.host.setAttribute('aria-busy', String(this.busy));
       this.plans = new Map();
-      this.session.messages.filter(message => ['streaming', 'interrupted'].includes(message.state)).forEach(message => {
+      this.session.messages.filter(message => ['streaming', 'interrupted'].includes(message.state)||message.state==='failed'&&message.progress>0).forEach(message => {
         this.plans.set(message.id, this.prepare(message));
       });
       if (anchorId) {
@@ -888,7 +903,7 @@ window.ChatConversations = (() => {
         const context = question.reference?.context||preceding.findLast(item => item.role === 'assistant')?.reply.context || {};
         message.regeneration = { original: { reply: message.reply, state: message.state, ...(message.progress !== undefined ? { progress: message.progress } : {}) }, nextReply: question.attachments?.length ? { ...message.reply, context: { ...context, pending: null, journey: null, lastIntent: 'attachment' } } : question.dialogueUnderstanding && window.DemoUnderstanding ? DemoUnderstanding.reply(question.dialogueUnderstanding, context) : quoteAnswer(question.inputSource === 'voice' ? question.voice?.query || question.text : question.text,question.reference,context) };
         if (!question.attachments?.length && !message.regeneration.nextReply.homeReply && !question.dialogueUnderstanding && window.DemoUnderstanding?.enabled) message.modelRequest = { text: question.text, context };
-        message.state = 'pending'; delete message.progress;
+        message.state = 'pending'; delete message.progress; delete message.taskStatus;
         this.session.updated = Date.now();
         this.persist(); this.render(); this.finish(message);
       }

@@ -1,0 +1,29 @@
+/* The existing sidebar typography, colors and item corner radii are retained. */
+.history-recent-list .history-recent,.history-pinned-list .history-recent{display:flex;align-items:center;gap:16px}
+.history-session-title{flex:1;min-width:0}
+.history-task-badge{flex:none;display:inline-flex;align-items:center;gap:9px}
+.history-task-running{font-size:24px;line-height:36px;color:#07b1c7}
+.history-task-running i{box-sizing:border-box;width:20px;height:20px;border:2px solid #cceff3;border-top-color:#07b1c7;border-radius:50%;animation:history-task-spin 1.2s linear infinite}
+.history-task-unread{width:12px;height:12px;margin-right:4px;border-radius:50%;background:#07b1c7}
+@keyframes history-task-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.history-task-running i{animation:none}}
+
+/* Neutral outlined notice, matching the supplied visual reference. */
+.response-failure{margin:0;color:#6b6b6b;font-size:26px;line-height:40px}
+.response-failure-heading{display:flex;width:fit-content;max-width:100%;align-items:center;gap:16px;min-height:76px;padding:16px 20px;border:2px solid #e5e5e5;border-radius:20px;background:#fff;box-shadow:0 2px 8px #00000006;box-sizing:border-box}
+.response-failure-icon{display:block;flex:0 0 32px;width:32px;height:32px;color:#FF1818}
+.response-failure .response-failure-title{min-width:0;margin:0;color:#252729;font-weight:400;font-size:28px;line-height:40px;overflow-wrap:anywhere}
+.response-failure-content{padding:12px 20px 0}
+.response-failure .response-failure-description{margin:0 0 8px;overflow-wrap:anywhere}
+.response-failure button{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:80px;max-width:100%;margin-left:0;padding:16px 24px;line-height:36px;font-size:26px;font-weight:500;font-family:inherit;border:0;border-radius:24px;background:#e3f7f9;color:#00b5c7;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.response-retry-icon{display:block;flex:0 0 32px;width:32px;height:32px}
+.response-failure button:hover{background:#d7f2f5}
+.response-failure button:active{background:#c9edf1}
+.response-failure button:focus-visible{outline:3px solid #00b5c7;outline-offset:4px}
+.chat-answer+.response-failure{margin-top:20px}
+
+
+.history-task-failed{font-size:24px;line-height:36px;color:#939693}
+
+
+.history-main .history-task-badge{margin-left:auto}
