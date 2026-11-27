@@ -7,19 +7,12 @@ window.ChatConversations = (() => {
   function emphasisMarkup(value, reply = {}, action = false) {
     const text = String(value ?? ''), ranges = [];
     const add = (start, end) => { if (end > start) ranges.push([start, end]); };
-    const terms = [reply.profile?.name, reply.profile?.store, '王小迪', '李明轩', '陈思雨', '王浩',
-      ...((reply.chart && !reply.chart.labels.every(label => /^\d+月$/.test(label))) ? reply.chart.labels : [])].filter(Boolean);
-    for (const term of new Set(terms)) {
-      let at = text.indexOf(term);
-      while (at !== -1) { add(at, at + term.length); at = text.indexOf(term, at + term.length); }
-    }
-    for (const pattern of [/[+-]?\d+(?:,\d{3})*(?:\.\d+)?(?:%|辆|台|万元|元|条)/g,
-      /稳步增长|持续增长|连续增长|创近[^，。；\n]{0,15}新高|领先第二名\d+辆/g]) {
-      for (const match of text.matchAll(pattern)) add(match.index, match.index + match[0].length);
-    }
-    if (action) {
-      const lead = text.match(/^[^，。；\n]{1,28}[，。；]/);
-      if (lead) add(0, lead[0].length - 1);
+    // One short emphasis per paragraph; avoid highlighting every name, model and number.
+    const name=reply.profile?.name,personAt=name?text.indexOf(name):-1;
+    if(personAt>=0)add(personAt,personAt+name.length);
+    else{
+      const metric=text.match(/[+-]?\d+(?:,\d{3})*(?:\.\d+)?(?:%|辆|台|万元|元|条)/);
+      if(metric)add(metric.index,metric.index+metric[0].length);
     }
     ranges.sort((a, b) => a[0] - b[0] || b[1] - a[1]);
     const merged = [];
@@ -48,9 +41,9 @@ window.ChatConversations = (() => {
     for (const paragraph of paragraphs) {
       const match = String(paragraph).match(/^\s*(?:\d+[.、．)]|[•●-])\s+([\s\S]+)$/);
       if (!match) { flush(); markup.push(`<p class="chat-paragraph">${emphasisMarkup(paragraph, reply)}</p>`); continue; }
-      const text = match[1], split = text.search(/[：:，,。！？?]/);
-      const boundary = split > 0 && split <= 36 ? split + (/[：:]/.test(text[split]) ? 1 : 0) : 0;
-      const body = boundary ? `<strong>${escape(text.slice(0, boundary))}</strong>${emphasisMarkup(text.slice(boundary), reply, true)}` : emphasisMarkup(text, reply, true);
+      const text = match[1], split = text.search(/[：:]/);
+      const boundary = split > 0 && split <= 12 ? split + 1 : 0;
+      const body = boundary ? `<strong>${escape(text.slice(0, boundary))}</strong>${escape(text.slice(boundary))}` : emphasisMarkup(text, reply);
       items.push(`<li class="chat-paragraph">${body}</li>`);
     }
     flush(); return markup.join('');
