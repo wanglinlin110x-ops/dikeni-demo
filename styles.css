@@ -1521,5 +1521,5 @@ body[data-page="conversation"] .chat-sales-section .chat-answer-list>li{position
 body[data-page="conversation"] .chat-sales-analysis .chat-paragraph{line-height:50px}
 .chat-sales-section-note .chat-answer-list{counter-reset:sales-note}
 body[data-page="conversation"] .chat-sales-section-note .chat-answer-list>li{counter-increment:sales-note;padding-left:64px}
-.chat-sales-section-note .chat-answer-list>li::before{content:counter(sales-note) "、";left:0;top:0;width:64px;height:auto;border-radius:0;background:none;font:inherit;font-weight:400}
+.chat-sales-section-note .chat-answer-list>li::before{content:counter(sales-note) ".";left:0;top:0;width:64px;height:auto;border-radius:0;background:none;font:inherit;font-weight:400}
 .font-large body[data-page="conversation"] .chat-sales-section-note .chat-answer-list>li::before{top:0}
