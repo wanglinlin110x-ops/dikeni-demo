@@ -651,7 +651,7 @@ body[data-page="conversation"] .chat-user{padding-top:0}
 body[data-page="conversation"] .chat-response+.chat-user{padding-top:24px}
 body[data-page="conversation"] .chat-answer{display:flex;flex-direction:column;gap:32px;padding:40px 24px 24px;color:#111}
 body[data-page="conversation"] .chat-answer>h2{margin:0}
-body[data-page="conversation"] .chat-paragraph{margin:0;font-size:30px;line-height:46px}
+body[data-page="conversation"] .chat-paragraph{margin:0;font-size:32px;line-height:48px}
 body[data-page="conversation"] .chat-paragraph+.chat-paragraph{margin-top:-8px}
 body[data-page="conversation"] .chat-answer-champion>.chat-paragraph:first-of-type{margin-top:0}
 body[data-page="conversation"] .chat-champion-profile h2{margin:0;font-size:32px;line-height:44.8px}
@@ -834,7 +834,7 @@ body:is([data-page="index"],[data-page="input"]) .s24{width:100%}
 }
 
 /* Answer lists use hanging bullets and emphasize the original lead phrase. */
-body[data-page="conversation"] .chat-answer-list{display:flex;flex-direction:column;gap:12px;margin:0;padding:0 0 0 1.35em;list-style:disc;font-size:30px;line-height:46px}
+body[data-page="conversation"] .chat-answer-list{display:flex;flex-direction:column;gap:12px;margin:0;padding:0 0 0 1.35em;list-style:disc;font-size:32px;line-height:48px}
 body[data-page="conversation"] .chat-answer-list>.chat-paragraph{display:list-item;margin:0;padding:0}
 .chat-answer-list>li::marker{color:#111;font-size:.75em}
 .chat-answer-list strong{font-weight:600}
@@ -1103,7 +1103,8 @@ img,svg,video{-webkit-user-drag:none}
 
 
 /* Large reading mode changes conversation text only; app chrome stays standard. */
-.font-large body[data-page="conversation"] .chat-thread :is(.chat-user p,.chat-paragraph,.chat-answer-list,.chat-script blockquote){font-size:36px;line-height:56px}
+.font-large body[data-page="conversation"] .chat-thread .chat-user p{font-size:36px;line-height:56px}
+.font-large body[data-page="conversation"] .chat-thread :is(.chat-paragraph,.chat-answer-list,.chat-script blockquote){font-size:38px;line-height:58px}
 .font-large body[data-page="conversation"] .chat-thread :is(.chat-answer h2,.chat-profile-heading h2){font-size:40px;line-height:58px;overflow-wrap:anywhere}
 .font-large body[data-page="conversation"] .chat-thread :is(.chat-profile-store,.chat-person-role,.chat-profile-badge,.chat-champion-tags>span){font-size:30px;line-height:44px}
 .font-large body[data-page="conversation"] .chat-thread :is(.chat-profile-badge,.chat-champion-tags>span){min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}
@@ -1238,7 +1239,7 @@ body[data-page="conversation"] .chat-thread .chat-table-wrap strong{font-weight:
 body[data-page="conversation"] .chat-thread .chat-table-wrap tr:last-child td{border-bottom:0}
 body[data-page="conversation"] .chat-thread :is(.chat-script,.chat-next-step){min-width:0;width:100%;padding:24px;border-radius:24px;background:#fff;border:0}
 body[data-page="conversation"] .chat-thread :is(.chat-script,.chat-next-step) h3{font-size:26px;line-height:40px;font-weight:600;color:#101210;margin:0 0 16px}
-body[data-page="conversation"] .chat-thread .chat-script blockquote{margin:0;font-size:30px;line-height:46px;color:#101210;overflow-wrap:anywhere}
+body[data-page="conversation"] .chat-thread .chat-script blockquote{margin:0;font-size:32px;line-height:48px;color:#101210;overflow-wrap:anywhere}
 body[data-page="conversation"] .chat-thread .clarification-card legend{font-size:28px;line-height:41.44px;font-weight:400;color:#666}
 body[data-page="conversation"] .chat-thread .clarification-options{gap:16px;margin-top:30px}
 body[data-page="conversation"] .chat-thread .clarification-options button{border-radius:24px;font-size:27px;line-height:39.96px;padding:13px 22px}
@@ -1258,7 +1259,7 @@ body[data-page="conversation"] .chat-thread .clarification-hint{font-size:26px;l
 .font-large body[data-page="conversation"] .chat-thread .chat-horizontal-row small{font-size:28px;line-height:42px}
 .font-large body[data-page="conversation"] .chat-thread .chat-table-wrap :is(td,th){font-size:30px;line-height:46px}
 .font-large body[data-page="conversation"] .chat-thread :is(.chat-script,.chat-next-step) h3{font-size:34px;line-height:50px}
-.font-large body[data-page="conversation"] .chat-thread .chat-script blockquote{font-size:36px;line-height:56px}
+.font-large body[data-page="conversation"] .chat-thread .chat-script blockquote{font-size:38px;line-height:58px}
 .font-large body[data-page="conversation"] .chat-thread .clarification-card legend{font-size:36px;line-height:54px}
 .font-large body[data-page="conversation"] .chat-thread .clarification-options button{font-size:34px;line-height:50px}
 .font-large body[data-page="conversation"] .chat-thread .clarification-hint{font-size:30px;line-height:46px}
@@ -1441,12 +1442,12 @@ body[data-page="conversation"] .conversation-materials img{width:auto;height:aut
 /* Figma237:1911 — structured sales reply, reuse the existing card and typography. */
 .chat-sales-analysis{display:flex;flex-direction:column;gap:40px;min-width:0;width:100%}
 .chat-sales-section{display:flex;flex-direction:column;gap:24px;min-width:0}
-.chat-sales-section h3{margin:0;font-size:30px;font-weight:600;line-height:44.4px;color:#101210;overflow-wrap:anywhere}
+.chat-sales-section h3{margin:0;font-size:32px;font-weight:600;line-height:48px;color:#101210;overflow-wrap:anywhere}
 .chat-sales-scope{margin:0;padding:0 0 0 24px;border-left:3px solid #d4d4d4;color:#777;font-size:26px;line-height:40px;overflow-wrap:anywhere}
 .chat-sales-scope p{margin:0}.chat-sales-scope p+p{margin-top:12px}
 body[data-page="conversation"] .chat-sales-section .chat-answer-list{gap:0;padding-left:45px}
 .chat-sales-analysis .chat-table-wrap{max-width:100%;min-width:0}
-.font-large body[data-page="conversation"] .chat-sales-section h3{font-size:36px;line-height:56px}
+.font-large body[data-page="conversation"] .chat-sales-section h3{font-size:38px;line-height:58px}
 .font-large body[data-page="conversation"] .chat-sales-scope{font-size:30px;line-height:46px}
 
 .chat-answer-sales>h2+.chat-paragraph{margin-top:-16px}
