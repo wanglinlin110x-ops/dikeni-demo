@@ -1516,3 +1516,8 @@ body[data-page="conversation"] .chat-thread .chat-table-card td{vertical-align:m
 body[data-page="conversation"] .chat-sales-section .chat-answer-list>li{position:relative;padding-left:40px}
 .chat-sales-section .chat-answer-list>li::before{content:"";position:absolute;left:4px;top:20px;width:8px;height:8px;border-radius:50%;background:currentColor}
 .font-large body[data-page="conversation"] .chat-sales-section .chat-answer-list>li::before{top:25px}
+
+/* Figma312:2350: note content uses50px text lines and24px item spacing. */
+body[data-page="conversation"] .chat-sales-analysis .chat-paragraph{line-height:50px}
+.chat-sales-section-note .chat-answer-list>li::before{left:10px;top:20px;width:10px;height:10px}
+.font-large body[data-page="conversation"] .chat-sales-section-note .chat-answer-list>li::before{top:24px}
