@@ -651,7 +651,7 @@ body[data-page="conversation"] .chat-user{padding-top:0}
 body[data-page="conversation"] .chat-response+.chat-user{padding-top:24px}
 body[data-page="conversation"] .chat-answer{display:flex;flex-direction:column;gap:32px;padding:40px 24px 24px;color:#111}
 body[data-page="conversation"] .chat-answer>h2{margin:0}
-body[data-page="conversation"] .chat-paragraph{margin:0;font-size:32px;line-height:48px}
+body[data-page="conversation"] .chat-paragraph{margin:0;font-size:32px;line-height:50px}
 body[data-page="conversation"] .chat-paragraph+.chat-paragraph{margin-top:-8px}
 body[data-page="conversation"] .chat-answer-champion>.chat-paragraph:first-of-type{margin-top:0}
 body[data-page="conversation"] .chat-champion-profile h2{margin:0;font-size:32px;line-height:44.8px}
@@ -1206,7 +1206,7 @@ body[data-page="conversation"] .chat-thread .chat-answer>.chat-paragraph+.chat-p
 body[data-page="conversation"] .chat-thread .chat-answer-champion>.chat-paragraph:first-of-type{margin-top:-8px}
 body[data-page="conversation"] .chat-thread .chat-paragraph strong,
 body[data-page="conversation"] .chat-thread .chat-script strong{font-weight:500;font-size:inherit;line-height:inherit;color:inherit}
-body[data-page="conversation"] .chat-thread .chat-answer>h2{font-size:38px;line-height:54px;font-weight:500}
+body[data-page="conversation"] .chat-thread .chat-answer>h2{font-size:36px;line-height:52px;font-weight:500}
 body[data-page="conversation"] .chat-thread .chat-answer .chat-person-facts{gap:24px 12px;border:0;padding-top:0}
 body[data-page="conversation"] .chat-thread .chat-answer .chat-person-facts>div{position:relative;padding-left:24px}
 body[data-page="conversation"] .chat-thread .chat-answer .chat-person-facts>div::before{content:"";position:absolute;inset:0 auto 0 0;width:8px;background:url("assets/reply-fact-accent.svg") center/8px 100% no-repeat}
@@ -1499,7 +1499,7 @@ body[data-page="conversation"] .chat-thread .chat-table-card td,.chat-table-prev
 body[data-page="conversation"] .chat-paragraph{font-weight:400;color:#101210}
 .chat-sales-analysis{counter-reset:sales-section}
 .chat-sales-section:not(.chat-sales-section-note){counter-increment:sales-section}
-.chat-sales-section:not(.chat-sales-section-note)>h3::before{content:counter(sales-section) ". "}
+.chat-sales-section:not(.chat-sales-section-note)>h3::before{content:counter(sales-section,cjk-ideographic) "、"}
 .chat-sales-section-note{margin-top:-8px}
 .chat-sales-section-note>h3{font-size:32px;line-height:48px}
 .chat-sales-analysis>.chat-paragraph{margin-top:-8px}
@@ -1519,5 +1519,7 @@ body[data-page="conversation"] .chat-sales-section .chat-answer-list>li{position
 
 /* Figma312:2350: note content uses50px text lines and24px item spacing. */
 body[data-page="conversation"] .chat-sales-analysis .chat-paragraph{line-height:50px}
-.chat-sales-section-note .chat-answer-list>li::before{left:10px;top:20px;width:10px;height:10px}
-.font-large body[data-page="conversation"] .chat-sales-section-note .chat-answer-list>li::before{top:24px}
+.chat-sales-section-note .chat-answer-list{counter-reset:sales-note}
+body[data-page="conversation"] .chat-sales-section-note .chat-answer-list>li{counter-increment:sales-note;padding-left:64px}
+.chat-sales-section-note .chat-answer-list>li::before{content:counter(sales-note) "、";left:0;top:0;width:64px;height:auto;border-radius:0;background:none;font:inherit;font-weight:400}
+.font-large body[data-page="conversation"] .chat-sales-section-note .chat-answer-list>li::before{top:0}
