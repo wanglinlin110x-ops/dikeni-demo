@@ -1445,7 +1445,7 @@ body[data-page="conversation"] .conversation-materials img{width:auto;height:aut
 .chat-sales-section h3{margin:0;font-size:34px;font-weight:500;line-height:46px;color:#101210;overflow-wrap:anywhere}
 .chat-sales-scope{margin:0;padding:0 0 0 24px;border-left:3px solid #d4d4d4;color:#777;font-size:28px;line-height:40px;overflow-wrap:anywhere}
 .chat-sales-scope p{margin:0}.chat-sales-scope p+p{margin-top:24px}
-body[data-page="conversation"] .chat-sales-section .chat-answer-list{gap:24px;padding-left:40px;list-style:disc}
+body[data-page="conversation"] .chat-sales-section .chat-answer-list{gap:24px;padding-left:0;list-style:none}
 .chat-sales-analysis .chat-table-wrap{max-width:100%;min-width:0}
 .font-large body[data-page="conversation"] .chat-sales-section h3{font-size:38px;line-height:58px}
 .font-large body[data-page="conversation"] .chat-sales-scope{font-size:30px;line-height:46px}
@@ -1493,7 +1493,7 @@ body[data-page="conversation"] .chat-thread .chat-table-card td,.chat-table-prev
 
 /* File cards follow the shared card gap without an extra top margin. */
 .chat-answer-sales>.chat-reply-files{margin-top:0}
-.chat-answer-sales>.chat-reply-files+.chat-answer-actions{margin-top:-16px}
+.chat-answer-sales>.chat-reply-files+.chat-answer-actions{margin-top:0;padding:0 8px 8px;align-items:flex-start}
 
 /* Figma275:565: shared content hierarchy and sales table geometry, 750px canvas. */
 body[data-page="conversation"] .chat-paragraph{font-weight:400;color:#101210}
@@ -1511,3 +1511,8 @@ body[data-page="conversation"] .chat-thread .chat-table-card td{vertical-align:m
 .chat-table-card table:not(:has(th:nth-child(3))) th:first-child{width:200px}
 .chat-artifact-file>button:first-child small{line-height:34px}
 .font-large body[data-page="conversation"] .chat-sales-section-note>h3{font-size:38px;line-height:58px}
+
+/* List dots align to the reply text edge; wrapped lines retain their text indent. */
+body[data-page="conversation"] .chat-sales-section .chat-answer-list>li{position:relative;padding-left:40px}
+.chat-sales-section .chat-answer-list>li::before{content:"";position:absolute;left:0;top:20px;width:8px;height:8px;border-radius:50%;background:currentColor}
+.font-large body[data-page="conversation"] .chat-sales-section .chat-answer-list>li::before{top:25px}

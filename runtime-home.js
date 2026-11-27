@@ -2129,7 +2129,7 @@ window.ChatConversations = (() => {
     const markup = [];
     let items = [];
     const flush = () => {
-      if (items.length) { markup.push(`<ul class="chat-answer-list">${items.join('')}</ul>`); items = []; }
+      if (items.length) { markup.push(`<ul class="chat-answer-list" role="list">${items.join('')}</ul>`); items = []; }
     };
     for (const paragraph of paragraphs) {
       const match = String(paragraph).match(/^\s*(?:\d+[.、．)]|[•●-])\s+([\s\S]+)$/);
